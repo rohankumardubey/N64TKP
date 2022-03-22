@@ -5,12 +5,11 @@
 #include <limits>
 #include <array>
 #include "n64_instruction.h"
+#include "n64_types.h"
 
 namespace TKPEmu::N64::Devices {
     using Byte = uint8_t;
     using HalfWord = uint16_t;
-    using Word = uint32_t;
-    using DoubleWord = uint64_t;
     // General purpose registers. They occupy 32 or 64 bits based on the
     // operation mode
     using GPR = DoubleWord;
@@ -38,6 +37,8 @@ namespace TKPEmu::N64::Devices {
         using OpcodeFunctionPtr = void (CPU::*)();
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
+        // The current instruction
+        Instruction instr_;
 
         /// Registers
         // r0 is hardwired to 0, r31 is the link register
@@ -75,9 +76,13 @@ namespace TKPEmu::N64::Devices {
             &CPU::SDC1, &CPU::SDC2, &CPU::SD
         };
 
-        // Functions to get or set a GPR that deal with r0
-        inline GPR& get_gpr(int index);
-        inline GPR& set_gpr(int index, GPR data);
+        inline Byte       m_load_b(uint64_t addr);
+        inline HalfWord   m_load_hw(uint64_t addr);
+        inline Word       m_load_w(uint64_t addr);
+        inline DoubleWord m_load_dw(uint64_t addr);
+
+        uint32_t get_curr_ld_addr();
+        // Maybe useless?
         // Function to read from CPUs internal 64-bit bus
         void internal_read(DoubleWord addr);
         // Function to write to CPUs internal 64-bit bus
