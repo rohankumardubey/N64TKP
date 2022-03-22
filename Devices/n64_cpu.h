@@ -4,12 +4,11 @@
 #include <cstdint>
 #include <limits>
 #include <array>
+#include "n64_instruction.h"
 
 namespace TKPEmu::N64::Devices {
-    // Bit hack to get signum of number (-1, 0 or 1)
-    template <typename T> int sgn(T val) {
-        return (T(0) < val) - (val < T(0));
-    }
+    using Byte = uint8_t;
+    using HalfWord = uint16_t;
     using Word = uint32_t;
     using DoubleWord = uint64_t;
     // General purpose registers. They occupy 32 or 64 bits based on the
@@ -17,30 +16,11 @@ namespace TKPEmu::N64::Devices {
     using GPR = DoubleWord;
     // Floating point registers, they occupy 64 bits
     using FPR = double;
-    // This union describes how the inner bits of the 32 bit instructions are used
-    // Source: VR4300 manual, 1.4.3
-    union Instruction {
-        struct {
-            uint8_t  op        : 6;
-            uint8_t  rs        : 5;
-            uint8_t  rt        : 5;
-            uint16_t immediate : 16;
-        } IType;
-        struct {
-            uint8_t  op        : 6;
-            uint8_t  target    : 26;
-        } JType;
-        struct {
-            uint8_t  op        : 6;
-            uint8_t  rs        : 5;
-            uint8_t  rt        : 5;
-            uint8_t  rd        : 5;
-            uint8_t  sa        : 5;
-            uint8_t  func      : 6;
-        } RType;
-        uint32_t Full;
-    };
-    constexpr static uint64_t OpcodeMasks[2] = {
+    // Bit hack to get signum of number (-1, 0 or 1)
+    template <typename T> int sgn(T val) {
+        return (T(0) < val) - (val < T(0));
+    }
+    constexpr static uint64_t OperationMasks[2] = {
         std::numeric_limits<uint32_t>::max(),
         std::numeric_limits<uint64_t>::max()
     };
@@ -55,6 +35,7 @@ namespace TKPEmu::N64::Devices {
     class CPU {
     public:
     private:
+        using OpcodeFunctionPtr = void (CPU::*)();
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
 
@@ -65,6 +46,34 @@ namespace TKPEmu::N64::Devices {
         DoubleWord pc_, hi_, lo_;
         bool llbit_;
         float fcr0_, fcr31_;
+        void SPECIAL(), REGIMM(), J(), JAL(),
+            BEQ(), BNE(), BLEZ(), BGTZ(),
+            ADDI(), ADDIU(), SLTI(), SLTIU(),
+            ANDI(), ORI(), XORI(), LUI(),
+            CP0(), CP1(), BEQL(), BNEL(),
+            BLEZL(), BGTZL(), DADDI(), DADDIU(),
+            LDL(), LDR(), LB(), LH(),
+            LWL(), LW(), LBU(), LHU(),
+            LWR(), LWU(), SB(), SH(),
+            SWL(), SW(), SDL(), SDR(),
+            SWR(), CACHE(), LL(), LWC1(),
+            LDC1(), LD(), SC(), SWC1(),
+            SDC1(), SDC2(), SD();
+        const std::array<OpcodeFunctionPtr, 64> opcodes_ = {
+            &CPU::SPECIAL, &CPU::REGIMM, &CPU::J, &CPU::JAL,
+            &CPU::BEQ, &CPU::BNE, &CPU::BLEZ, &CPU::BGTZ,
+            &CPU::ADDI, &CPU::ADDIU, &CPU::SLTI, &CPU::SLTIU,
+            &CPU::ANDI, &CPU::ORI, &CPU::XORI, &CPU::LUI,
+            &CPU::CP0, &CPU::CP1, &CPU::BEQL, &CPU::BNEL,
+            &CPU::BLEZL, &CPU::BGTZL, &CPU::DADDI, &CPU::DADDIU,
+            &CPU::LDL, &CPU::LDR, &CPU::LB, &CPU::LH,
+            &CPU::LWL, &CPU::LW, &CPU::LBU, &CPU::LHU,
+            &CPU::LWR, &CPU::LWU, &CPU::SB, &CPU::SH,
+            &CPU::SWL, &CPU::SW, &CPU::SDL, &CPU::SDR,
+            &CPU::SWR, &CPU::CACHE, &CPU::LL, &CPU::LWC1,
+            &CPU::LDC1, &CPU::LD, &CPU::SC, &CPU::SWC1,
+            &CPU::SDC1, &CPU::SDC2, &CPU::SD
+        };
 
         // Functions to get or set a GPR that deal with r0
         inline GPR& get_gpr(int index);
