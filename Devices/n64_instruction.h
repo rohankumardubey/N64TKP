@@ -15,7 +15,7 @@ namespace TKPEmu::N64::Devices {
 
         } IType; // Immediate
         struct {
-            uint8_t  target    : 26; // unconditional branch target address
+            uint32_t  target    : 26; // unconditional branch target address
             uint8_t  op        : 6;  // operation code
         } JType; // Jump
         struct {

@@ -6,34 +6,112 @@ namespace TKPEmu::N64::Devices {
         return gpr_regs_[instr_.IType.rs].UW[0] + static_cast<int16_t>(instr_.IType.immediate);
     }
     void CPU::LB() {
-        uint64_t sign_extended_addr = get_curr_ld_addr();
+        uint32_t sign_extended_addr = get_curr_ld_addr();
         gpr_regs_[instr_.IType.rt].UB[0] = m_load_b(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].W[0] = gpr_regs_[instr_.IType.rt].B[0];
+        gpr_regs_[instr_.IType.rt].DW = gpr_regs_[instr_.IType.rt].B[0];
     }
     void CPU::LBU() {
-        uint64_t sign_extended_addr = get_curr_ld_addr();
+        uint32_t sign_extended_addr = get_curr_ld_addr();
         gpr_regs_[instr_.IType.rt].UB[0] = m_load_b(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].UW[0] = gpr_regs_[instr_.IType.rt].UB[0];
+        gpr_regs_[instr_.IType.rt].UDW = gpr_regs_[instr_.IType.rt].UB[0];
     }
     void CPU::LH() {
-        uint64_t sign_extended_addr = get_curr_ld_addr();
+        uint32_t sign_extended_addr = get_curr_ld_addr();
         gpr_regs_[instr_.IType.rt].UHW[0] = m_load_b(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].W[0] = gpr_regs_[instr_.IType.rt].HW[0];
+        gpr_regs_[instr_.IType.rt].DW = gpr_regs_[instr_.IType.rt].HW[0];
     }
     void CPU::LHU() {
-        uint64_t sign_extended_addr = get_curr_ld_addr();
+        uint32_t sign_extended_addr = get_curr_ld_addr();
         gpr_regs_[instr_.IType.rt].UHW[0] = m_load_b(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].UW[0] = gpr_regs_[instr_.IType.rt].UHW[0];
+        gpr_regs_[instr_.IType.rt].UDW = gpr_regs_[instr_.IType.rt].UHW[0];
     }
     void CPU::LW() {
-        uint64_t sign_extended_addr = get_curr_ld_addr();
-        gpr_regs_[instr_.IType.rt].UW[0] = m_load_b(sign_extended_addr);
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        gpr_regs_[instr_.IType.rt].UDW = m_load_b(sign_extended_addr);
     }
     void CPU::LWU() {
-        uint64_t sign_extended_addr = get_curr_ld_addr();
-        gpr_regs_[instr_.IType.rt].UW[0] = m_load_b(sign_extended_addr);
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        gpr_regs_[instr_.IType.rt].UDW = m_load_b(sign_extended_addr);
     }
     void CPU::LWL() {
-
+        static constexpr uint32_t masks[4] { 
+            0x00000000,
+            0x000000FF,
+            0x0000FFFF,
+            0x00FFFFFF, 
+        };
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        uint8_t shift = sign_extended_addr & 0b11;
+        uint32_t temp = m_load_w(sign_extended_addr & ~0b11).UW;
+        gpr_regs_[instr_.IType.rt].UDW &= (
+            masks[shift]
+        );
+        gpr_regs_[instr_.IType.rt].DW |= (
+            temp << (shift * 8)
+        );
+    }
+    void CPU::LWR() {
+        static constexpr uint32_t masks[4] { 
+            0x00000000,
+            0xFF000000,
+            0xFFFF0000,
+            0xFFFFFF00, 
+        };
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        uint8_t shift = sign_extended_addr & 0b11;
+        uint32_t temp = m_load_w(sign_extended_addr & ~0b11).UW;
+        gpr_regs_[instr_.IType.rt].UDW &= (
+            masks[shift]
+        );
+        gpr_regs_[instr_.IType.rt].DW |= (
+            temp >> (shift * 8)
+        );
+    }
+    void CPU::LDL() {
+        static constexpr uint64_t masks[8] { 
+            0x0000000000000000,
+            0x00000000000000FF,
+            0x000000000000FFFF,
+            0x0000000000FFFFFF, 
+            0x00000000FFFFFFFF, 
+            0x000000FFFFFFFFFF, 
+            0x0000FFFFFFFFFFFF, 
+            0x00FFFFFFFFFFFFFF, 
+        };
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        uint8_t shift = sign_extended_addr & 0b111;
+        uint64_t temp = m_load_dw(sign_extended_addr & ~0b111).UDW;
+        gpr_regs_[instr_.IType.rt].UDW &= (
+            masks[shift]
+        );
+        gpr_regs_[instr_.IType.rt].DW |= (
+            temp << (shift * 8)
+        );
+    }
+    void CPU::LDR() {
+        static constexpr uint64_t masks[8] { 
+            0x0000000000000000,
+            0xFF00000000000000,
+            0xFFFF000000000000,
+            0xFFFFFF0000000000,
+            0xFFFFFFFF00000000,
+            0xFFFFFFFFFF000000,
+            0xFFFFFFFFFFFF0000,
+            0xFFFFFFFFFFFFFF00,
+        };
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        uint8_t shift = sign_extended_addr & 0b111;
+        uint64_t temp = m_load_dw(sign_extended_addr & ~0b111).UDW;
+        gpr_regs_[instr_.IType.rt].UDW &= (
+            masks[shift]
+        );
+        gpr_regs_[instr_.IType.rt].DW |= (
+            temp >> (shift * 8)
+        );
+    }
+    Word CPU::m_load_w(uint64_t addr) {
+        Word ret;
+        ret.UW = 0x12345678;
+        return ret;
     }
 }
