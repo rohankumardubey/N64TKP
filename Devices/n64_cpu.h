@@ -76,10 +76,10 @@ namespace TKPEmu::N64::Devices {
         //     &CPU::SDC1, &CPU::SDC2, &CPU::SD
         // };
 
-        inline Byte       m_load_b(uint64_t addr) {};
-        inline HalfWord   m_load_hw(uint64_t addr) {};
-        inline Word       m_load_w(uint64_t addr);
-        inline DoubleWord m_load_dw(uint64_t addr) {};
+        inline uint8_t       m_load_b(uint64_t addr);
+        inline uint16_t   m_load_hw(uint64_t addr);
+        inline uint32_t       m_load_w(uint64_t addr);
+        inline uint64_t m_load_dw(uint64_t addr);
 
         uint32_t get_curr_ld_addr();
         // Maybe useless?
