@@ -4,10 +4,13 @@
 #include <cstdint>
 #include <limits>
 #include <array>
+#include <bit>
 #include "n64_instruction.h"
 #include "n64_types.h"
 
 namespace TKPEmu::N64::Devices {
+    using MemAddr = uint64_t;
+    using MemData = uint64_t;
     using Byte = uint8_t;
     using HalfWord = uint16_t;
     // General purpose registers. They occupy 32 or 64 bits based on the
@@ -47,39 +50,43 @@ namespace TKPEmu::N64::Devices {
         DoubleWord pc_, hi_, lo_;
         bool llbit_;
         float fcr0_, fcr31_;
-         void //SPECIAL(), REGIMM(), J(), JAL(),
-        //     BEQ(), BNE(), BLEZ(), BGTZ(),
-        //     ADDI(), ADDIU(), SLTI(), SLTIU(),
-        //     ANDI(), ORI(), XORI(), LUI(),
-        //     CP0(), CP1(), BEQL(), BNEL(),
-        //     BLEZL(), BGTZL(), DADDI(), DADDIU(),
-             LDL(), LDR(), LB(), LH(),
-            LWL(), LW(), LBU(), LHU(),
-            LWR(), LWU()/* SB(), SH(),
-            SWL(), SW(), SDL(), SDR(),
-            SWR(), CACHE(), LL(), LWC1(),
-            LDC1(), LD(), SC(), SWC1(),
-            SDC1(), SDC2(), SD()*/;
-        // const std::array<OpcodeFunctionPtr, 64> opcodes_ = {
-        //     &CPU::SPECIAL, &CPU::REGIMM, &CPU::J, &CPU::JAL,
-        //     &CPU::BEQ, &CPU::BNE, &CPU::BLEZ, &CPU::BGTZ,
-        //     &CPU::ADDI, &CPU::ADDIU, &CPU::SLTI, &CPU::SLTIU,
-        //     &CPU::ANDI, &CPU::ORI, &CPU::XORI, &CPU::LUI,
-        //     &CPU::CP0, &CPU::CP1, &CPU::BEQL, &CPU::BNEL,
-        //     &CPU::BLEZL, &CPU::BGTZL, &CPU::DADDI, &CPU::DADDIU,
-        //     &CPU::LDL, &CPU::LDR, &CPU::LB, &CPU::LH,
-        //     &CPU::LWL, &CPU::LW, &CPU::LBU, &CPU::LHU,
-        //     &CPU::LWR, &CPU::LWU, &CPU::SB, &CPU::SH,
-        //     &CPU::SWL, &CPU::SW, &CPU::SDL, &CPU::SDR,
-        //     &CPU::SWR, &CPU::CACHE, &CPU::LL, &CPU::LWC1,
-        //     &CPU::LDC1, &CPU::LD, &CPU::SC, &CPU::SWC1,
-        //     &CPU::SDC1, &CPU::SDC2, &CPU::SD
-        // };
 
-        inline uint8_t       m_load_b(uint64_t addr);
-        inline uint16_t   m_load_hw(uint64_t addr);
-        inline uint32_t       m_load_w(uint64_t addr);
-        inline uint64_t m_load_dw(uint64_t addr);
+        void SPECIAL(), REGIMM(), J(), JAL(),
+            BEQ(), BNE(), BLEZ(), BGTZ(),
+            ADDI(), ADDIU(), SLTI(), SLTIU(),
+            ANDI(), ORI(), XORI(), LUI(),
+            CP0(), CP1(), CP2(), BEQL(), BNEL(),
+            BLEZL(), BGTZL(), DADDI(), DADDIU(),
+            LDL(), LDR(), LB(), LH(),
+            LWL(), LW(), LBU(), LHU(),
+            LWR(), LWU(), SB(), SH(),
+            SWL(), SW(), SDL(), SDR(),
+            SWR(), CACHE(), LL(), LLD() ,
+            LWC1(), LWC2(),
+            LDC1(), LDC2(), LD(), SC(), SWC1(),
+            SWC2(), SCD(), SDC1(), SDC2(), SD();
+        void BAD();
+
+        const std::array<OpcodeFunctionPtr, 64> opcodes_ = {
+            &CPU::SPECIAL, &CPU::REGIMM, &CPU::J,    &CPU::JAL,   &CPU::BEQ,  &CPU::BNE,  &CPU::BLEZ,  &CPU::BGTZ,
+            &CPU::ADDI,    &CPU::ADDIU,  &CPU::SLTI, &CPU::SLTIU, &CPU::ANDI, &CPU::ORI,  &CPU::XORI,  &CPU::LUI,
+            &CPU::CP0,     &CPU::CP1,    &CPU::CP2,  &CPU::BAD,   &CPU::BEQL, &CPU::BNEL, &CPU::BLEZL, &CPU::BGTZL,
+            &CPU::DADDI,   &CPU::DADDIU, &CPU::LDL,  &CPU::LDR,   &CPU::BAD,  &CPU::BAD,  &CPU::BAD,   &CPU::BAD,
+            &CPU::LB,      &CPU::LH,     &CPU::LWL,  &CPU::LW,    &CPU::LBU,  &CPU::LHU,  &CPU::LWR,   &CPU::LWU,
+            &CPU::SB,      &CPU::SH,     &CPU::SWL,  &CPU::SW,    &CPU::SDL,  &CPU::SDR,  &CPU::SWR,   &CPU::CACHE,
+            &CPU::LL,      &CPU::LWC1,   &CPU::LWC2, &CPU::BAD,   &CPU::LLD,  &CPU::LDC1, &CPU::LDC2,  &CPU::LD,
+            &CPU::SC,      &CPU::SWC1,   &CPU::SWC2, &CPU::BAD,   &CPU::SCD,  &CPU::SDC1, &CPU::SDC2,  &CPU::SD
+        };
+
+        inline uint8_t  m_load_b(MemAddr addr);
+        inline uint16_t m_load_hw(MemAddr addr);
+        inline uint32_t m_load_w(MemAddr addr);
+        inline uint64_t m_load_dw(MemAddr addr);
+
+        inline uint8_t  m_store_b(MemAddr addr, MemData data);
+        inline uint16_t m_store_hw(MemAddr addr, MemData data);
+        inline uint32_t m_store_w(MemAddr addr, MemData data);
+        inline uint64_t m_store_dw(MemAddr addr, MemData data);
 
         uint32_t get_curr_ld_addr();
         // Maybe useless?

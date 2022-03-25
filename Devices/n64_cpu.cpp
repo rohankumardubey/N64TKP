@@ -109,4 +109,22 @@ namespace TKPEmu::N64::Devices {
             temp >> (shift * 8)
         );
     }
+    void CPU::SC() {
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        if (llbit_) {
+            m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UW[0]);
+        }
+        gpr_regs_[instr_.IType.rt].W[0] = llbit_;
+    }
+    void CPU::SCD() {
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        if (llbit_) {
+            m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UDW);
+        }
+        gpr_regs_[instr_.IType.rt].W[0] = llbit_;
+    }
+    void CPU::SD() {
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UDW);
+    }
 }
