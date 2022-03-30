@@ -8,22 +8,22 @@ namespace TKPEmu::N64::Devices {
     void CPU::LB() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
         gpr_regs_[instr_.IType.rt].UB[0] = m_load_b(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].DW = gpr_regs_[instr_.IType.rt].B[0];
+        gpr_regs_[instr_.IType.rt].D = gpr_regs_[instr_.IType.rt].B[0];
     }
     void CPU::LBU() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
         gpr_regs_[instr_.IType.rt].UB[0] = m_load_b(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].UDW = gpr_regs_[instr_.IType.rt].UB[0];
+        gpr_regs_[instr_.IType.rt].UD = gpr_regs_[instr_.IType.rt].UB[0];
     }
     void CPU::LH() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
-        gpr_regs_[instr_.IType.rt].UHW[0] = m_load_hw(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].DW = gpr_regs_[instr_.IType.rt].HW[0];
+        gpr_regs_[instr_.IType.rt].UH[0] = m_load_h(sign_extended_addr);
+        gpr_regs_[instr_.IType.rt].D = gpr_regs_[instr_.IType.rt].H[0];
     }
     void CPU::LHU() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
-        gpr_regs_[instr_.IType.rt].UHW[0] = m_load_hw(sign_extended_addr);
-        gpr_regs_[instr_.IType.rt].UDW = gpr_regs_[instr_.IType.rt].UHW[0];
+        gpr_regs_[instr_.IType.rt].UH[0] = m_load_h(sign_extended_addr);
+        gpr_regs_[instr_.IType.rt].UD = gpr_regs_[instr_.IType.rt].UH[0];
     }
     void CPU::LW() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
@@ -43,10 +43,10 @@ namespace TKPEmu::N64::Devices {
         uint32_t sign_extended_addr = get_curr_ld_addr();
         uint8_t shift = sign_extended_addr & 0b11;
         uint32_t temp = m_load_w(sign_extended_addr & ~0b11);
-        gpr_regs_[instr_.IType.rt].UDW &= (
+        gpr_regs_[instr_.IType.rt].UD &= (
             masks[shift]
         );
-        gpr_regs_[instr_.IType.rt].DW |= (
+        gpr_regs_[instr_.IType.rt].D |= (
             temp << (shift * 8)
         );
     }
@@ -60,10 +60,10 @@ namespace TKPEmu::N64::Devices {
         uint32_t sign_extended_addr = get_curr_ld_addr();
         uint8_t shift = sign_extended_addr & 0b11;
         uint32_t temp = m_load_w(sign_extended_addr & ~0b11);
-        gpr_regs_[instr_.IType.rt].UDW &= (
+        gpr_regs_[instr_.IType.rt].UD &= (
             masks[shift]
         );
-        gpr_regs_[instr_.IType.rt].DW |= (
+        gpr_regs_[instr_.IType.rt].D |= (
             temp >> (shift * 8)
         );
     }
@@ -80,11 +80,11 @@ namespace TKPEmu::N64::Devices {
         };
         uint32_t sign_extended_addr = get_curr_ld_addr();
         uint8_t shift = sign_extended_addr & 0b111;
-        uint64_t temp = m_load_dw(sign_extended_addr & ~0b111);
-        gpr_regs_[instr_.IType.rt].UDW &= (
+        uint64_t temp = m_load_d(sign_extended_addr & ~0b111);
+        gpr_regs_[instr_.IType.rt].UD &= (
             masks[shift]
         );
-        gpr_regs_[instr_.IType.rt].DW |= (
+        gpr_regs_[instr_.IType.rt].D |= (
             temp << (shift * 8)
         );
     }
@@ -101,13 +101,25 @@ namespace TKPEmu::N64::Devices {
         };
         uint32_t sign_extended_addr = get_curr_ld_addr();
         uint8_t shift = sign_extended_addr & 0b111;
-        uint64_t temp = m_load_dw(sign_extended_addr & ~0b111);
-        gpr_regs_[instr_.IType.rt].UDW &= (
+        uint64_t temp = m_load_w(sign_extended_addr & ~0b111);
+        gpr_regs_[instr_.IType.rt].UD &= (
             masks[shift]
         );
-        gpr_regs_[instr_.IType.rt].DW |= (
+        gpr_regs_[instr_.IType.rt].D |= (
             temp >> (shift * 8)
         );
+    }
+    void CPU::SB() {
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        m_store_b(sign_extended_addr, gpr_regs_[instr_.IType.rt].UB[0]);
+    }
+    void CPU::SWL() {
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UW[1]);
+    }
+    void CPU::SW() {
+        uint32_t sign_extended_addr = get_curr_ld_addr();
+        m_store_b(sign_extended_addr, gpr_regs_[instr_.IType.rt].UW[0]);
     }
     void CPU::SC() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
@@ -119,12 +131,12 @@ namespace TKPEmu::N64::Devices {
     void CPU::SCD() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
         if (llbit_) {
-            m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UDW);
+            m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UD);
         }
         gpr_regs_[instr_.IType.rt].W[0] = llbit_;
     }
     void CPU::SD() {
         uint32_t sign_extended_addr = get_curr_ld_addr();
-        m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UDW);
+        m_store_d(sign_extended_addr, gpr_regs_[instr_.IType.rt].UD);
     }
 }

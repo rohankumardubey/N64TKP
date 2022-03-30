@@ -2,29 +2,40 @@
 #define TKPEMU_N64_TYPES_H
 #include <cstdint>
 namespace TKPEmu::N64 {
-    // This union format was copied by Project64, very helpful
-    union Word {
-        int32_t  W;
-        uint32_t UW;
-        int16_t  HW[2];
-        uint16_t UHW[2];
-        int8_t   B[4];
-        uint8_t  UB[4];
+    using MemAddr = uint64_t;
+    using MemData_UB = uint8_t;
+    using MemData_UH = uint16_t;
+    using MemData_UW = uint32_t;
+    using MemData_UD = uint64_t;
+    using MemData_B = int8_t;
+    using MemData_H = int16_t;
+    using MemData_W = int32_t;
+    using MemData_D = int64_t;
+    using MemData_Float = float;
+    using MemData_Double = double;
+    // This union format idea was copied by Project64
+    union MemData_UnionW {
+        MemData_W  W;
+        MemData_UW UW;
+        MemData_H  H[2];
+        MemData_UH UH[2];
+        MemData_B  B[4];
+        MemData_UB UB[4];
 
-        float    F;
+        MemData_Float FLOAT;
     };
-    union DoubleWord {
-        int64_t  DW;
-        uint64_t UDW;
-        int32_t  W[2];
-        uint32_t UW[2];
-        int16_t  HW[4];
-        uint16_t UHW[4];
-        int8_t   B[8];
-        uint8_t  UB[8];
+    union MemData_UnionDW {
+        MemData_D  D;
+        MemData_UD UD;
+        MemData_W  W[2];
+        MemData_UW UW[2];
+        MemData_H  H[4];
+        MemData_UH UH[4];
+        MemData_B  B[8];
+        MemData_UB UB[8];
 
-        double   D;
-        float    F[2];
+        MemData_Double DOUBLE;
+        MemData_Float  FLOAT[2];
     };
 }
 #endif

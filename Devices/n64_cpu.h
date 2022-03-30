@@ -9,15 +9,6 @@
 #include "n64_types.h"
 
 namespace TKPEmu::N64::Devices {
-    using MemAddr = uint64_t;
-    using MemData = uint64_t;
-    using Byte = uint8_t;
-    using HalfWord = uint16_t;
-    // General purpose registers. They occupy 32 or 64 bits based on the
-    // operation mode
-    using GPR = DoubleWord;
-    // Floating point registers, they occupy 64 bits
-    using FPR = double;
     // Bit hack to get signum of number (-1, 0 or 1)
     template <typename T> int sgn(T val) {
         return (T(0) < val) - (val < T(0));
@@ -45,11 +36,11 @@ namespace TKPEmu::N64::Devices {
 
         /// Registers
         // r0 is hardwired to 0, r31 is the link register
-        std::array<GPR, 32> gpr_regs_;
-        std::array<FPR, 32> fpr_regs_;
-        DoubleWord pc_, hi_, lo_;
+        std::array<MemData_UnionDW, 32> gpr_regs_;
+        std::array<MemData_Double, 32> fpr_regs_;
+        MemData_UD pc_, hi_, lo_;
         bool llbit_;
-        float fcr0_, fcr31_;
+        MemData_Float fcr0_, fcr31_;
 
         void SPECIAL(), REGIMM(), J(), JAL(),
             BEQ(), BNE(), BLEZ(), BGTZ(),
@@ -78,22 +69,22 @@ namespace TKPEmu::N64::Devices {
             &CPU::SC,      &CPU::SWC1,   &CPU::SWC2, &CPU::BAD,   &CPU::SCD,  &CPU::SDC1, &CPU::SDC2,  &CPU::SD
         };
 
-        inline uint8_t  m_load_b(MemAddr addr);
-        inline uint16_t m_load_hw(MemAddr addr);
-        inline uint32_t m_load_w(MemAddr addr);
-        inline uint64_t m_load_dw(MemAddr addr);
+        inline MemData_UB m_load_b(MemAddr addr);
+        inline MemData_UH m_load_h(MemAddr addr);
+        inline MemData_UW m_load_w(MemAddr addr);
+        inline MemData_UD m_load_d(MemAddr addr);
 
-        inline uint8_t  m_store_b(MemAddr addr, MemData data);
-        inline uint16_t m_store_hw(MemAddr addr, MemData data);
-        inline uint32_t m_store_w(MemAddr addr, MemData data);
-        inline uint64_t m_store_dw(MemAddr addr, MemData data);
+        inline void m_store_b(MemAddr addr, MemData_UB data);
+        inline void m_store_h(MemAddr addr, MemData_UH data);
+        inline void m_store_w(MemAddr addr, MemData_UW data);
+        inline void m_store_d(MemAddr addr, MemData_UD data);
 
         uint32_t get_curr_ld_addr();
         // Maybe useless?
         // Function to read from CPUs internal 64-bit bus
-        void internal_read(DoubleWord addr);
+        void internal_read(MemData_UD addr);
         // Function to write to CPUs internal 64-bit bus
-        void internal_write(DoubleWord addr, DoubleWord data);
+        void internal_write(MemData_UD addr, MemData_UD data);
     };
         
 }
