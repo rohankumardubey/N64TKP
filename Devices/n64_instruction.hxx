@@ -7,7 +7,7 @@ namespace TKPEmu::N64::Devices {
     using EndianType = decltype(std::endian::native);
     // This union describes how the inner bits of the 32 bit instructions are used
     // Source: VR4300 manual, 1.4.3
-    template <EndianType T = std::endian::native>
+    template <EndianType>
     union InstructionBase; // base case is purposefully not defined
     template<>
     union InstructionBase<std::endian::little> {
@@ -54,6 +54,6 @@ namespace TKPEmu::N64::Devices {
         uint32_t Full : 32;
     };
     using Instruction = InstructionBase<std::endian::native>;
-    static_assert(sizeof(Instruction) == 4, "N64 instruction should be 4 bytes");
+    static_assert(sizeof(Instruction) == sizeof(uint32_t), "N64 instruction should be 4 bytes");
 }
 #endif

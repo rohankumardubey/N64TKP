@@ -35,11 +35,11 @@ namespace TKPEmu::N64::Devices {
         Instruction instr_;
         /// Registers
         // r0 is hardwired to 0, r31 is the link register
-        std::array<MemData_UnionDW, 32> gpr_regs_;
-        std::array<MemData_Double, 32> fpr_regs_;
-        MemData_UD pc_, hi_, lo_;
+        std::array<MemDataUnionDW, 32> gpr_regs_;
+        std::array<MemDataDouble, 32> fpr_regs_;
+        MemDataUD pc_, hi_, lo_;
         bool llbit_;
-        MemData_Float fcr0_, fcr31_;
+        MemDataFloat fcr0_, fcr31_;
 
         void SPECIAL(), REGIMM(), J(), JAL(),
             BEQ(), BNE(), BLEZ(), BGTZ(),
@@ -68,22 +68,22 @@ namespace TKPEmu::N64::Devices {
             &CPU::SC,      &CPU::SWC1,   &CPU::SWC2, &CPU::BAD,   &CPU::SCD,  &CPU::SDC1, &CPU::SDC2,  &CPU::SD
         };
 
-        inline MemData_UB m_load_b(MemAddr addr);
-        inline MemData_UH m_load_h(MemAddr addr);
-        inline MemData_UW m_load_w(MemAddr addr);
-        inline MemData_UD m_load_d(MemAddr addr);
+        inline MemDataUB m_load_b(MemAddr addr);
+        inline MemDataUH m_load_h(MemAddr addr);
+        inline MemDataUW m_load_w(MemAddr addr);
+        inline MemDataUD m_load_d(MemAddr addr);
 
-        inline void m_store_b(MemAddr addr, MemData_UB data);
-        inline void m_store_h(MemAddr addr, MemData_UH data);
-        inline void m_store_w(MemAddr addr, MemData_UW data);
-        inline void m_store_d(MemAddr addr, MemData_UD data);
+        inline void m_store_b(MemAddr addr, MemDataUB data);
+        inline void m_store_h(MemAddr addr, MemDataUH data);
+        inline void m_store_w(MemAddr addr, MemDataUW data);
+        inline void m_store_d(MemAddr addr, MemDataUD data);
 
         uint32_t get_curr_ld_addr();
         // Maybe useless?
         // Function to read from CPUs internal 64-bit bus
-        void internal_read(MemData_UD addr);
+        void internal_read(MemDataUD addr);
         // Function to write to CPUs internal 64-bit bus
-        void internal_write(MemData_UD addr, MemData_UD data);
+        void internal_write(MemDataUD addr, MemDataUD data);
     };
         
 }
