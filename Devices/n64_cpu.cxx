@@ -1,6 +1,14 @@
 #include "n64_cpu.hxx"
 
 namespace TKPEmu::N64::Devices {
+
+    CPU::CPU() :
+        instr_cache_(KB(16)),
+        data_cache_(KB(8))
+    {
+
+    }
+
     uint32_t CPU::get_curr_ld_addr() {
         // To be used with immediate instructions, returns a sign-extended offset added to register base
         return gpr_regs_[instr_.IType.rs].UW._0 + static_cast<int16_t>(instr_.IType.immediate);

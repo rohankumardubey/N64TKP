@@ -1,8 +1,11 @@
+#pragma once
 #ifndef TKP_N64_TYPES_H
 #define TKP_N64_TYPES_H
 #include <cstdint>
+#include <limits>
 namespace TKPEmu::N64 {
     using MemAddr = uint64_t;
+    using MemDataBit = bool;
     using MemDataUB = uint8_t;
     using MemDataUH = uint16_t;
     using MemDataUW = uint32_t;
@@ -14,7 +17,6 @@ namespace TKPEmu::N64 {
     using MemDataFloat = float;
     using MemDataDouble = double;
     using EndianType = decltype(std::endian::native);
-    // If your system is big endian, MemDataUnionDWBase<std::endian::big> is used
     template<EndianType>
     union MemDataUnionDWBase;
     template<>
@@ -120,5 +122,8 @@ namespace TKPEmu::N64 {
         } FLOAT;
     };
     using MemDataUnionDW = MemDataUnionDWBase<std::endian::native>;
+    static_assert(sizeof(MemDataDouble) == 8, "double data type is not 8 bytes!");
+    static_assert(sizeof(MemDataUnionDW) == sizeof(MemDataD), "Size of MemDataUnionDW mismatch!");
+    static_assert(std::numeric_limits<MemDataFloat>::is_iec559, "float data type is not ISO/IEC/IEEE 60559:2011 compliant!");
 }
 #endif

@@ -4,10 +4,11 @@
 #include <cstdint>
 #include <limits>
 #include <array>
+#include <vector>
 #include <bit>
 #include "n64_instruction.hxx"
 #include "n64_types.hxx"
-
+#define KB(x) (static_cast<size_t>(x << 10))
 namespace TKPEmu::N64::Devices {
     // Bit hack to get signum of number (-1, 0 or 1)
     template <typename T> int sgn(T val) {
@@ -17,16 +18,14 @@ namespace TKPEmu::N64::Devices {
         std::numeric_limits<uint32_t>::max(),
         std::numeric_limits<uint64_t>::max()
     };
-    // This union allows you to access the 9th 'G'pu bit or the isolated global 8 'B'its
-    union RAMByte {
-        struct {
-            bool gpu_bit : 1;
-            uint8_t data : 8;
-        } sliced;
-        uint16_t full;
+    enum class OperatingMode {
+        User,
+        Supervisor,
+        Kernel
     };
     class CPU {
     public:
+        CPU();
     //private:
         using OpcodeFunctionPtr = void (CPU::*)();
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
@@ -37,8 +36,11 @@ namespace TKPEmu::N64::Devices {
         // r0 is hardwired to 0, r31 is the link register
         std::array<MemDataUnionDW, 32> gpr_regs_;
         std::array<MemDataDouble, 32> fpr_regs_;
+        std::array<MemDataUnionDW, 32> cp0_regs_;
+        std::vector<MemDataUB> instr_cache_;
+        std::vector<MemDataUB> data_cache_;
         MemDataUD pc_, hi_, lo_;
-        bool llbit_;
+        MemDataBit llbit_;
         MemDataFloat fcr0_, fcr31_;
 
         void SPECIAL(), REGIMM(), J(), JAL(),
@@ -56,17 +58,6 @@ namespace TKPEmu::N64::Devices {
             LDC1(), LDC2(), LD(), SC(), SWC1(),
             SWC2(), SCD(), SDC1(), SDC2(), SD();
         void BAD();
-
-        const std::array<OpcodeFunctionPtr, 64> opcodes_ = {
-            &CPU::SPECIAL, &CPU::REGIMM, &CPU::J,    &CPU::JAL,   &CPU::BEQ,  &CPU::BNE,  &CPU::BLEZ,  &CPU::BGTZ,
-            &CPU::ADDI,    &CPU::ADDIU,  &CPU::SLTI, &CPU::SLTIU, &CPU::ANDI, &CPU::ORI,  &CPU::XORI,  &CPU::LUI,
-            &CPU::CP0,     &CPU::CP1,    &CPU::CP2,  &CPU::BAD,   &CPU::BEQL, &CPU::BNEL, &CPU::BLEZL, &CPU::BGTZL,
-            &CPU::DADDI,   &CPU::DADDIU, &CPU::LDL,  &CPU::LDR,   &CPU::BAD,  &CPU::BAD,  &CPU::BAD,   &CPU::BAD,
-            &CPU::LB,      &CPU::LH,     &CPU::LWL,  &CPU::LW,    &CPU::LBU,  &CPU::LHU,  &CPU::LWR,   &CPU::LWU,
-            &CPU::SB,      &CPU::SH,     &CPU::SWL,  &CPU::SW,    &CPU::SDL,  &CPU::SDR,  &CPU::SWR,   &CPU::CACHE,
-            &CPU::LL,      &CPU::LWC1,   &CPU::LWC2, &CPU::BAD,   &CPU::LLD,  &CPU::LDC1, &CPU::LDC2,  &CPU::LD,
-            &CPU::SC,      &CPU::SWC1,   &CPU::SWC2, &CPU::BAD,   &CPU::SCD,  &CPU::SDC1, &CPU::SDC2,  &CPU::SD
-        };
 
         inline MemDataUB m_load_b(MemAddr addr);
         inline MemDataUH m_load_h(MemAddr addr);
