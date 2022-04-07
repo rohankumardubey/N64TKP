@@ -1,6 +1,6 @@
 #pragma once
-#ifndef TKPEMU_N64_RSP_H
-#define TKPEMU_N64_RSP_H
+#ifndef TKP_N64_RSP_H
+#define TKP_N64_RSP_H
 #include <cstdint>
 #include <array>
 

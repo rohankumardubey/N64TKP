@@ -1,6 +1,6 @@
 #pragma once
-#ifndef TKPEMU_N64_OPCODE_H
-#define TKPEMU_N64_OPCODE_H
+#ifndef TKP_N64_OPCODE_H
+#define TKP_N64_OPCODE_H
 #include <cstdint>
 
 namespace TKPEmu::N64::Devices {

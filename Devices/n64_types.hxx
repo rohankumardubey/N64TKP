@@ -1,5 +1,5 @@
-#ifndef TKPEMU_N64_TYPES_H
-#define TKPEMU_N64_TYPES_H
+#ifndef TKP_N64_TYPES_H
+#define TKP_N64_TYPES_H
 #include <cstdint>
 namespace TKPEmu::N64 {
     using MemAddr = uint64_t;

@@ -1,9 +1,9 @@
 #pragma once
-#ifndef TKPEMU_N64_RCP_H
-#define TKPEMU_N64_RCP_H
-#include "n64_rsp.h"
-#include "n64_rdp.h"
-#include "n64_ve.h"
+#ifndef TKP_N64_RCP_H
+#define TKP_N64_RCP_H
+#include "n64_rsp.hxx"
+#include "n64_rdp.hxx"
+#include "n64_ve.hxx"
 
 namespace TKPEmu::N64::Devices {
     // GPU, Reality Co-processor

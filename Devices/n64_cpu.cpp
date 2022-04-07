@@ -1,4 +1,4 @@
-#include "n64_cpu.h"
+#include "n64_cpu.hxx"
 
 namespace TKPEmu::N64::Devices {
     uint32_t CPU::get_curr_ld_addr() {

@@ -1,12 +1,12 @@
 #pragma once
-#ifndef TKPEMU_N64_CPU_H
-#define TKPEMU_N64_CPU_H
+#ifndef TKP_N64_CPU_H
+#define TKP_N64_CPU_H
 #include <cstdint>
 #include <limits>
 #include <array>
 #include <bit>
-#include "n64_instruction.h"
-#include "n64_types.h"
+#include "n64_instruction.hxx"
+#include "n64_types.hxx"
 
 namespace TKPEmu::N64::Devices {
     // Bit hack to get signum of number (-1, 0 or 1)
