@@ -1,6 +1,6 @@
 #pragma once
 #ifndef TKP_N64_CPU_H
-#define TKPEMU_N64_CPU_H
+#define TKP_N64_CPU_H
 #include <cstdint>
 #include <limits>
 #include <array>
@@ -33,7 +33,6 @@ namespace TKPEmu::N64::Devices {
         bool mode64_ = false;
         // The current instruction
         Instruction instr_;
-
         /// Registers
         // r0 is hardwired to 0, r31 is the link register
         std::array<MemData_UnionDW, 32> gpr_regs_;

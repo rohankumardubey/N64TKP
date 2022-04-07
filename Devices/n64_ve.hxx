@@ -1,6 +1,6 @@
 #pragma once
 #ifndef TKP_N64_VE_H
-#define TKPEMU_N64_VE_H
+#define TKP_N64_VE_H
 
 namespace TKPEmu::N64::Devices {
     // Video encoder

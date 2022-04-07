@@ -1,6 +1,6 @@
 #pragma once
 #ifndef TKP_N64_RDP_H
-#define TKPEMU_N64_RDP_H
+#define TKP_N64_RDP_H
 
 namespace TKPEmu::N64::Devices {
     // Reality Display Processor

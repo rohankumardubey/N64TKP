@@ -1,6 +1,6 @@
 #pragma once
 #ifndef TKP_N64_OPCODE_H
-#define TKPEMU_N64_OPCODE_H
+#define TKP_N64_OPCODE_H
 #include <cstdint>
 #include <bit>
 namespace TKPEmu::N64::Devices {
@@ -54,5 +54,6 @@ namespace TKPEmu::N64::Devices {
         uint32_t Full : 32;
     };
     using Instruction = InstructionBase<std::endian::native>;
+    static_assert(sizeof(Instruction) == 4, "N64 instruction should be 4 bytes");
 }
 #endif
