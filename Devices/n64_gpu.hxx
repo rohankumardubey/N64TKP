@@ -1,6 +1,6 @@
 #pragma once
 #ifndef TKP_N64_RCP_H
-#define TKP_N64_RCP_H
+#define TKPEMU_N64_RCP_H
 #include "n64_rsp.hxx"
 #include "n64_rdp.hxx"
 #include "n64_ve.hxx"

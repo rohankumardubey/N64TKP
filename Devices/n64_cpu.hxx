@@ -1,6 +1,6 @@
 #pragma once
 #ifndef TKP_N64_CPU_H
-#define TKP_N64_CPU_H
+#define TKPEMU_N64_CPU_H
 #include <cstdint>
 #include <limits>
 #include <array>
