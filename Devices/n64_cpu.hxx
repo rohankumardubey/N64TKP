@@ -6,9 +6,11 @@
 #include <array>
 #include <vector>
 #include <bit>
+#include <memory>
 #include "n64_instruction.hxx"
 #include "n64_types.hxx"
 #define KB(x) (static_cast<size_t>(x << 10))
+
 namespace TKPEmu::N64::Devices {
     // Bit hack to get signum of number (-1, 0 or 1)
     template <typename T> int sgn(T val) {
@@ -26,8 +28,7 @@ namespace TKPEmu::N64::Devices {
     class CPU {
     public:
         CPU();
-    //private:
-        using OpcodeFunctionPtr = void (CPU::*)();
+    private:
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
         // The current instruction
@@ -37,8 +38,10 @@ namespace TKPEmu::N64::Devices {
         std::array<MemDataUnionDW, 32> gpr_regs_;
         std::array<MemDataDouble, 32> fpr_regs_;
         std::array<MemDataUnionDW, 32> cp0_regs_;
+        // CPU cache
         std::vector<MemDataUB> instr_cache_;
         std::vector<MemDataUB> data_cache_;
+        // Special registers
         MemDataUD pc_, hi_, lo_;
         MemDataBit llbit_;
         MemDataFloat fcr0_, fcr31_;
@@ -75,6 +78,72 @@ namespace TKPEmu::N64::Devices {
         void internal_read(MemDataUD addr);
         // Function to write to CPUs internal 64-bit bus
         void internal_write(MemDataUD addr, MemDataUD data);
+
+        /*
+            Pipeline
+        */
+        // In case we need to change return/argument type in the future
+        using ICFret  = void;    using ICFargs  = void;
+        using ITLBret = void;    using ITLBargs = void;
+        using ITCret  = void;    using ITCargs  = void;
+        using RFRret  = void;    using RFRargs  = void;
+        using IDECret = void;    using IDECargs = void;
+        using IVAret  = void;    using IVAargs  = void;
+        using BCMPret = void;    using BCMPargs = void;
+        using ALUret  = void;    using ALUargs  = void;
+        using DVAret  = void;    using DVAargs  = void;
+        using DCRret  = void;    using DCRargs  = void;
+        using DTLBret = void;    using DTLBargs = void;
+        using LAret   = void;    using LAargs   = void;
+        using DTCret  = void;    using DTCargs  = void;
+        using DCWret  = void;    using DCWargs  = void;
+        using RFWret  = void;    using RFWargs  = void;
+
+        
+        
+        /**
+            Instruction cache fetch.
+            Used to address the page/bank of the instruction cache.
+            Note: In ICF, virtual address is used like this:
+
+            xx  xxxxxxxxxxxxxx
+            |1| |_____ 2 ____|
+
+            1: selected IC bank (0-3)
+            2: these bits address the selected IC bank
+
+        */
+        ICFret  ICF(ICFargs);
+        
+
+        // Instruction micro-TLB read
+        ITLBret ITLB(ITLBargs);
+        // Instruction cache tag check
+        ITCret  ITC(ITCargs);
+        // Register file read
+        RFRret  RFR(RFRargs);
+        // Instruction decode
+        IDECret IDEC(IDECargs);
+        // Instruction virtual address calculation
+        IVAret  IVA(IVAargs);
+        // Branch compare
+        BCMPret BCMP(BCMPargs);
+        // Arithmetic logic operation
+        ALUret  ALU(ALUargs);
+        // Data virtual address calculation
+        DVAret  DVA(DVAargs);
+        // Data cache read
+        DCRret  DCR(DCRargs);
+        // Data joint-TLB read
+        DTLBret DTLB(DTLBargs);
+        // Load data alignment
+        LAret   LA(LAargs);
+        // Data cache tag check
+        DTCret  DTC(DTCargs);
+        // Data cache write
+        DCWret  DCW(DCWargs);
+        // Register file write
+        RFWret  RFW(RFWargs);
     };
         
 }
