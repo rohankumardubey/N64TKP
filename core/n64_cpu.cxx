@@ -13,6 +13,37 @@ namespace TKPEmu::N64::Devices {
         
     }
 
+    CPU::SelAddrSpace32ret CPU::select_addr_space32(SelAddrSpace32args addr) {
+        // VR4300 manual page 136 table 5-3
+        unsigned _3msb = addr >> 29;
+        uint32_t physical_addr = 0;
+        switch(_3msb) {
+            case 0b100:
+            // kseg0
+            physical_addr = translate_kseg0(addr);
+            break;
+            case 0b101:
+            // kseg1
+            physical_addr = translate_kseg1(addr);
+            break;
+            case 0b110:
+            // ksseg
+            break;
+            case 0b111:
+            // kseg3
+            break;
+            default:
+            // kuseg
+            // From manual:
+            // In Kernel mode, when KX = 0 in the Status register, and the most-significant bit
+            // of the virtual address is cleared, the kuseg virtual address space is selected; it
+            // covers the current 231 bytes (2 GB) user address space. The virtual address is
+            // extended with the contents of the 8-bit ASID field to form a unique virtual
+            // address.
+            physical_addr = translate_kuseg(addr);
+            break;
+        }
+    }
 
     // uint32_t CPU::get_curr_ld_addr() {
     //     // To be used with immediate instructions, returns a sign-extended offset added to register base

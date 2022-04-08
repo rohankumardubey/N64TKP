@@ -10,6 +10,11 @@
 #include "n64_instruction.hxx"
 #include "n64_types.hxx"
 #define KB(x) (static_cast<size_t>(x << 10))
+#define check_bit(x, y) ((x) & (1u << y))
+constexpr uint32_t KSEG0_START = 0x8000'0000;
+constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
+constexpr uint32_t KSEG1_START = 0xA000'0000;
+constexpr uint32_t KSEG1_END   = 0xBFFF'FFFF;
 
 namespace TKPEmu::N64::Devices {
     // Bit hack to get signum of number (-1, 0 or 1)
@@ -78,6 +83,49 @@ namespace TKPEmu::N64::Devices {
         void internal_read(MemDataUD addr);
         // Function to write to CPUs internal 64-bit bus
         void internal_write(MemDataUD addr, MemDataUD data);
+
+        using DirectMapret = uint32_t;
+        using DirectMapargs = uint32_t;
+        using TLBret = uint32_t;
+        using TLBargs = uint32_t;
+        using SelAddrSpace32ret = void;
+        using SelAddrSpace32args = uint32_t;
+
+        // Kernel mode addressing functions
+        /**
+            VR4300 manual, page 122: 
+
+            There are virtual-to-physical address translations that occur outside of the TLB. For example, 
+            addresses in the kseg0 and kseg1 spaces are unmapped translations. In these spaces the physical 
+            address is derived by subtracting the base address of the space from the virtual address.
+            @param addr virtual address, range 0x80000000-0x9fffffff
+            @return physical address 
+        */
+        inline DirectMapret translate_kseg0(DirectMapargs addr) {
+            return addr - KSEG0_START;
+        }
+        /**
+            VR4300 manual, page 122: 
+
+            There are virtual-to-physical address translations that occur outside of the TLB. For example, 
+            addresses in the kseg0 and kseg1 spaces are unmapped translations. In these spaces the physical 
+            address is derived by subtracting the base address of the space from the virtual address.
+            @param addr virtual address, range 0xa0000000-0xbfffffff
+            @return physical address 
+        */
+        inline DirectMapret translate_kseg1(DirectMapargs addr) {
+            return addr - KSEG1_START;
+        }
+        /**
+            
+            @param addr virtual address, range 0x00000000-0x7fffffff
+        */
+        inline TLBret translate_kuseg(TLBargs) {
+
+        }
+
+        SelAddrSpace32ret select_addr_space32(SelAddrSpace32args);
+
 
         /*
             Pipeline

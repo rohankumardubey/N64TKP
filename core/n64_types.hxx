@@ -3,6 +3,7 @@
 #define TKP_N64_TYPES_H
 #include <cstdint>
 #include <limits>
+#include <bit>
 namespace TKPEmu::N64 {
     using MemAddr = uint64_t;
     using MemDataBit = bool;
