@@ -3,8 +3,9 @@
 #define TKP_N64_TYPES_H
 #include <cstdint>
 #include <limits>
-#include <bit>
+#include <immintrin.h>
 namespace TKPEmu::N64 {
+    // Note: manual here refers to vr4300 manual
     using MemAddr = uint64_t;
     using MemDataBit = bool;
     using MemDataUB = uint8_t;
@@ -18,6 +19,97 @@ namespace TKPEmu::N64 {
     using MemDataFloat = float;
     using MemDataDouble = double;
     using EndianType = decltype(std::endian::native);
+
+    /**
+        This class represents the ordering of an instruction cache line
+
+        @see manual, 11.2.1
+    */
+    template <EndianType>
+    union InstructionCacheLineBase;
+    template<>
+    union InstructionCacheLineBase<std::endian::little> {
+        struct {
+            uint32_t _1_PTag : 20; // Physical address tag
+            uint32_t _1_V    : 1;  // Valid bit
+            uint32_t _1_rest : 11;
+            uint32_t _2      : 32;
+            uint32_t _3      : 32;
+            uint32_t _4      : 32;
+            uint32_t _5      : 32;
+            uint32_t _6      : 32;
+            uint32_t _7      : 32;
+            uint32_t _8      : 32;
+        } Data;
+        __m256 Full;
+    };
+    template<>
+    union InstructionCacheLineBase<std::endian::big> {
+        struct {
+            uint32_t _8      : 32;
+            uint32_t _7      : 32;
+            uint32_t _6      : 32;
+            uint32_t _5      : 32;
+            uint32_t _4      : 32;
+            uint32_t _3      : 32;
+            uint32_t _2      : 32;
+            uint32_t _1_rest : 11;
+            uint32_t _1_V    : 1;  // Valid bit
+            uint32_t _1_PTag : 20; // Physical address tag
+        } Data;
+        __m256 Full;
+    };
+    /**
+        This union describes how the inner bits of the 32 bit instructions are used
+
+        @see manual, 1.4.3
+    */
+    template <EndianType>
+    union InstructionBase; // base case is purposefully not defined
+    template<>
+    union InstructionBase<std::endian::little> {
+        struct {
+            uint32_t immediate : 16; // immediate value
+            uint32_t rt        : 5;  // target (source/destination) register number
+            uint32_t rs        : 5;  // source register number (r0-r31)
+            uint32_t op        : 6;  // operation code
+        } IType; // Immediate
+        struct {
+            uint32_t target    : 26; // unconditional branch target address
+            uint32_t op        : 6;  // operation code
+        } JType; // Jump
+        struct {
+            uint32_t func      : 6;  // function field
+            uint32_t sa        : 5;  // shift amount
+            uint32_t rd        : 5;  // destination register number
+            uint32_t rt        : 5;  // target register number
+            uint32_t rs        : 5;  // source register number
+            uint32_t op        : 6;  // operation code
+        } RType; // Register
+        uint32_t Full : 32;
+    };
+    template<>
+    union InstructionBase<std::endian::big> {
+        struct {
+            uint32_t op        : 6;  // operation code
+            uint32_t rs        : 5;  // source register number (r0-r31)
+            uint32_t rt        : 5;  // target (source/destination) register number
+            uint32_t immediate : 16; // immediate value
+        } IType; // Immediate
+        struct {
+            uint32_t op        : 6;  // operation code
+            uint32_t target    : 26; // unconditional branch target address
+        } JType; // Jump
+        struct {
+            uint32_t op        : 6;  // operation code
+            uint32_t rs        : 5;  // source register number
+            uint32_t rt        : 5;  // target register number
+            uint32_t rd        : 5;  // destination register number
+            uint32_t sa        : 5;  // shift amount
+            uint32_t func      : 6;  // function field
+        } RType; // Register
+        uint32_t Full : 32;
+    };
     template<EndianType>
     union MemDataUnionDWBase;
     template<>
@@ -123,6 +215,10 @@ namespace TKPEmu::N64 {
         } FLOAT;
     };
     using MemDataUnionDW = MemDataUnionDWBase<std::endian::native>;
+    using Instruction = InstructionBase<std::endian::native>;
+    using InstructionCacheLine = InstructionCacheLineBase<std::endian::native>;
+    static_assert(sizeof(InstructionCacheLine) == 32, "InstructionCacheLine should be 32 bytes!");
+    static_assert(sizeof(Instruction) == sizeof(uint32_t), "N64 instruction should be 4 bytes");
     static_assert(sizeof(MemDataDouble) == 8, "double data type is not 8 bytes!");
     static_assert(sizeof(MemDataUnionDW) == sizeof(MemDataD), "Size of MemDataUnionDW mismatch!");
     static_assert(std::numeric_limits<MemDataFloat>::is_iec559, "float data type is not ISO/IEC/IEEE 60559:2011 compliant!");

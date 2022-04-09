@@ -7,7 +7,6 @@
 #include <vector>
 #include <bit>
 #include <memory>
-#include "n64_instruction.hxx"
 #include "n64_types.hxx"
 #define KB(x) (static_cast<size_t>(x << 10))
 #define check_bit(x, y) ((x) & (1u << y))
@@ -25,6 +24,7 @@ namespace TKPEmu::N64::Devices {
         std::numeric_limits<uint32_t>::max(),
         std::numeric_limits<uint64_t>::max()
     };
+    // Only kernel mode is used for (most?) n64 licensed games
     enum class OperatingMode {
         User,
         Supervisor,
@@ -119,6 +119,7 @@ namespace TKPEmu::N64::Devices {
         /**
             
             @param addr virtual address, range 0x00000000-0x7fffffff
+            @return physical address
         */
         inline TLBret translate_kuseg(TLBargs) {
 
