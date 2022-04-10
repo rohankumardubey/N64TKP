@@ -30,6 +30,18 @@ namespace TKPEmu::N64::Devices {
         Supervisor,
         Kernel
     };
+    /**
+        32-bit address bus 
+        
+        Source: https://n64brew.dev/wiki/Memory_map     
+    */
+    class CPUBus {
+    public:
+        bool LoadFromFile(std::string path);
+    private:
+        std::vector<uint8_t> rom_;
+        friend class CPU;
+    };
     class CPU {
     public:
         CPU();
@@ -164,7 +176,6 @@ namespace TKPEmu::N64::Devices {
         */
         ICFret  ICF(ICFargs);
         
-
         // Instruction micro-TLB read
         ITLBret ITLB(ITLBargs);
         // Instruction cache tag check
@@ -194,6 +205,5 @@ namespace TKPEmu::N64::Devices {
         // Register file write
         RFWret  RFW(RFWargs);
     };
-        
 }
 #endif
