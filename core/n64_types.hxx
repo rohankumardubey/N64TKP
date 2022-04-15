@@ -89,7 +89,7 @@ namespace TKPEmu::N64 {
             uint32_t rs        : 5;  // source register number
             uint32_t op        : 6;  // operation code
         } RType; // Register
-        uint32_t Full : 32;
+        uint32_t Full;
     };
     union MemDataUnionDWBase {
         MemDataD  D;
@@ -163,7 +163,7 @@ namespace TKPEmu::N64 {
         "TGE    ", "TGEU   ", "TLT    ", "TLTU   ", "TEQ    ", "S65ERR ", "TNE    ", "S67ERR ",
         "DSLL   ", "S71ERR ", "DSRL   ", "DSRA   ", "DSLL32 ", "S75ERR ", "DSRL32 ", "DSRA32 ",
     };
-
+    
     using MemDataUnionDW = MemDataUnionDWBase;
     using Instruction = InstructionBase;
     using InstructionCacheLine = InstructionCacheLineBase;
