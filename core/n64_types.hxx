@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <limits>
 #include <immintrin.h>
+#include <array>
+
 namespace TKPEmu::N64 {
     // Note: manual here refers to vr4300 manual
     using MemAddr = uint64_t;
@@ -139,6 +141,29 @@ namespace TKPEmu::N64 {
             MemDataFloat _1;
         } FLOAT;
     };
+
+    const static std::array<std::string, 64> OperationCodes = {
+        "SPECIAL", "REGIMM ", "J      ", "JAL    ", "BEQ    ", "BNE    ", "BLEZ   ", "BGTZ   ",
+        "ADDI   ", "ADDIU  ", "SLTI   ", "STLIU  ", "ANDI   ", "ORI    ", "XORI   ", "LUI    ",
+        "COP0   ", "COP1   ", "COP2   ", "23ERR  ", "BEQL   ", "BNEL   ", "BLEZL  ", "BGTZL  ",
+        "DADDI  ", "DADDIU ", "LDL    ", "LDR    ", "34ERR  ", "35ERR  ", "36ERR  ", "37ERR  ",
+        "LB     ", "LH     ", "LWL    ", "LW     ", "LBU    ", "LHU    ", "LWR    ", "LWU    ",
+        "SB     ", "SH     ", "SWL    ", "SW     ", "SDL    ", "SDR    ", "SWR    ", "CACHE  ",
+        "LL     ", "LWC1   ", "LWC2   ", "63ERR  ", "LLD    ", "LDC1   ", "LDC2   ", "LD     ",
+        "SC     ", "SWC1   ", "SWC2   ", "73ERR  ", "SCD    ", "SDC1   ", "SDC2   ", "SD     ",
+    };
+
+    const static std::array<std::string, 64> SpecialCodes = {
+        "SLL    ", "S2ERR  ", "SRL    ", "SRA    ", "SLLV   ", "S5ERR  ", "SRLV   ", "SRAV   ",
+        "JR     ", "JALR   ", "S12ERR ", "S13ERR ", "SYSCALL", "BREAK  ", "S16ERR ", "SYNC   ",
+        "MFHI   ", "MTHI   ", "MFLO   ", "MTLO   ", "DSLLV  ", "S25ERR ", "DSRLV  ", "DSRAV  ",
+        "MULT   ", "MULTU  ", "DIV    ", "DIVU   ", "DMULT  ", "DMULTU ", "DDIV   ", "DDIVU  ",
+        "ADD    ", "ADDU   ", "SUB    ", "SUBU   ", "AND    ", "OR     ", "XOR    ", "NOR    ",
+        "S50ERR ", "S51ERR ", "SLT    ", "SLTU   ", "DADD   ", "DADDU  ", "DSUB   ", "DSUBU  ",
+        "TGE    ", "TGEU   ", "TLT    ", "TLTU   ", "TEQ    ", "S65ERR ", "TNE    ", "S67ERR ",
+        "DSLL   ", "S71ERR ", "DSRL   ", "DSRA   ", "DSLL32 ", "S75ERR ", "DSRL32 ", "DSRA32 ",
+    };
+
     using MemDataUnionDW = MemDataUnionDWBase;
     using Instruction = InstructionBase;
     using InstructionCacheLine = InstructionCacheLineBase;
