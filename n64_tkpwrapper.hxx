@@ -6,6 +6,7 @@
 namespace TKPEmu::N64 {
     class N64_TKPWrapper : public Emulator {
 	public:
+		N64_TKPWrapper() = default;
 		N64_TKPWrapper(std::any args);
 		// void HandleKeyDown(SDL_Keycode key) override;
 		// void HandleKeyUp(SDL_Keycode key) override;
@@ -14,7 +15,7 @@ namespace TKPEmu::N64 {
 		// std::string GetScreenshotHash() override;
 		// bool IsReadyToDraw() override;
     private:
-        N64 n64_;
+        N64 n64_impl_;
         // void v_log_state() override;
 		// void save_state(std::ofstream& ofstream) override;
 		// void load_state(std::ifstream& ifstream) override;

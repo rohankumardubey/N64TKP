@@ -4,10 +4,14 @@
 #include <cstdint>
 #include <limits>
 #include <array>
+#include <queue>
 #include <vector>
 #include <bit>
 #include <memory>
+#include <optional>
 #include "n64_types.hxx"
+#include "n64_cpu_exceptions.hxx"
+
 #define KB(x) (static_cast<size_t>(x << 10))
 #define check_bit(x, y) ((x) & (1u << y))
 constexpr uint32_t KSEG0_START = 0x8000'0000;
@@ -30,6 +34,18 @@ namespace TKPEmu::N64::Devices {
         Supervisor,
         Kernel
     };
+    enum class PipelineStage {
+        IC = 0, // Instruction cache fetch
+        RF = 1, // Register fetch
+        EX = 2, // Execution
+        DC = 3, // Data cache fetch
+        WB = 4, // Write back
+        NOP // No operation
+    };
+    struct PipelineStorage {
+        Instruction instruction;
+        InstructionType type;
+    };
     /**
         32-bit address bus 
         
@@ -45,7 +61,16 @@ namespace TKPEmu::N64::Devices {
     class CPU {
     public:
         CPU();
+        void Reset();
     private:
+        using DirectMapRet = uint32_t;
+        using DirectMapArgs = uint32_t;
+        using TLBRet = uint32_t;
+        using TLBArgs = uint32_t;
+        using SelAddrSpace32Ret = uint32_t;
+        using SelAddrSpace32Args = uint32_t;
+        using PipelineStageRet  = void;
+        using PipelineStageArgs = size_t;
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
         // The current instruction
@@ -96,13 +121,6 @@ namespace TKPEmu::N64::Devices {
         // Function to write to CPUs internal 64-bit bus
         void internal_write(MemDataUD addr, MemDataUD data);
 
-        using DirectMapret = uint32_t;
-        using DirectMapargs = uint32_t;
-        using TLBret = uint32_t;
-        using TLBargs = uint32_t;
-        using SelAddrSpace32ret = void;
-        using SelAddrSpace32args = uint32_t;
-
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 
@@ -113,9 +131,7 @@ namespace TKPEmu::N64::Devices {
             @param addr virtual address, range 0x80000000-0x9fffffff
             @return physical address 
         */
-        inline DirectMapret translate_kseg0(DirectMapargs addr) {
-            return addr - KSEG0_START;
-        }
+        inline DirectMapRet translate_kseg0(DirectMapArgs addr) noexcept;
         /**
             VR4300 manual, page 122: 
 
@@ -125,85 +141,27 @@ namespace TKPEmu::N64::Devices {
             @param addr virtual address, range 0xa0000000-0xbfffffff
             @return physical address 
         */
-        inline DirectMapret translate_kseg1(DirectMapargs addr) {
-            return addr - KSEG1_START;
-        }
+        inline DirectMapRet translate_kseg1(DirectMapArgs addr) noexcept;
         /**
             
             @param addr virtual address, range 0x00000000-0x7fffffff
             @return physical address
         */
-        inline TLBret translate_kuseg(TLBargs) {
+        inline TLBRet translate_kuseg(TLBArgs);
 
-        }
+        SelAddrSpace32Ret select_addr_space32(SelAddrSpace32Args);
 
-        SelAddrSpace32ret select_addr_space32(SelAddrSpace32args);
+        std::array<std::queue<PipelineStage>, 5> pipeline_;
+        std::array<PipelineStorage, 5>           pipeline_storage_;
 
+        PipelineStageRet IC(PipelineStageArgs process_no);
+        PipelineStageRet RF(PipelineStageArgs process_no);
+        PipelineStageRet EX(PipelineStageArgs process_no);
+        PipelineStageRet DC(PipelineStageArgs process_no) {};
+        PipelineStageRet WB(PipelineStageArgs process_no) {};
 
-        /*
-            Pipeline
-        */
-        // In case we need to change return/argument type in the future
-        using ICFret  = void;    using ICFargs  = void;
-        using ITLBret = void;    using ITLBargs = void;
-        using ITCret  = void;    using ITCargs  = void;
-        using RFRret  = void;    using RFRargs  = void;
-        using IDECret = void;    using IDECargs = void;
-        using IVAret  = void;    using IVAargs  = void;
-        using BCMPret = void;    using BCMPargs = void;
-        using ALUret  = void;    using ALUargs  = void;
-        using DVAret  = void;    using DVAargs  = void;
-        using DCRret  = void;    using DCRargs  = void;
-        using DTLBret = void;    using DTLBargs = void;
-        using LAret   = void;    using LAargs   = void;
-        using DTCret  = void;    using DTCargs  = void;
-        using DCWret  = void;    using DCWargs  = void;
-        using RFWret  = void;    using RFWargs  = void;
-
-        
-        
-        /**
-            Instruction cache fetch.
-            Used to address the page/bank of the instruction cache.
-            Note: In ICF, virtual address is used like this:
-
-            xx  xxxxxxxxxxxxxx
-            |1| |_____ 2 ____|
-
-            1: selected IC bank (0-3)
-            2: these bits address the selected IC bank
-
-        */
-        ICFret  ICF(ICFargs);
-        
-        // Instruction micro-TLB read
-        ITLBret ITLB(ITLBargs);
-        // Instruction cache tag check
-        ITCret  ITC(ITCargs);
-        // Register file read
-        RFRret  RFR(RFRargs);
-        // Instruction decode
-        IDECret IDEC(IDECargs);
-        // Instruction virtual address calculation
-        IVAret  IVA(IVAargs);
-        // Branch compare
-        BCMPret BCMP(BCMPargs);
-        // Arithmetic logic operation
-        ALUret  ALU(ALUargs);
-        // Data virtual address calculation
-        DVAret  DVA(DVAargs);
-        // Data cache read
-        DCRret  DCR(DCRargs);
-        // Data joint-TLB read
-        DTLBret DTLB(DTLBargs);
-        // Load data alignment
-        LAret   LA(LAargs);
-        // Data cache tag check
-        DTCret  DTC(DTCargs);
-        // Data cache write
-        DCWret  DCW(DCWargs);
-        // Register file write
-        RFWret  RFW(RFWargs);
+        bool execute_instruction(PipelineStage stage, size_t process_no);
+        void update_pipeline();
     };
 }
 #endif

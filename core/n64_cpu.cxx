@@ -6,14 +6,131 @@ namespace TKPEmu::N64::Devices {
         instr_cache_(KB(16)),
         data_cache_(KB(8))
     {
-
+        Reset();
     }
 
-    CPU::ICFret CPU::ICF(ICFargs) {
-        
+    void CPU::Reset() {
+        pc_ = 0x1000;
+        for (int i = 0; i < 5; i++) {
+            std::queue<PipelineStage> empty;
+            std::swap(pipeline_[i], empty);
+            // Initialize pipeline like this:
+            // 1. IC
+            // 2. NOP IC
+            // 3. NOP NOP IC
+            // 4. NOP NOP NOP IC
+            // 5. NOP NOP NOP NOP IC
+            for (int j = 0; j < i; j++) {
+                pipeline_[i].push(PipelineStage::NOP);
+            }
+            pipeline_[i].push(PipelineStage::IC);
+        }
     }
 
-    CPU::SelAddrSpace32ret CPU::select_addr_space32(SelAddrSpace32args addr) {
+    bool CPU::execute_instruction(PipelineStage stage, size_t process_no) {
+        switch(stage) {
+            case PipelineStage::IC: {
+                IC(process_no);
+                pipeline_[process_no].push(PipelineStage::RF);
+                return true;
+            }
+            case PipelineStage::RF: {
+                RF(process_no);
+                pipeline_[process_no].push(PipelineStage::EX);
+                return true;
+            }
+            case PipelineStage::EX: {
+                EX(process_no);
+                pipeline_[process_no].push(PipelineStage::DC);
+                return true;
+            }
+            case PipelineStage::DC: {
+                DC(process_no);
+                pipeline_[process_no].push(PipelineStage::WB);
+                return true;
+            }
+            case PipelineStage::WB: {
+                WB(process_no);
+                pipeline_[process_no].push(PipelineStage::IC);
+                return true;
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
+        // Fetch the current process instruction
+        pipeline_storage_[process_no].instruction.Full
+            = select_addr_space32(pc_);
+        pc_ += 4;
+    }
+
+    CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
+        // Fetch the registers
+        auto opcode = pipeline_storage_[process_no].instruction.IType.op;
+        switch(opcode) {
+            case 0: {
+                auto func = pipeline_storage_[process_no].instruction.RType.func;
+                pipeline_storage_[process_no].type = SpecialInstructionTypeTable[func];
+                break;
+            }
+            default: {
+                pipeline_storage_[process_no].type = InstructionTypeTable[opcode];
+                break;
+            }
+        }
+    }
+
+    CPU::PipelineStageRet CPU::EX(PipelineStageArgs process_no) {
+        PipelineException exception = PipelineException::None;
+        Instruction& cur_instr = pipeline_storage_[process_no].instruction;
+        switch(pipeline_storage_[process_no].type) {
+            /**
+             * ADD - throws IntegerOverflowException
+             * 
+             * 
+             */
+            case InstructionType::s_ADD: {
+                MemDataW op1 = gpr_regs_[cur_instr.RType.rs].W._0;
+                MemDataW op2 = gpr_regs_[cur_instr.RType.rt].W._0;
+                // Sign extend the operands
+                MemDataD seop1 = op1;
+                MemDataD seop2 = op2;
+                MemDataD result = seop1 + seop2;
+                // Check for integeroverflowexception - missing
+                gpr_regs_[cur_instr.RType.rd].D = result;
+                break;
+            }
+            default: {
+                throw InstructionNotImplementedException(cur_instr.Full);
+            }
+        }
+    }
+
+    void CPU::update_pipeline() {
+        for (size_t i = 0; i < 5; i++) {
+            auto& process = pipeline_[i];
+            PipelineStage ps = process.front();
+            process.pop();
+            execute_instruction(ps, i);
+        }
+    }
+
+    CPU::DirectMapRet CPU::translate_kseg0(DirectMapArgs addr) noexcept {
+        return addr - KSEG0_START;
+    }
+
+    CPU::DirectMapRet CPU::translate_kseg1(DirectMapArgs addr) noexcept {
+        return addr - KSEG1_START;
+    }
+
+    CPU::TLBRet CPU::translate_kuseg(TLBArgs) {
+        throw NotImplementedException(__func__);
+    }
+
+    CPU::SelAddrSpace32Ret CPU::select_addr_space32(SelAddrSpace32Args addr) {
         // VR4300 manual page 136 table 5-3
         unsigned _3msb = addr >> 29;
         uint32_t physical_addr = 0;
@@ -43,144 +160,6 @@ namespace TKPEmu::N64::Devices {
             physical_addr = translate_kuseg(addr);
             break;
         }
+        return physical_addr;
     }
-
-    // uint32_t CPU::get_curr_ld_addr() {
-    //     // To be used with immediate instructions, returns a sign-extended offset added to register base
-    //     return gpr_regs_[instr_.IType.rs].UW._0 + static_cast<int16_t>(instr_.IType.immediate);
-    // }
-    // void CPU::LB() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     gpr_regs_[instr_.IType.rt].UB._0 = m_load_b(sign_extended_addr);
-    //     gpr_regs_[instr_.IType.rt].D = gpr_regs_[instr_.IType.rt].B._0;
-    // }
-    // void CPU::LBU() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     gpr_regs_[instr_.IType.rt].UB._0 = m_load_b(sign_extended_addr);
-    //     gpr_regs_[instr_.IType.rt].UD = gpr_regs_[instr_.IType.rt].UB._0;
-    // }
-    // void CPU::LH() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     gpr_regs_[instr_.IType.rt].UH._0 = m_load_h(sign_extended_addr);
-    //     gpr_regs_[instr_.IType.rt].D = gpr_regs_[instr_.IType.rt].H._0;
-    // }
-    // void CPU::LHU() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     gpr_regs_[instr_.IType.rt].UH._0 = m_load_h(sign_extended_addr);
-    //     gpr_regs_[instr_.IType.rt].UD = gpr_regs_[instr_.IType.rt].UH._0;
-    // }
-    // void CPU::LW() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     gpr_regs_[instr_.IType.rt].W._0 = m_load_w(sign_extended_addr);
-    // }
-    // void CPU::LWU() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     gpr_regs_[instr_.IType.rt].UW._0 = m_load_w(sign_extended_addr);
-    // }
-    // void CPU::LWL() {
-    //     static constexpr uint32_t masks[4] { 
-    //         0x00000000,
-    //         0x000000FF,
-    //         0x0000FFFF,
-    //         0x00FFFFFF, 
-    //     };
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     uint8_t shift = sign_extended_addr & 0b11;
-    //     uint32_t temp = m_load_w(sign_extended_addr & ~0b11);
-    //     gpr_regs_[instr_.IType.rt].UD &= (
-    //         masks[shift]
-    //     );
-    //     gpr_regs_[instr_.IType.rt].D |= (
-    //         temp << (shift * 8)
-    //     );
-    // }
-    // void CPU::LWR() {
-    //     static constexpr uint32_t masks[4] { 
-    //         0x00000000,
-    //         0xFF000000,
-    //         0xFFFF0000,
-    //         0xFFFFFF00, 
-    //     };
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     uint8_t shift = sign_extended_addr & 0b11;
-    //     uint32_t temp = m_load_w(sign_extended_addr & ~0b11);
-    //     gpr_regs_[instr_.IType.rt].UD &= (
-    //         masks[shift]
-    //     );
-    //     gpr_regs_[instr_.IType.rt].D |= (
-    //         temp >> (shift * 8)
-    //     );
-    // }
-    // void CPU::LDL() {
-    //     static constexpr uint64_t masks[8] { 
-    //         0x0000000000000000,
-    //         0x00000000000000FF,
-    //         0x000000000000FFFF,
-    //         0x0000000000FFFFFF, 
-    //         0x00000000FFFFFFFF, 
-    //         0x000000FFFFFFFFFF, 
-    //         0x0000FFFFFFFFFFFF, 
-    //         0x00FFFFFFFFFFFFFF, 
-    //     };
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     uint8_t shift = sign_extended_addr & 0b111;
-    //     uint64_t temp = m_load_d(sign_extended_addr & ~0b111);
-    //     gpr_regs_[instr_.IType.rt].UD &= (
-    //         masks[shift]
-    //     );
-    //     gpr_regs_[instr_.IType.rt].D |= (
-    //         temp << (shift * 8)
-    //     );
-    // }
-    // void CPU::LDR() {
-    //     static constexpr uint64_t masks[8] { 
-    //         0x0000000000000000,
-    //         0xFF00000000000000,
-    //         0xFFFF000000000000,
-    //         0xFFFFFF0000000000,
-    //         0xFFFFFFFF00000000,
-    //         0xFFFFFFFFFF000000,
-    //         0xFFFFFFFFFFFF0000,
-    //         0xFFFFFFFFFFFFFF00,
-    //     };
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     uint8_t shift = sign_extended_addr & 0b111;
-    //     uint64_t temp = m_load_w(sign_extended_addr & ~0b111);
-    //     gpr_regs_[instr_.IType.rt].UD &= (
-    //         masks[shift]
-    //     );
-    //     gpr_regs_[instr_.IType.rt].D |= (
-    //         temp >> (shift * 8)
-    //     );
-    // }
-    // void CPU::SB() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     m_store_b(sign_extended_addr, gpr_regs_[instr_.IType.rt].UB._0);
-    // }
-    // void CPU::SWL() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UW._1);
-    // }
-    // void CPU::SW() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     m_store_b(sign_extended_addr, gpr_regs_[instr_.IType.rt].UW._0);
-    // }
-    // void CPU::SC() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     if (llbit_) {
-    //         m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UW._0);
-    //     }
-    //     gpr_regs_[instr_.IType.rt].W._0 = llbit_;
-    // }
-    // void CPU::SCD() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     if (llbit_) {
-    //         m_store_w(sign_extended_addr, gpr_regs_[instr_.IType.rt].UD);
-    //     }
-    //     gpr_regs_[instr_.IType.rt].W._0 = llbit_;
-    // }
-    // void CPU::SD() {
-    //     uint32_t sign_extended_addr = get_curr_ld_addr();
-    //     m_store_d(sign_extended_addr, gpr_regs_[instr_.IType.rt].UD);
-    // }
 }
