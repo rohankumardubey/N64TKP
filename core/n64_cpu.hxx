@@ -18,7 +18,14 @@ constexpr uint32_t KSEG0_START = 0x8000'0000;
 constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
 constexpr uint32_t KSEG1_START = 0xA000'0000;
 constexpr uint32_t KSEG1_END   = 0xBFFF'FFFF;
-
+namespace TKPEmu {
+    namespace N64 {
+        class N64;
+    }
+    namespace Applications {
+        class N64_RomDisassembly;
+    }
+}
 namespace TKPEmu::N64::Devices {
     // Bit hack to get signum of number (-1, 0 or 1)
     template <typename T> int sgn(T val) {
@@ -55,6 +62,7 @@ namespace TKPEmu::N64::Devices {
     public:
         bool LoadFromFile(std::string path);
     private:
+        MemDataUW get_instruction(MemDataUW physical_addr);
         std::vector<uint8_t> rom_;
         friend class CPU;
     };
@@ -150,6 +158,7 @@ namespace TKPEmu::N64::Devices {
         inline TLBRet translate_kuseg(TLBArgs);
 
         SelAddrSpace32Ret select_addr_space32(SelAddrSpace32Args);
+        MemDataUW get_instruction(MemDataUW physical_addr);
 
         std::array<std::queue<PipelineStage>, 5> pipeline_;
         std::array<PipelineStorage, 5>           pipeline_storage_;
@@ -162,6 +171,13 @@ namespace TKPEmu::N64::Devices {
 
         bool execute_instruction(PipelineStage stage, size_t process_no);
         void update_pipeline();
+
+        CPUBus cpubus_;
+
+        friend class TKPEmu::N64::N64;
+        
+        // TKPEmu specific friends (applications)
+        friend class TKPEmu::Applications::N64_RomDisassembly;
     };
 }
 #endif

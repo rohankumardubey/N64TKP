@@ -3,6 +3,8 @@
 namespace TKPEmu::N64::Devices {
 
     CPU::CPU() :
+        gpr_regs_{},
+        fpr_regs_{},
         instr_cache_(KB(16)),
         data_cache_(KB(8))
     {
@@ -62,8 +64,8 @@ namespace TKPEmu::N64::Devices {
 
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
         // Fetch the current process instruction
-        pipeline_storage_[process_no].instruction.Full
-            = select_addr_space32(pc_);
+        auto phys_addr = select_addr_space32(pc_);
+        pipeline_storage_[process_no].instruction.Full = get_instruction(phys_addr);
         pc_ += 4;
     }
 
@@ -88,9 +90,30 @@ namespace TKPEmu::N64::Devices {
         Instruction& cur_instr = pipeline_storage_[process_no].instruction;
         switch(pipeline_storage_[process_no].type) {
             /**
-             * ADD - throws IntegerOverflowException
+             * LUI
              * 
+             * doesn't throw
+             */
+            case InstructionType::LUI: {
+                MemDataW imm = cur_instr.IType.immediate << 16;
+                // Sign extend the immediate
+                MemDataD seimm = imm;
+                gpr_regs_[cur_instr.IType.rt].D = seimm;
+                break;
+            }
+            /**
+             * ORI
              * 
+             * doesn't throw
+             */
+            case InstructionType::ORI: {
+                gpr_regs_[cur_instr.IType.rt].UD |= cur_instr.IType.immediate;
+                break;
+            }
+            /**
+             * s_ADD
+             * 
+             * throws IntegerOverflowException
              */
             case InstructionType::s_ADD: {
                 MemDataW op1 = gpr_regs_[cur_instr.RType.rs].W._0;
@@ -99,7 +122,7 @@ namespace TKPEmu::N64::Devices {
                 MemDataD seop1 = op1;
                 MemDataD seop2 = op2;
                 MemDataD result = seop1 + seop2;
-                // Check for integeroverflowexception - missing
+                // TODO: Check for integeroverflowexception - missing
                 gpr_regs_[cur_instr.RType.rd].D = result;
                 break;
             }
@@ -161,5 +184,15 @@ namespace TKPEmu::N64::Devices {
             break;
         }
         return physical_addr;
+    }
+    MemDataUW CPU::get_instruction(MemDataUW physical_addr) {
+        return cpubus_.get_instruction(physical_addr);
+    }
+    MemDataUW CPUBus::get_instruction(MemDataUW physical_addr) {
+        if (physical_addr >= rom_.size()) [[unlikely]] {
+            // TODO: remove this check for speed?
+            throw std::exception();
+        }
+        return rom_[physical_addr];
     }
 }

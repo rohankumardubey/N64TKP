@@ -2,7 +2,7 @@
 #ifndef TKP_N64_TKPROMDIS_H
 #define TKP_N64_TKPROMDIS_H
 #include "../include/base_application.h"
-
+#include "../N64TKP/n64_tkpwrapper.hxx"
 namespace TKPEmu::Applications {
     
     class N64_RomDisassembly : public IMApplication {

@@ -8,9 +8,12 @@ namespace TKPEmu::N64 {
     class N64 {
     public:
         bool LoadCartridge(std::string path);
+        void Update();
+        Devices::CPU& GetCPU() {
+            return cpu_;
+        }
     private:
         Devices::CPU cpu_;
-        Devices::CPUBus cpubus_;
     };
 }
 #endif

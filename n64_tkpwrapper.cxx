@@ -10,4 +10,12 @@ namespace TKPEmu::N64 {
 		}
 		return opened;
 	}
+	
+	void N64_TKPWrapper::start_debug() {
+
+	}
+	
+	float* N64_TKPWrapper::GetScreenData() {
+		return nullptr;
+	}
 }
