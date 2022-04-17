@@ -17,6 +17,9 @@ namespace TKPEmu::N64 {
 		Devices::CPU& GetCPU() {
 			return n64_impl_.GetCPU();
 		}
+		void update() {
+			n64_impl_.Update();
+		}
     private:
         N64 n64_impl_;
         // void v_log_state() override;

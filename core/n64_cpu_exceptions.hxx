@@ -5,7 +5,7 @@
 namespace TKPEmu::N64 {
     class InstructionNotImplementedException : public std::logic_error {
     public:
-        InstructionNotImplementedException(uint32_t instr) : std::logic_error{"Instruction not yet implemented: " + std::to_string(instr)} {}
+        InstructionNotImplementedException(std::string instr) : std::logic_error{std::string("Instruction not yet implemented: ") + instr} {}
     };
     class NotImplementedException : public std::logic_error {
     public:

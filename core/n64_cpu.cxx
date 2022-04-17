@@ -1,4 +1,5 @@
 #include "n64_cpu.hxx"
+#include <iostream>
 
 namespace TKPEmu::N64::Devices {
 
@@ -12,7 +13,7 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::Reset() {
-        pc_ = 0x1000;
+        pc_ = 0x80001000;
         for (int i = 0; i < 5; i++) {
             std::queue<PipelineStage> empty;
             std::swap(pipeline_[i], empty);
@@ -87,8 +88,11 @@ namespace TKPEmu::N64::Devices {
 
     CPU::PipelineStageRet CPU::EX(PipelineStageArgs process_no) {
         PipelineException exception = PipelineException::None;
-        Instruction& cur_instr = pipeline_storage_[process_no].instruction;
-        switch(pipeline_storage_[process_no].type) {
+        PipelineStorage& cur_storage = pipeline_storage_[process_no];
+        Instruction& cur_instr = cur_storage.instruction;
+        cur_storage.data = 0;
+        cur_storage.write_loc = nullptr;
+        switch(cur_storage.type) {
             /**
              * LUI
              * 
@@ -98,7 +102,8 @@ namespace TKPEmu::N64::Devices {
                 MemDataW imm = cur_instr.IType.immediate << 16;
                 // Sign extend the immediate
                 MemDataD seimm = imm;
-                gpr_regs_[cur_instr.IType.rt].D = seimm;
+                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].D;
+                cur_storage.data = seimm;
                 break;
             }
             /**
@@ -107,7 +112,8 @@ namespace TKPEmu::N64::Devices {
              * doesn't throw
              */
             case InstructionType::ORI: {
-                gpr_regs_[cur_instr.IType.rt].UD |= cur_instr.IType.immediate;
+                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].D;
+                cur_storage.data = gpr_regs_[cur_instr.IType.rt].D | cur_instr.IType.immediate;
                 break;
             }
             /**
@@ -123,12 +129,37 @@ namespace TKPEmu::N64::Devices {
                 MemDataD seop2 = op2;
                 MemDataD result = seop1 + seop2;
                 // TODO: Check for integeroverflowexception - missing
-                gpr_regs_[cur_instr.RType.rd].D = result;
+                cur_storage.write_loc = &gpr_regs_[cur_instr.RType.rd].D;
+                cur_storage.data = result;
+                break;
+            }
+            /**
+             * SW
+             * 
+             * throws TLB miss exception
+             *        TLB invalid exception
+             *        TLB modification exception
+             *        Bus error exception
+             *        Address error exception
+             */
+            case InstructionType::SW: {
+
                 break;
             }
             default: {
-                throw InstructionNotImplementedException(cur_instr.Full);
+                throw InstructionNotImplementedException(OperationCodes[cur_instr.IType.op]);
             }
+        }
+    }
+
+    CPU::PipelineStageRet CPU::DC(PipelineStageArgs process_no) {
+        // unimplemented atm
+    }
+
+    CPU::PipelineStageRet CPU::WB(PipelineStageArgs process_no) {
+        PipelineStorage& cur_storage = pipeline_storage_[process_no];
+        if (cur_storage.write_loc) {
+            *cur_storage.write_loc = cur_storage.data;
         }
     }
 
@@ -138,6 +169,7 @@ namespace TKPEmu::N64::Devices {
             PipelineStage ps = process.front();
             process.pop();
             execute_instruction(ps, i);
+            std::cout << static_cast<int>(ps) << " " << i << std::endl;
         }
     }
 
@@ -193,6 +225,8 @@ namespace TKPEmu::N64::Devices {
             // TODO: remove this check for speed?
             throw std::exception();
         }
-        return rom_[physical_addr];
+        // Loads in big endian
+        // should only work for .z64 files
+        return rom_[physical_addr] << 24 | rom_[physical_addr + 1] << 16 | rom_[physical_addr + 2] << 8 | rom_[physical_addr + 3];
     }
 }

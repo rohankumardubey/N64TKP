@@ -14,8 +14,11 @@ namespace TKPEmu::Applications {
         auto* n64_ptr = static_cast<N64::N64_TKPWrapper*>(emulator_.get());
         for (int i = 0; i < 32; i++) {
             std::stringstream ss;
-            ss << "r" << i << ": " << std::hex << n64_ptr->GetCPU().gpr_regs_[i].UD;
+            ss << "r" << i << ": " << std::hex << n64_ptr->GetCPU().gpr_regs_[i].UW._0;
             ImGui::TextUnformatted(ss.str().c_str());
+        }
+        if (ImGui::Button("update")) {
+            n64_ptr->update();
         }
     }
 }

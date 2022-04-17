@@ -52,6 +52,8 @@ namespace TKPEmu::N64::Devices {
     struct PipelineStorage {
         Instruction instruction;
         InstructionType type;
+        MemDataD data;
+        MemDataD* write_loc = nullptr;
     };
     /**
         32-bit address bus 
@@ -166,8 +168,8 @@ namespace TKPEmu::N64::Devices {
         PipelineStageRet IC(PipelineStageArgs process_no);
         PipelineStageRet RF(PipelineStageArgs process_no);
         PipelineStageRet EX(PipelineStageArgs process_no);
-        PipelineStageRet DC(PipelineStageArgs process_no) {};
-        PipelineStageRet WB(PipelineStageArgs process_no) {};
+        PipelineStageRet DC(PipelineStageArgs process_no);
+        PipelineStageRet WB(PipelineStageArgs process_no);
 
         bool execute_instruction(PipelineStage stage, size_t process_no);
         void update_pipeline();
