@@ -1,3 +1,6 @@
+/*
+
+*/
 #pragma once
 #ifndef TKP_N64_TYPES_H
 #define TKP_N64_TYPES_H
@@ -48,7 +51,7 @@ namespace TKPEmu::N64 {
     /**
         This class represents the ordering of an instruction cache line
 
-        @see manual, 11.2.1
+        @see manual 11.2.1
     */
     union InstructionCacheLineBase {
         struct {
@@ -68,7 +71,7 @@ namespace TKPEmu::N64 {
     /**
         This union describes how the inner bits of the 32 bit instructions are used
 
-        @see manual, 1.4.3
+        @see manual 1.4.3
     */
     union InstructionBase {
         struct {
@@ -181,6 +184,25 @@ namespace TKPEmu::N64 {
         s_DSLL, s_DSRL, s_DSRA, s_DSLL32, s_DSRL32, s_DSRA32,
 
         ERROR
+    };
+    /**
+     * AccessType table for L&S common funcs
+     * 
+     * @see manual Table 16-3
+     */
+    enum class AccessType {
+        BYTE       = 0,
+        HALFWORD   = 1,
+        TRIPLEWORD = 2,
+        WORD       = 3,
+        QUINTIBYTE = 4,
+        SEXTIBYTE  = 5,
+        SEPTIBYTE  = 6,
+        DOUBLEWORD = 7
+    };
+    enum class WriteType {
+        REGISTER,
+        MMU
     };
     constexpr static std::array<InstructionType, 64> InstructionTypeTable = {
         InstructionType::SPECIAL, InstructionType::REGIMM, InstructionType::J, InstructionType::JAL, InstructionType::BEQ, InstructionType::BNE, InstructionType::BLEZ, InstructionType::BGTZ,

@@ -11,25 +11,9 @@ namespace TKPEmu::N64 {
     public:
         NotImplementedException(std::string arg) : std::logic_error{std::string("Not implemented exception. Message: ") + arg} {}
     };
-    enum class PipelineException {
-        None,
-        InstructionAddressErrorException,
-        InstructionTLBException,
-        InstructionBusErrorException,
-        SYSCALLInstructionException,
-        BreakpointInstructionException,
-        CoprocessorUnusableException,
-        ReservedInstructionException,
-        ExternalResetException,
-        ExternalNMIException,
-        IntegerOverflowException,
-        TRAPInstructionException,
-        FloatingPointException,
-        DataAddressErrorException,
-        DataTLBException,
-        ReferencetoWatchAddressException,
-        InterruptException,
-        DataBusErrorException
+    class InstructionAddressErrorException :  public std::runtime_error {
+        public:
+        InstructionAddressErrorException() : std::runtime_error{"InstructionAddressError exception"} {};
     };
 }
 #endif

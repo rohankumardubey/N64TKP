@@ -63,36 +63,68 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
-    CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
-        // Fetch the current process instruction
-        auto phys_addr = select_addr_space32(pc_);
-        pipeline_storage_[process_no].instruction.Full = get_instruction(phys_addr);
-        pc_ += 4;
-    }
-
-    CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
-        // Fetch the registers
-        auto opcode = pipeline_storage_[process_no].instruction.IType.op;
-        switch(opcode) {
-            case 0: {
-                auto func = pipeline_storage_[process_no].instruction.RType.func;
-                pipeline_storage_[process_no].type = SpecialInstructionTypeTable[func];
+    void CPU::register_write(size_t process_no) {
+        PipelineStorage& cur_storage = pipeline_storage_[process_no];
+        switch(cur_storage.access_type) {
+            case AccessType::BYTE: {
+                *std::any_cast<MemDataUB*>(cur_storage.write_loc)
+                    = std::any_cast<MemDataUB>(cur_storage.data);
+                break;
+            }
+            case AccessType::HALFWORD: {
+                *std::any_cast<MemDataUH*>(cur_storage.write_loc)
+                    = std::any_cast<MemDataUH>(cur_storage.data);
+                break;
+            }
+            case AccessType::WORD: {
+                *std::any_cast<MemDataUW*>(cur_storage.write_loc)
+                    = std::any_cast<MemDataUW>(cur_storage.data);
+                break;
+            }
+            case AccessType::DOUBLEWORD: {
+                *std::any_cast<MemDataUD*>(cur_storage.write_loc)
+                    = std::any_cast<MemDataUD>(cur_storage.data);
                 break;
             }
             default: {
-                pipeline_storage_[process_no].type = InstructionTypeTable[opcode];
-                break;
+                throw NotImplementedException(__func__);
             }
         }
     }
 
+    CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
+        // Fetch the current process instruction
+        auto phys_addr = select_addr_space32(pc_);
+        pipeline_storage_[process_no].instruction.Full = cpubus_.fetch_instruction_uncached(phys_addr);
+    }
+
+    CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
+        // Fetch the registers
+
+        // Get instruction from previous fetch
+        auto opcode = pipeline_storage_[process_no].instruction.IType.op;
+        switch(opcode) {
+            case 0: {
+                auto func = pipeline_storage_[process_no].instruction.RType.func;
+                pipeline_storage_[process_no].instr_type = SpecialInstructionTypeTable[func];
+                break;
+            }
+            default: {
+                pipeline_storage_[process_no].instr_type = InstructionTypeTable[opcode];
+                break;
+            }
+        }
+        pc_ += 4;
+    }
+
     CPU::PipelineStageRet CPU::EX(PipelineStageArgs process_no) {
-        PipelineException exception = PipelineException::None;
         PipelineStorage& cur_storage = pipeline_storage_[process_no];
         Instruction& cur_instr = cur_storage.instruction;
-        cur_storage.data = 0;
-        cur_storage.write_loc = nullptr;
-        switch(cur_storage.type) {
+        cur_storage.paddr = 0;
+        cur_storage.vaddr = 0;
+        cur_storage.write_loc.reset();
+        cur_storage.data.reset();
+        switch(cur_storage.instr_type) {
             /**
              * LUI
              * 
@@ -101,9 +133,11 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::LUI: {
                 MemDataW imm = cur_instr.IType.immediate << 16;
                 // Sign extend the immediate
-                MemDataD seimm = imm;
-                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].D;
+                MemDataUD seimm = static_cast<MemDataD>(imm);
+                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].UD;
                 cur_storage.data = seimm;
+                cur_storage.write_type = WriteType::REGISTER;
+                cur_storage.access_type = AccessType::DOUBLEWORD;
                 break;
             }
             /**
@@ -112,8 +146,10 @@ namespace TKPEmu::N64::Devices {
              * doesn't throw
              */
             case InstructionType::ORI: {
-                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].D;
-                cur_storage.data = gpr_regs_[cur_instr.IType.rt].D | cur_instr.IType.immediate;
+                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].UD;
+                cur_storage.data = gpr_regs_[cur_instr.IType.rt].UD | cur_instr.IType.immediate;
+                cur_storage.write_type = WriteType::REGISTER;
+                cur_storage.access_type = AccessType::DOUBLEWORD;
                 break;
             }
             /**
@@ -143,7 +179,13 @@ namespace TKPEmu::N64::Devices {
              *        Address error exception
              */
             case InstructionType::SW: {
-
+                #if SKIPEXCEPTIONS == 0
+                if ((cur_storage.vaddr & 0b11) != 0) {
+                    // From manual:
+                    // If either of the loworder two bits of the address are not zero, an address error exception occurs.
+                    throw InstructionAddressErrorException();
+                }
+                #endif
                 break;
             }
             default: {
@@ -158,8 +200,19 @@ namespace TKPEmu::N64::Devices {
 
     CPU::PipelineStageRet CPU::WB(PipelineStageArgs process_no) {
         PipelineStorage& cur_storage = pipeline_storage_[process_no];
-        if (cur_storage.write_loc) {
-            *cur_storage.write_loc = cur_storage.data;
+        if (cur_storage.write_loc.has_value() &&
+            cur_storage.data.has_value()) {
+            switch(cur_storage.write_type) {
+                case WriteType::REGISTER: {
+                    register_write(process_no);
+                    break;
+                }
+                case WriteType::MMU: {
+                    store_memory(cur_storage.cached, cur_storage.access_type,
+                            std::any_cast<MemDataUD>(cur_storage.data), cur_storage.paddr);
+                    break;
+                }
+            }
         }
     }
 
@@ -169,34 +222,33 @@ namespace TKPEmu::N64::Devices {
             PipelineStage ps = process.front();
             process.pop();
             execute_instruction(ps, i);
-            std::cout << static_cast<int>(ps) << " " << i << std::endl;
         }
     }
 
-    CPU::DirectMapRet CPU::translate_kseg0(DirectMapArgs addr) noexcept {
-        return addr - KSEG0_START;
+    MemDataUW CPU::translate_kseg0(MemDataUD vaddr) noexcept {
+        return vaddr - KSEG0_START;
     }
 
-    CPU::DirectMapRet CPU::translate_kseg1(DirectMapArgs addr) noexcept {
-        return addr - KSEG1_START;
+    MemDataUW CPU::translate_kseg1(MemDataUD vaddr) noexcept {
+        return vaddr - KSEG1_START;
     }
 
-    CPU::TLBRet CPU::translate_kuseg(TLBArgs) {
+    MemDataUW CPU::translate_kuseg(MemDataUD vaddr) noexcept {
         throw NotImplementedException(__func__);
     }
 
     CPU::SelAddrSpace32Ret CPU::select_addr_space32(SelAddrSpace32Args addr) {
         // VR4300 manual page 136 table 5-3
         unsigned _3msb = addr >> 29;
-        uint32_t physical_addr = 0;
+        uint32_t paddr = 0;
         switch(_3msb) {
             case 0b100:
             // kseg0
-            physical_addr = translate_kseg0(addr);
+            paddr = translate_kseg0(addr);
             break;
             case 0b101:
             // kseg1
-            physical_addr = translate_kseg1(addr);
+            paddr = translate_kseg1(addr);
             break;
             case 0b110:
             // ksseg
@@ -212,21 +264,15 @@ namespace TKPEmu::N64::Devices {
             // covers the current 231 bytes (2 GB) user address space. The virtual address is
             // extended with the contents of the 8-bit ASID field to form a unique virtual
             // address.
-            physical_addr = translate_kuseg(addr);
+            paddr = translate_kuseg(addr);
             break;
         }
-        return physical_addr;
+        return paddr;
     }
-    MemDataUW CPU::get_instruction(MemDataUW physical_addr) {
-        return cpubus_.get_instruction(physical_addr);
-    }
-    MemDataUW CPUBus::get_instruction(MemDataUW physical_addr) {
-        if (physical_addr >= rom_.size()) [[unlikely]] {
-            // TODO: remove this check for speed?
-            throw std::exception();
+
+    void CPU::store_memory(bool cached, AccessType type, MemDataUD data, MemDataUW paddr, MemDataUD vaddr) {
+        if (!cached) {
+
         }
-        // Loads in big endian
-        // should only work for .z64 files
-        return rom_[physical_addr] << 24 | rom_[physical_addr + 1] << 16 | rom_[physical_addr + 2] << 8 | rom_[physical_addr + 3];
     }
 }
