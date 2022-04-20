@@ -67,23 +67,23 @@ namespace TKPEmu::N64::Devices {
         PipelineStorage& cur_storage = pipeline_storage_[process_no];
         switch(cur_storage.access_type) {
             case AccessType::BYTE: {
-                *std::any_cast<MemDataUB*>(cur_storage.write_loc)
-                    = std::any_cast<MemDataUB>(cur_storage.data);
+                *std::any_cast<uint8_t*>(cur_storage.write_loc)
+                    = std::any_cast<uint8_t>(cur_storage.data);
                 break;
             }
             case AccessType::HALFWORD: {
-                *std::any_cast<MemDataUH*>(cur_storage.write_loc)
-                    = std::any_cast<MemDataUH>(cur_storage.data);
+                *std::any_cast<uint16_t*>(cur_storage.write_loc)
+                    = std::any_cast<uint16_t>(cur_storage.data);
                 break;
             }
             case AccessType::WORD: {
-                *std::any_cast<MemDataUW*>(cur_storage.write_loc)
-                    = std::any_cast<MemDataUW>(cur_storage.data);
+                *std::any_cast<uint32_t*>(cur_storage.write_loc)
+                    = std::any_cast<uint32_t>(cur_storage.data);
                 break;
             }
             case AccessType::DOUBLEWORD: {
-                *std::any_cast<MemDataUD*>(cur_storage.write_loc)
-                    = std::any_cast<MemDataUD>(cur_storage.data);
+                *std::any_cast<uint64_t*>(cur_storage.write_loc)
+                    = std::any_cast<uint64_t>(cur_storage.data);
                 break;
             }
             default: {
@@ -94,8 +94,10 @@ namespace TKPEmu::N64::Devices {
 
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
         // Fetch the current process instruction
-        auto phys_addr = select_addr_space32(pc_);
-        pipeline_storage_[process_no].instruction.Full = cpubus_.fetch_instruction_uncached(phys_addr);
+        auto paddr_s = translate_vaddr(pc_);
+        auto& cur_storage = pipeline_storage_[process_no];
+        cur_storage.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
+        cur_storage.cached = paddr_s.cached;
     }
 
     CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
@@ -131,9 +133,9 @@ namespace TKPEmu::N64::Devices {
              * doesn't throw
              */
             case InstructionType::LUI: {
-                MemDataW imm = cur_instr.IType.immediate << 16;
+                int32_t imm = cur_instr.IType.immediate << 16;
                 // Sign extend the immediate
-                MemDataUD seimm = static_cast<MemDataD>(imm);
+                uint64_t seimm = static_cast<int64_t>(imm);
                 cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].UD;
                 cur_storage.data = seimm;
                 cur_storage.write_type = WriteType::REGISTER;
@@ -158,12 +160,12 @@ namespace TKPEmu::N64::Devices {
              * throws IntegerOverflowException
              */
             case InstructionType::s_ADD: {
-                MemDataW op1 = gpr_regs_[cur_instr.RType.rs].W._0;
-                MemDataW op2 = gpr_regs_[cur_instr.RType.rt].W._0;
+                int32_t op1 = gpr_regs_[cur_instr.RType.rs].W._0;
+                int32_t op2 = gpr_regs_[cur_instr.RType.rt].W._0;
                 // Sign extend the operands
-                MemDataD seop1 = op1;
-                MemDataD seop2 = op2;
-                MemDataD result = seop1 + seop2;
+                int64_t seop1 = op1;
+                int64_t seop2 = op2;
+                int64_t result = seop1 + seop2;
                 // TODO: Check for integeroverflowexception - missing
                 cur_storage.write_loc = &gpr_regs_[cur_instr.RType.rd].D;
                 cur_storage.data = result;
@@ -209,7 +211,7 @@ namespace TKPEmu::N64::Devices {
                 }
                 case WriteType::MMU: {
                     store_memory(cur_storage.cached, cur_storage.access_type,
-                            std::any_cast<MemDataUD>(cur_storage.data), cur_storage.paddr);
+                            std::any_cast<uint64_t>(cur_storage.data), cur_storage.paddr);
                     break;
                 }
             }
@@ -225,29 +227,33 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
-    MemDataUW CPU::translate_kseg0(MemDataUD vaddr) noexcept {
+    uint32_t CPU::translate_kseg0(uint32_t vaddr) noexcept {
         return vaddr - KSEG0_START;
     }
 
-    MemDataUW CPU::translate_kseg1(MemDataUD vaddr) noexcept {
+    uint32_t CPU::translate_kseg1(uint32_t vaddr) noexcept {
         return vaddr - KSEG1_START;
     }
 
-    MemDataUW CPU::translate_kuseg(MemDataUD vaddr) noexcept {
+    uint32_t CPU::translate_kuseg(uint32_t vaddr) noexcept {
         throw NotImplementedException(__func__);
     }
 
-    CPU::SelAddrSpace32Ret CPU::select_addr_space32(SelAddrSpace32Args addr) {
+    TranslatedAddress CPU::translate_vaddr(uint32_t addr) {
         // VR4300 manual page 136 table 5-3
         unsigned _3msb = addr >> 29;
         uint32_t paddr = 0;
+        bool cached = false;
         switch(_3msb) {
             case 0b100:
             // kseg0
+            // cached, non tlb
             paddr = translate_kseg0(addr);
+            cached = true;
             break;
             case 0b101:
             // kseg1
+            // uncached, non tlb
             paddr = translate_kseg1(addr);
             break;
             case 0b110:
@@ -265,14 +271,50 @@ namespace TKPEmu::N64::Devices {
             // extended with the contents of the 8-bit ASID field to form a unique virtual
             // address.
             paddr = translate_kuseg(addr);
+            cached = true;
             break;
         }
-        return paddr;
+        return { paddr, cached };
     }
 
-    void CPU::store_memory(bool cached, AccessType type, MemDataUD data, MemDataUW paddr, MemDataUD vaddr) {
+    void CPU::store_memory(bool cached, AccessType type, uint64_t data, uint32_t paddr, uint64_t vaddr) {
         if (!cached) {
-
+            uint8_t* loc = cpubus_.redirect_paddress(paddr);
+            switch(type) {
+                case AccessType::DOUBLEWORD: {
+                    *(loc++) = (data >> 56) & 0xFF;
+                    *(loc++) = (data >> 48) & 0xFF;
+                    *(loc++) = (data >> 40) & 0xFF;
+                    *(loc++) = (data >> 32) & 0xFF;
+                    *(loc++) = (data >> 24) & 0xFF;
+                    *(loc++) = (data >> 16) & 0xFF;
+                    *(loc++) = (data >> 8)  & 0xFF;
+                    *(loc)   = data & 0xFF;
+                    break;
+                }
+                case AccessType::WORD: {
+                    *(loc++) = (data >> 24) & 0xFF;
+                    *(loc++) = (data >> 16) & 0xFF;
+                    *(loc++) = (data >> 8)  & 0xFF;
+                    *(loc)   = data & 0xFF;
+                    break;
+                }
+                case AccessType::HALFWORD: {
+                    *(loc++) = (data >> 8) & 0xFF;
+                    *(loc)   = data & 0xFF;
+                    break;
+                }
+                case AccessType::BYTE: {
+                    *(loc) = data & 0xFF;
+                    break;
+                }
+                default: {
+                    // Do nothing purposefully
+                    break;
+                }
+            }
+        } else {
+            // currently not implemented
         }
     }
 }

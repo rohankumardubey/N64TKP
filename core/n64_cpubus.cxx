@@ -19,7 +19,7 @@ namespace TKPEmu::N64::Devices {
         }
         return true;
     }
-    MemDataUW CPUBus::fetch_instruction_uncached(MemDataUW paddr) {
+    uint32_t CPUBus::fetch_instruction_uncached(uint32_t paddr) {
         if (paddr >= rom_.size()) [[unlikely]] {
             // TODO: remove this check for speed?
             throw std::exception();
@@ -28,7 +28,7 @@ namespace TKPEmu::N64::Devices {
         // should only work for .z64 files
         return rom_[paddr] << 24 | rom_[paddr + 1] << 16 | rom_[paddr + 2] << 8 | rom_[paddr + 3];
     }
-    MemDataUW& CPUBus::redirect_paddress (MemDataUW paddr) {
+    uint8_t* CPUBus::redirect_paddress (uint32_t paddr) {
         switch(paddr & 0xF000'0000) {
             case 0x0000'0000: {
                 if (paddr < 0x0040'0000) {        // 0x00000000	0x003FFFFF	RDRAM	                        RDRAM located on motherboard
@@ -67,12 +67,13 @@ namespace TKPEmu::N64::Devices {
             case 0x5000'0000:
             case 0x6000'0000:
             case 0x7000'0000: {
-                if (paddr < 0x1FC0'0000) {         // 0x10000000 0x1FBFFFFF	Cartridge Domain 1 Address 2	Cartridge ROM
-                } else if (paddr < 0x1FC007C0) {   // 0x1FC00000 0x1FC007BF	PIF ROM (IPL1/2)	            Executed on boot
-                } else if (paddr < 0x1FC0'0800) {  // 0x1FC007C0 0x1FC007FF	PIF RAM	                        Controller and EEPROM communication, and during IPL1/2 is used to read startup data from the PIF
-                } else if (paddr < 0x1FD0'0000) {  // 0x1FC00800 0x1FCFFFFF	Reserved	                    Unknown usage
+                if (paddr < 0x1FC0'0000) {        // 0x10000000 0x1FBFFFFF	Cartridge Domain 1 Address 2	Cartridge ROM
+                } else if (paddr < 0x1FC0'07C0) { // 0x1FC00000 0x1FC007BF	PIF ROM (IPL1/2)	            Executed on boot
+                } else if (paddr < 0x1FC0'0800) { // 0x1FC007C0 0x1FC007FF  PIF RAM	                        Controller and EEPROM communication, and during IPL1/2 is used to read startup data from the PIF
+                    return &pif_ram_[paddr - 0x1FC0'07C0];
+                } else if (paddr < 0x1FD0'0000) { // 0x1FC00800 0x1FCFFFFF  Reserved	                    Unknown usage
                     throw NotImplementedException(__func__);
-                } else {                           // 0x1FD00000 0x7FFFFFFF	Cartridge Domain 1 Address 3	Mapped to same address range on physical cartridge port
+                } else {                          // 0x1FD00000 0x7FFFFFFF  Cartridge Domain 1 Address 3	Mapped to same address range on physical cartridge port
                     throw NotImplementedException(__func__);
                 }
                 break;

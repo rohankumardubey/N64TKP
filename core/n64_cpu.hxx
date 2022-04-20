@@ -62,9 +62,13 @@ namespace TKPEmu::N64::Devices {
         WriteType write_type;
         std::any write_loc = nullptr;
         std::any data;
-        MemDataUD paddr;
-        MemDataUD vaddr;
+        uint64_t paddr;
+        uint64_t vaddr;
         bool cached = false;
+    };
+    struct TranslatedAddress {
+        uint32_t paddr;
+        bool cached;
     };
     /**
         32-bit address bus 
@@ -75,10 +79,11 @@ namespace TKPEmu::N64::Devices {
     public:
         bool LoadFromFile(std::string path);
     private:
-        MemDataUW  fetch_instruction_uncached(MemDataUW paddr);
-        MemDataUW  fetch_instruction_cached  (MemDataUW paddr);
-        MemDataUW& redirect_paddress (MemDataUW paddr);
+        uint32_t  fetch_instruction_uncached(uint32_t paddr);
+        uint32_t  fetch_instruction_cached  (uint32_t paddr);
+        uint8_t*  redirect_paddress (uint32_t paddr);
         std::vector<uint8_t> rom_;
+        std::array<uint8_t, 64> pif_ram_;
         friend class CPU;
     };
     class CPU {
@@ -86,8 +91,6 @@ namespace TKPEmu::N64::Devices {
         CPU();
         void Reset();
     private:
-        using SelAddrSpace32Ret = uint32_t;
-        using SelAddrSpace32Args = uint32_t;
         using PipelineStageRet  = void;
         using PipelineStageArgs = size_t;
         CPUBus cpubus_;
@@ -100,15 +103,15 @@ namespace TKPEmu::N64::Devices {
         /// Registers
         // r0 is hardwired to 0, r31 is the link register
         std::array<MemDataUnionDW, 32> gpr_regs_;
-        std::array<MemDataDouble, 32> fpr_regs_;
+        std::array<double, 32> fpr_regs_;
         std::array<MemDataUnionDW, 32> cp0_regs_;
         // CPU cache
-        std::vector<MemDataUB> instr_cache_;
-        std::vector<MemDataUB> data_cache_;
+        std::vector<uint8_t> instr_cache_;
+        std::vector<uint8_t> data_cache_;
         // Special registers
-        MemDataUD pc_, hi_, lo_;
-        MemDataBit llbit_;
-        MemDataFloat fcr0_, fcr31_;
+        uint64_t pc_, hi_, lo_;
+        bool llbit_;
+        float fcr0_, fcr31_;
 
         void SPECIAL(), REGIMM(), J(), JAL(),
             BEQ(), BNE(), BLEZ(), BGTZ(),
@@ -135,7 +138,7 @@ namespace TKPEmu::N64::Devices {
             @param addr virtual address, range 0x80000000-0x9fffffff
             @return physical address 
         */
-        inline MemDataUW translate_kseg0(MemDataUD vaddr) noexcept;
+        inline uint32_t translate_kseg0(uint32_t vaddr) noexcept;
         /**
             VR4300 manual, page 122: 
 
@@ -145,15 +148,14 @@ namespace TKPEmu::N64::Devices {
             @param addr virtual address, range 0xa0000000-0xbfffffff
             @return physical address 
         */
-        inline MemDataUW translate_kseg1(MemDataUD vaddr) noexcept;
+        inline uint32_t translate_kseg1(uint32_t vaddr) noexcept;
         /**
             
             @param addr virtual address, range 0x00000000-0x7fffffff
             @return physical address
         */
-        inline MemDataUW translate_kuseg(MemDataUD vaddr) noexcept;
-        SelAddrSpace32Ret select_addr_space32(SelAddrSpace32Args);
-
+        inline uint32_t translate_kuseg(uint32_t vaddr) noexcept;
+        TranslatedAddress translate_vaddr(uint32_t vaddr);
         /**
          * Load and store instruction common functions
          * 
@@ -168,7 +170,7 @@ namespace TKPEmu::N64::Devices {
          * For non TLB address space, the address is just fetched from cache or
          * memory.
          */
-        inline MemDataUD AddressTranslation();
+        inline uint64_t AddressTranslation();
         /**
          * Searches the cache and main memory to search for the contents
          * of the specified data length stored in a specified physical address.
@@ -179,7 +181,7 @@ namespace TKPEmu::N64::Devices {
          * a data word. The data is loaded to the cache if the cache is
          * enabled. 
          */
-        inline MemDataUD LoadMemory();
+        inline uint64_t LoadMemory();
         /**
          * Searches the cache, write buffer, and main memory to store the
          * contents of a specified data length to a specified physical address.
@@ -195,7 +197,7 @@ namespace TKPEmu::N64::Devices {
          * @param paddr physical address
          * @param vaddr virtual address (unneeded?)
          */
-        inline void store_memory(bool cached, AccessType type, MemDataUD data, MemDataUW paddr, MemDataUD vaddr = 0);
+        inline void store_memory(bool cached, AccessType type, uint64_t data, uint32_t paddr, uint64_t vaddr = 0);
 
         PipelineStageRet IC(PipelineStageArgs process_no);
         PipelineStageRet RF(PipelineStageArgs process_no);

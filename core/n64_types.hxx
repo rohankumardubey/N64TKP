@@ -11,18 +11,6 @@
 
 namespace TKPEmu::N64 {
     // Note: manual here refers to vr4300 manual
-    using MemAddr = uint64_t;
-    using MemDataBit = bool;
-    using MemDataUB = uint8_t;
-    using MemDataUH = uint16_t;
-    using MemDataUW = uint32_t;
-    using MemDataUD = uint64_t;
-    using MemDataB = int8_t;
-    using MemDataH = int16_t;
-    using MemDataW = int32_t;
-    using MemDataD = int64_t;
-    using MemDataFloat = float;
-    using MemDataDouble = double;
     union TLBEntry32 {
         struct {
             uint32_t _0_unused1 : 1;
@@ -95,53 +83,53 @@ namespace TKPEmu::N64 {
         uint32_t Full;
     };
     union MemDataUnionDWBase {
-        MemDataD  D;
-        MemDataUD UD;
+        int64_t  D;
+        uint64_t UD;
         struct {
-            MemDataW     _0;
-            MemDataW     _1;
+            int32_t     _0;
+            int32_t     _1;
         } W;
         struct {
-            MemDataUW    _0;
-            MemDataUW    _1;
+            uint32_t    _0;
+            uint32_t    _1;
         } UW;
         struct {
-            MemDataH     _0;
-            MemDataH     _1;
-            MemDataH     _2;
-            MemDataH     _3;
+            int16_t     _0;
+            int16_t     _1;
+            int16_t     _2;
+            int16_t     _3;
         } H;
         struct {
-            MemDataUH    _0;
-            MemDataUH    _1;
-            MemDataUH    _2;
-            MemDataUH    _3;
+            uint16_t    _0;
+            uint16_t    _1;
+            uint16_t    _2;
+            uint16_t    _3;
         } UH;
         struct {
-            MemDataB     _0;
-            MemDataB     _1;
-            MemDataB     _2;
-            MemDataB     _3;
-            MemDataB     _4;
-            MemDataB     _5;
-            MemDataB     _6;
-            MemDataB     _7;
+            int8_t     _0;
+            int8_t     _1;
+            int8_t     _2;
+            int8_t     _3;
+            int8_t     _4;
+            int8_t     _5;
+            int8_t     _6;
+            int8_t     _7;
         } B;
         struct {
-            MemDataUB    _0;
-            MemDataUB    _1;
-            MemDataUB    _2;
-            MemDataUB    _3;
-            MemDataUB    _4;
-            MemDataUB    _5;
-            MemDataUB    _6;
-            MemDataUB    _7;
+            uint8_t    _0;
+            uint8_t    _1;
+            uint8_t    _2;
+            uint8_t    _3;
+            uint8_t    _4;
+            uint8_t    _5;
+            uint8_t    _6;
+            uint8_t    _7;
         } UB;
 
-        MemDataDouble DOUBLE;
+        double DOUBLE;
         struct {
-            MemDataFloat _0;
-            MemDataFloat _1;
+            float _0;
+            float _1;
         } FLOAT;
     };
     const static std::array<std::string, 64> OperationCodes = {
@@ -232,8 +220,8 @@ namespace TKPEmu::N64 {
     static_assert(std::endian::native == std::endian::little, "This emulator does not work on big endian systems!");
     static_assert(sizeof(InstructionCacheLine) == 32, "InstructionCacheLine should be 32 bytes!");
     static_assert(sizeof(Instruction) == sizeof(uint32_t), "N64 instruction should be 4 bytes!");
-    static_assert(sizeof(MemDataDouble) == 8, "double data type is not 8 bytes!");
-    static_assert(sizeof(MemDataUnionDW) == sizeof(MemDataD), "Size of MemDataUnionDW mismatch!");
-    static_assert(std::numeric_limits<MemDataFloat>::is_iec559, "float data type is not ISO/IEC/IEEE 60559:2011 compliant!");
+    static_assert(sizeof(double) == 8, "double data type is not 8 bytes!");
+    static_assert(sizeof(MemDataUnionDW) == sizeof(int64_t), "Size of MemDataUnionDW mismatch!");
+    static_assert(std::numeric_limits<float>::is_iec559, "float data type is not ISO/IEC/IEEE 60559:2011 compliant!");
 }
 #endif
