@@ -12,15 +12,15 @@ namespace TKPEmu::N64::Devices {
     }
     void CPU::Reset() {
         pc_ = 0x80001000;
+        // Initialize pipeline like this:
+        // 1. IC
+        // 2. NOP IC
+        // 3. NOP NOP IC
+        // 4. NOP NOP NOP IC
+        // 5. NOP NOP NOP NOP IC
         for (int i = 0; i < 5; i++) {
             std::queue<PipelineStage> empty;
             std::swap(pipeline_[i], empty);
-            // Initialize pipeline like this:
-            // 1. IC
-            // 2. NOP IC
-            // 3. NOP NOP IC
-            // 4. NOP NOP NOP IC
-            // 5. NOP NOP NOP NOP IC
             for (int j = 0; j < i; j++) {
                 pipeline_[i].push(PipelineStage::NOP);
             }
@@ -65,6 +65,8 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
+        pipeline_cur_instr_[process_no] = icrf_latch_.instruction.Full;
+        pc_ += 4;
     }
 
     CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
@@ -85,7 +87,6 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
         }
-        pc_ += 4;
         rfex_latch_.fetched_rs.UD = fetched_rs.UD;
         rfex_latch_.fetched_rt.UD = fetched_rt.UD;
         rfex_latch_.instruction = icrf_latch_.instruction;
@@ -113,7 +114,8 @@ namespace TKPEmu::N64::Devices {
                             dcwb_latch_.data, dcwb_latch_.dest);
                     break;
                 }
-                default: {
+                case WriteType::REGISTER: {
+                    store_register();
                     break;
                 }
             }

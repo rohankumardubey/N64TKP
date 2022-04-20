@@ -31,6 +31,16 @@ namespace TKPEmu::Applications {
             auto& mem = memory_views_[selected];
             if (mem.DataPtr) {
                 switch(mem.Type) {
+                    case MemoryType::PIPELINE: {
+                        static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
+                        ImGui::Text("Stages");
+                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[0].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[0]);
+                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[1].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[1]);
+                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[2].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[2]);
+                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[3].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[3]);
+                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[4].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[4]);
+                        break;
+                    }
                     case MemoryType::GPR_REGS: {
                         for (uint32_t i = 0; i < mem.Size; ++i) {
                             auto data = (static_cast<N64::MemDataUnionDW*>(mem.DataPtr) + i)->UW._0;
@@ -73,10 +83,10 @@ namespace TKPEmu::Applications {
                 fill_memory_views();
             }
             ImGui::EndChild();
+            if (ImGui::Button("update")) {
+                n64_ptr->update();
+            }
             ImGui::EndGroup();
-        }
-        if (ImGui::Button("update")) {
-            n64_ptr->update();
         }
     }
     void N64_RomDisassembly::v_reset() {
@@ -99,6 +109,10 @@ namespace TKPEmu::Applications {
                     }
                     case MemoryType::MEMORY: {
                         mem.DataPtr = n64_ptr->GetCPU().cpubus_.redirect_paddress(mem.StartAddress);
+                        break;
+                    }
+                    case MemoryType::PIPELINE: {
+                        mem.DataPtr = n64_ptr;
                         break;
                     }
                 }

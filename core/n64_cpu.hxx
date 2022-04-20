@@ -51,22 +51,8 @@ namespace TKPEmu::N64::Devices {
         EX = 2, // Execution
         DC = 3, // Data cache fetch
         WB = 4, // Write back
-        NOP     // No operation
+        NOP = 5,    // No operation
     };
-    // Storage for each pipeline instruction
-    // Does the job of pipeline latches
-    // struct PipelineStorage {
-    //     Instruction     instruction;
-    //     InstructionType instr_type;
-    //     MemDataUnionDW  fetched_rt; // fetched during RF stage
-    //     MemDataUnionDW  fetched_rs; // fetched during RF stage
-    //     AccessType      write_access_type;
-    //     WriteType       write_type;
-    //     std::any        write_loc = nullptr;
-    //     std::any        write_data;
-    //     uint64_t        write_paddr;
-    //     bool            write_cached = false;
-    // };
     struct ICRF_latch {
         Instruction     instruction;
     };
@@ -101,13 +87,20 @@ namespace TKPEmu::N64::Devices {
     */
     class CPUBus {
     public:
+        CPUBus();
         bool LoadFromFile(std::string path);
+        void Reset();
     private:
         uint32_t  fetch_instruction_uncached(uint32_t paddr);
         uint32_t  fetch_instruction_cached  (uint32_t paddr);
         uint8_t*  redirect_paddress (uint32_t paddr);
-        std::vector<uint8_t> rom_;
+        void      map_direct_addresses();
+        std::array<uint8_t, 0xFC00000> cart_rom_;
+        std::array<uint8_t, 0x400000> rdram_ {};
+        std::array<uint8_t, 0x400000> rdram_xpk_ {};
         std::array<uint8_t, 64> pif_ram_ {};
+        std::array<uint8_t, 0x100> temp_addresses_{};
+        std::array<uint8_t*, 0x1000> page_table_ {};
         friend class CPU;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };
@@ -120,11 +113,11 @@ namespace TKPEmu::N64::Devices {
         using PipelineStageArgs = size_t;
         CPUBus cpubus_;
         std::array<std::queue<PipelineStage>, 5> pipeline_;
-        // std::array<PipelineStorage, 5>           pipeline_storage_;
-        ICRF_latch icrf_latch_;
-        RFEX_latch rfex_latch_;
-        EXDC_latch exdc_latch_;
-        DCWB_latch dcwb_latch_;
+        std::array<uint32_t, 5>                  pipeline_cur_instr_ {};
+        ICRF_latch icrf_latch_ {};
+        RFEX_latch rfex_latch_ {};
+        EXDC_latch exdc_latch_ {};
+        DCWB_latch dcwb_latch_ {};
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
         // The current instruction

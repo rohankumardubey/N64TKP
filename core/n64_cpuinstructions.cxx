@@ -70,15 +70,22 @@ namespace TKPEmu::N64::Devices {
                 #endif
                 break;
             }
+            case InstructionType::LW: {
+
+                break;
+            }
             default: {
                 throw InstructionNotImplementedException(OperationCodes[cur_instr.IType.op]);
             }
         }
-        if (exdc_latch_.write_type == WriteType::REGISTER) {
-            // Bypassing
+        if (exdc_latch_.write_type == WriteType::REGISTER &&
+            exdc_latch_.data.has_value()) {
+            // Bypassing (from manual)
             // result is stored during EX instead of waiting for WB when it comes
             // to writing to a register
+            // for instructions like ADD that don't need DC stage to write back
             store_register();
+            exdc_latch_.data.reset();
         }
     }
 }
