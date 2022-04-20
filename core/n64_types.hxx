@@ -1,6 +1,3 @@
-/*
-
-*/
 #pragma once
 #ifndef TKP_N64_TYPES_H
 #define TKP_N64_TYPES_H

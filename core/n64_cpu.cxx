@@ -2,7 +2,6 @@
 #include <iostream>
 
 namespace TKPEmu::N64::Devices {
-
     CPU::CPU() :
         gpr_regs_{},
         fpr_regs_{},
@@ -11,7 +10,6 @@ namespace TKPEmu::N64::Devices {
     {
         Reset();
     }
-
     void CPU::Reset() {
         pc_ = 0x80001000;
         for (int i = 0; i < 5; i++) {
@@ -30,7 +28,7 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
-    bool CPU::execute_instruction(PipelineStage stage, size_t process_no) {
+    bool CPU::execute_stage(PipelineStage stage, size_t process_no) {
         switch(stage) {
             case PipelineStage::IC: {
                 IC(process_no);
@@ -63,155 +61,59 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
-    void CPU::register_write(size_t process_no) {
-        PipelineStorage& cur_storage = pipeline_storage_[process_no];
-        switch(cur_storage.access_type) {
-            case AccessType::BYTE: {
-                *std::any_cast<uint8_t*>(cur_storage.write_loc)
-                    = std::any_cast<uint8_t>(cur_storage.data);
-                break;
-            }
-            case AccessType::HALFWORD: {
-                *std::any_cast<uint16_t*>(cur_storage.write_loc)
-                    = std::any_cast<uint16_t>(cur_storage.data);
-                break;
-            }
-            case AccessType::WORD: {
-                *std::any_cast<uint32_t*>(cur_storage.write_loc)
-                    = std::any_cast<uint32_t>(cur_storage.data);
-                break;
-            }
-            case AccessType::DOUBLEWORD: {
-                *std::any_cast<uint64_t*>(cur_storage.write_loc)
-                    = std::any_cast<uint64_t>(cur_storage.data);
-                break;
-            }
-            default: {
-                throw NotImplementedException(__func__);
-            }
-        }
-    }
-
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
-        auto& cur_storage = pipeline_storage_[process_no];
-        cur_storage.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        cur_storage.cached = paddr_s.cached;
+        icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
     }
 
     CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
         // Fetch the registers
-
+        auto fetched_rs = gpr_regs_[icrf_latch_.instruction.RType.rs];
+        auto fetched_rt = gpr_regs_[icrf_latch_.instruction.RType.rt];
+        InstructionType type;
         // Get instruction from previous fetch
-        auto opcode = pipeline_storage_[process_no].instruction.IType.op;
+        auto opcode = icrf_latch_.instruction.IType.op;
         switch(opcode) {
             case 0: {
-                auto func = pipeline_storage_[process_no].instruction.RType.func;
-                pipeline_storage_[process_no].instr_type = SpecialInstructionTypeTable[func];
+                auto func = icrf_latch_.instruction.RType.func;
+                type = SpecialInstructionTypeTable[func];
                 break;
             }
             default: {
-                pipeline_storage_[process_no].instr_type = InstructionTypeTable[opcode];
+                type = InstructionTypeTable[opcode];
                 break;
             }
         }
         pc_ += 4;
+        rfex_latch_.fetched_rs.UD = fetched_rs.UD;
+        rfex_latch_.fetched_rt.UD = fetched_rt.UD;
+        rfex_latch_.instruction = icrf_latch_.instruction;
+        rfex_latch_.instruction_type = type;
     }
 
     CPU::PipelineStageRet CPU::EX(PipelineStageArgs process_no) {
-        PipelineStorage& cur_storage = pipeline_storage_[process_no];
-        Instruction& cur_instr = cur_storage.instruction;
-        cur_storage.paddr = 0;
-        cur_storage.vaddr = 0;
-        cur_storage.write_loc.reset();
-        cur_storage.data.reset();
-        switch(cur_storage.instr_type) {
-            /**
-             * LUI
-             * 
-             * doesn't throw
-             */
-            case InstructionType::LUI: {
-                int32_t imm = cur_instr.IType.immediate << 16;
-                // Sign extend the immediate
-                uint64_t seimm = static_cast<int64_t>(imm);
-                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].UD;
-                cur_storage.data = seimm;
-                cur_storage.write_type = WriteType::REGISTER;
-                cur_storage.access_type = AccessType::DOUBLEWORD;
-                break;
-            }
-            /**
-             * ORI
-             * 
-             * doesn't throw
-             */
-            case InstructionType::ORI: {
-                cur_storage.write_loc = &gpr_regs_[cur_instr.IType.rt].UD;
-                cur_storage.data = gpr_regs_[cur_instr.IType.rt].UD | cur_instr.IType.immediate;
-                cur_storage.write_type = WriteType::REGISTER;
-                cur_storage.access_type = AccessType::DOUBLEWORD;
-                break;
-            }
-            /**
-             * s_ADD
-             * 
-             * throws IntegerOverflowException
-             */
-            case InstructionType::s_ADD: {
-                int32_t op1 = gpr_regs_[cur_instr.RType.rs].W._0;
-                int32_t op2 = gpr_regs_[cur_instr.RType.rt].W._0;
-                // Sign extend the operands
-                int64_t seop1 = op1;
-                int64_t seop2 = op2;
-                int64_t result = seop1 + seop2;
-                // TODO: Check for integeroverflowexception - missing
-                cur_storage.write_loc = &gpr_regs_[cur_instr.RType.rd].D;
-                cur_storage.data = result;
-                break;
-            }
-            /**
-             * SW
-             * 
-             * throws TLB miss exception
-             *        TLB invalid exception
-             *        TLB modification exception
-             *        Bus error exception
-             *        Address error exception
-             */
-            case InstructionType::SW: {
-                #if SKIPEXCEPTIONS == 0
-                if ((cur_storage.vaddr & 0b11) != 0) {
-                    // From manual:
-                    // If either of the loworder two bits of the address are not zero, an address error exception occurs.
-                    throw InstructionAddressErrorException();
-                }
-                #endif
-                break;
-            }
-            default: {
-                throw InstructionNotImplementedException(OperationCodes[cur_instr.IType.op]);
-            }
-        }
+        execute_instruction();
     }
 
     CPU::PipelineStageRet CPU::DC(PipelineStageArgs process_no) {
         // unimplemented atm
+        dcwb_latch_.access_type = exdc_latch_.access_type;
+        dcwb_latch_.data = exdc_latch_.data;
+        dcwb_latch_.dest = exdc_latch_.dest;
+        dcwb_latch_.write_type = exdc_latch_.write_type;
+        dcwb_latch_.cached = exdc_latch_.cached;
     }
 
     CPU::PipelineStageRet CPU::WB(PipelineStageArgs process_no) {
-        PipelineStorage& cur_storage = pipeline_storage_[process_no];
-        if (cur_storage.write_loc.has_value() &&
-            cur_storage.data.has_value()) {
-            switch(cur_storage.write_type) {
-                case WriteType::REGISTER: {
-                    register_write(process_no);
+        if (dcwb_latch_.data.has_value()) {
+            switch(dcwb_latch_.write_type) {
+                case WriteType::MMU: {
+                    store_memory(dcwb_latch_.cached, dcwb_latch_.access_type,
+                            dcwb_latch_.data, dcwb_latch_.dest);
                     break;
                 }
-                case WriteType::MMU: {
-                    store_memory(cur_storage.cached, cur_storage.access_type,
-                            std::any_cast<uint64_t>(cur_storage.data), cur_storage.paddr);
+                default: {
                     break;
                 }
             }
@@ -223,7 +125,7 @@ namespace TKPEmu::N64::Devices {
             auto& process = pipeline_[i];
             PipelineStage ps = process.front();
             process.pop();
-            execute_instruction(ps, i);
+            execute_stage(ps, i);
         }
     }
 
@@ -277,11 +179,40 @@ namespace TKPEmu::N64::Devices {
         return { paddr, cached };
     }
 
-    void CPU::store_memory(bool cached, AccessType type, uint64_t data, uint32_t paddr, uint64_t vaddr) {
+    void CPU::store_register() {
+        switch(exdc_latch_.access_type) {
+            case AccessType::BYTE: {
+                gpr_regs_[exdc_latch_.dest].UB._0
+                    = std::any_cast<uint8_t>(exdc_latch_.data);
+                break;
+            }
+            case AccessType::HALFWORD: {
+                gpr_regs_[exdc_latch_.dest].UH._0
+                    = std::any_cast<uint16_t>(exdc_latch_.data);
+                break;
+            }
+            case AccessType::WORD: {
+                gpr_regs_[exdc_latch_.dest].UW._0
+                    = std::any_cast<uint32_t>(exdc_latch_.data);
+                break;
+            }
+            case AccessType::DOUBLEWORD: {
+                gpr_regs_[exdc_latch_.dest].UD
+                    = std::any_cast<uint64_t>(exdc_latch_.data);
+                break;
+            }
+            default: {
+                throw NotImplementedException(__func__);
+            }
+        }
+    }
+
+    void CPU::store_memory(bool cached, AccessType type, std::any data_any, uint32_t paddr) {
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
             switch(type) {
                 case AccessType::DOUBLEWORD: {
+                    auto data = std::any_cast<uint64_t>(data_any);
                     *(loc++) = (data >> 56) & 0xFF;
                     *(loc++) = (data >> 48) & 0xFF;
                     *(loc++) = (data >> 40) & 0xFF;
@@ -293,6 +224,7 @@ namespace TKPEmu::N64::Devices {
                     break;
                 }
                 case AccessType::WORD: {
+                    auto data = std::any_cast<uint32_t>(data_any);
                     *(loc++) = (data >> 24) & 0xFF;
                     *(loc++) = (data >> 16) & 0xFF;
                     *(loc++) = (data >> 8)  & 0xFF;
@@ -300,11 +232,13 @@ namespace TKPEmu::N64::Devices {
                     break;
                 }
                 case AccessType::HALFWORD: {
+                    auto data = std::any_cast<uint16_t>(data_any);
                     *(loc++) = (data >> 8) & 0xFF;
                     *(loc)   = data & 0xFF;
                     break;
                 }
                 case AccessType::BYTE: {
+                    auto data = std::any_cast<uint8_t>(data_any);
                     *(loc) = data & 0xFF;
                     break;
                 }

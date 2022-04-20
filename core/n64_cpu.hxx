@@ -55,16 +55,40 @@ namespace TKPEmu::N64::Devices {
     };
     // Storage for each pipeline instruction
     // Does the job of pipeline latches
-    struct PipelineStorage {
-        Instruction instruction;
-        InstructionType instr_type;
-        AccessType access_type;
-        WriteType write_type;
-        std::any write_loc = nullptr;
-        std::any data;
-        uint64_t paddr;
-        uint64_t vaddr;
-        bool cached = false;
+    // struct PipelineStorage {
+    //     Instruction     instruction;
+    //     InstructionType instr_type;
+    //     MemDataUnionDW  fetched_rt; // fetched during RF stage
+    //     MemDataUnionDW  fetched_rs; // fetched during RF stage
+    //     AccessType      write_access_type;
+    //     WriteType       write_type;
+    //     std::any        write_loc = nullptr;
+    //     std::any        write_data;
+    //     uint64_t        write_paddr;
+    //     bool            write_cached = false;
+    // };
+    struct ICRF_latch {
+        Instruction     instruction;
+    };
+    struct RFEX_latch {
+        Instruction     instruction;
+        InstructionType instruction_type;
+        MemDataUnionDW  fetched_rt;
+        MemDataUnionDW  fetched_rs;
+    };
+    struct EXDC_latch {
+        WriteType       write_type;
+        AccessType      access_type;
+        std::any        data;
+        uint32_t        dest;
+        bool            cached;
+    };
+    struct DCWB_latch {
+        WriteType       write_type;
+        AccessType      access_type;
+        std::any        data;
+        uint32_t        dest;
+        bool            cached;
     };
     struct TranslatedAddress {
         uint32_t paddr;
@@ -83,8 +107,9 @@ namespace TKPEmu::N64::Devices {
         uint32_t  fetch_instruction_cached  (uint32_t paddr);
         uint8_t*  redirect_paddress (uint32_t paddr);
         std::vector<uint8_t> rom_;
-        std::array<uint8_t, 64> pif_ram_;
+        std::array<uint8_t, 64> pif_ram_ {};
         friend class CPU;
+        friend class TKPEmu::Applications::N64_RomDisassembly;
     };
     class CPU {
     public:
@@ -95,7 +120,11 @@ namespace TKPEmu::N64::Devices {
         using PipelineStageArgs = size_t;
         CPUBus cpubus_;
         std::array<std::queue<PipelineStage>, 5> pipeline_;
-        std::array<PipelineStorage, 5>           pipeline_storage_;
+        // std::array<PipelineStorage, 5>           pipeline_storage_;
+        ICRF_latch icrf_latch_;
+        RFEX_latch rfex_latch_;
+        EXDC_latch exdc_latch_;
+        DCWB_latch dcwb_latch_;
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
         // The current instruction
@@ -112,22 +141,6 @@ namespace TKPEmu::N64::Devices {
         uint64_t pc_, hi_, lo_;
         bool llbit_;
         float fcr0_, fcr31_;
-
-        void SPECIAL(), REGIMM(), J(), JAL(),
-            BEQ(), BNE(), BLEZ(), BGTZ(),
-            ADDI(), ADDIU(), SLTI(), SLTIU(),
-            ANDI(), ORI(), XORI(), LUI(),
-            CP0(), CP1(), CP2(), BEQL(), BNEL(),
-            BLEZL(), BGTZL(), DADDI(), DADDIU(),
-            LDL(), LDR(), LB(), LH(),
-            LWL(), LW(), LBU(), LHU(),
-            LWR(), LWU(), SB(), SH(),
-            SWL(), SW(), SDL(), SDR(),
-            SWR(), CACHE(), LL(), LLD() ,
-            LWC1(), LWC2(),
-            LDC1(), LDC2(), LD(), SC(), SWC1(),
-            SWC2(), SCD(), SDC1(), SDC2(), SD();
-        void BAD();
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 
@@ -193,11 +206,11 @@ namespace TKPEmu::N64::Devices {
          * 
          * @param cached whether to store in cache
          * @param type access type - see AccessType enum
-         * @param data data to store
+         * @param data data to store, std::any
          * @param paddr physical address
-         * @param vaddr virtual address (unneeded?)
          */
-        inline void store_memory(bool cached, AccessType type, uint64_t data, uint32_t paddr, uint64_t vaddr = 0);
+        inline void store_memory(bool cached, AccessType type, std::any data_any, uint32_t paddr);
+        void store_register();
 
         PipelineStageRet IC(PipelineStageArgs process_no);
         PipelineStageRet RF(PipelineStageArgs process_no);
@@ -205,12 +218,14 @@ namespace TKPEmu::N64::Devices {
         PipelineStageRet DC(PipelineStageArgs process_no);
         PipelineStageRet WB(PipelineStageArgs process_no);
 
-        inline bool execute_instruction(PipelineStage stage, size_t process_no);
-        inline void register_write(size_t process_no);
+        inline bool execute_stage(PipelineStage stage, size_t process_no);
+        /**
+         * Called during EX stage, handles the logic execution of each instruction
+         */
+        void execute_instruction();
         void update_pipeline();
 
         friend class TKPEmu::N64::N64;
-        // TKPEmu specific friends (applications)
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };
 }
