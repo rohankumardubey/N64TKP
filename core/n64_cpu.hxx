@@ -67,6 +67,8 @@ namespace TKPEmu::N64::Devices {
         AccessType      access_type;
         std::any        data;
         uint32_t        dest;
+        uint32_t        vaddr;
+        uint64_t*       dest_direct;
         bool            cached;
     };
     struct DCWB_latch {
@@ -114,14 +116,13 @@ namespace TKPEmu::N64::Devices {
         CPUBus cpubus_;
         std::array<std::queue<PipelineStage>, 5> pipeline_;
         std::array<uint32_t, 5>                  pipeline_cur_instr_ {};
-        ICRF_latch icrf_latch_ {};
-        RFEX_latch rfex_latch_ {};
-        EXDC_latch exdc_latch_ {};
-        DCWB_latch dcwb_latch_ {};
+        ICRF_latch icrf_latch_, icrf_next_ {};
+        RFEX_latch rfex_latch_, rfex_next_ {};
+        EXDC_latch exdc_latch_, exdc_next_ {};
+        DCWB_latch dcwb_latch_, dcwb_next_ {};
+        OperatingMode opmode_ = OperatingMode::Kernel;
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
-        // The current instruction
-        Instruction instr_;
         /// Registers
         // r0 is hardwired to 0, r31 is the link register
         std::array<MemDataUnionDW, 32> gpr_regs_;
@@ -186,8 +187,13 @@ namespace TKPEmu::N64::Devices {
          * and access type field of the address determine the data position in
          * a data word. The data is loaded to the cache if the cache is
          * enabled. 
+         * 
+         * @param cached whether to store in cache
+         * @param type access type - see AccessType enum
+         * @param data the result is stored here
+         * @param paddr physical address to read from
          */
-        inline uint64_t LoadMemory();
+        inline void load_memory(bool cached, AccessType type, std::any& data_any, uint32_t paddr);
         /**
          * Searches the cache, write buffer, and main memory to store the
          * contents of a specified data length to a specified physical address.
@@ -199,11 +205,11 @@ namespace TKPEmu::N64::Devices {
          * 
          * @param cached whether to store in cache
          * @param type access type - see AccessType enum
-         * @param data data to store, std::any
-         * @param paddr physical address
+         * @param data data to store
+         * @param paddr physical address to write to
          */
         inline void store_memory(bool cached, AccessType type, std::any data_any, uint32_t paddr);
-        void store_register();
+        void store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any data);
 
         PipelineStageRet IC(PipelineStageArgs process_no);
         PipelineStageRet RF(PipelineStageArgs process_no);

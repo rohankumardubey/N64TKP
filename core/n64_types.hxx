@@ -168,6 +168,7 @@ namespace TKPEmu::N64 {
         s_TGE, s_TGEU, s_TLT, s_TLTU, s_TEQ, s_TNE,
         s_DSLL, s_DSRL, s_DSRA, s_DSLL32, s_DSRL32, s_DSRA32,
 
+        NOP,
         ERROR
     };
     /**
@@ -183,11 +184,16 @@ namespace TKPEmu::N64 {
         QUINTIBYTE = 4,
         SEXTIBYTE  = 5,
         SEPTIBYTE  = 6,
-        DOUBLEWORD = 7
+        DOUBLEWORD = 7,
+
+        DOUBLEWORD_DIRECT = 8,
+        HALFWORD_UNSIGNED = 9,
     };
     enum class WriteType {
-        REGISTER,
-        MMU
+        REGISTER,     // for writing to register on EX
+        LATEREGISTER, // for writing to register on WB
+        MMU,          // for writing to mmu
+        NONE,         // don't write anything
     };
     constexpr static std::array<InstructionType, 64> InstructionTypeTable = {
         InstructionType::SPECIAL, InstructionType::REGIMM, InstructionType::J, InstructionType::JAL, InstructionType::BEQ, InstructionType::BNE, InstructionType::BLEZ, InstructionType::BGTZ,

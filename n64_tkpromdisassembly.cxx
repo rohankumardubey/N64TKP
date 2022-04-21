@@ -1,4 +1,5 @@
 #include "n64_tkpromdisassembly.hxx"
+#include "../include/emulator_disassembler.hxx"
 #include <sstream>
 
 namespace TKPEmu::Applications {
@@ -34,11 +35,12 @@ namespace TKPEmu::Applications {
                     case MemoryType::PIPELINE: {
                         static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
                         ImGui::Text("Stages");
-                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[0].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[0]);
-                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[1].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[1]);
-                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[2].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[2]);
-                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[3].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[3]);
-                        ImGui::Text(chars[(int)n64_ptr->GetCPU().pipeline_[4].front()].c_str()); ImGui::SameLine(); ImGui::Text("%08x", n64_ptr->GetCPU().pipeline_cur_instr_[4]);
+                        for (int i = 0; i < 5; i++) {
+                            std::string cur_stage = chars[static_cast<int>(n64_ptr->GetCPU().pipeline_[i].front())];
+                            auto cur_instr = n64_ptr->GetCPU().pipeline_cur_instr_[i];
+                            std::string dis_string = TKPEmu::GeneralDisassembler::GetDisassembledString(EmuType::N64, cur_instr);
+                            ImGui::Text("%s %08x %s", cur_stage.c_str(), cur_instr, dis_string.c_str());
+                        }
                         break;
                     }
                     case MemoryType::GPR_REGS: {

@@ -12,8 +12,12 @@ namespace TKPEmu::N64 {
         NotImplementedException(std::string arg) : std::logic_error{std::string("Not implemented exception. Message: ") + arg} {}
     };
     class InstructionAddressErrorException :  public std::runtime_error {
-        public:
+    public:
         InstructionAddressErrorException() : std::runtime_error{"InstructionAddressError exception"} {};
+    };
+    class ReservedInstructionException : public std::runtime_error {
+    public:
+        ReservedInstructionException() : std::runtime_error{"ReservedInstruction exception"} {};
     };
 }
 #endif
