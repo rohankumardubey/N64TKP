@@ -1,8 +1,6 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 
-constexpr uint32_t EMPTY_INSTRUCTION = 0xFFFFFFFF;
-
 namespace TKPEmu::N64::Devices {
     CPU::CPU() :
         gpr_regs_{},

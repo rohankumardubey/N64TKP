@@ -7,6 +7,7 @@
 #include <array>
 
 namespace TKPEmu::N64 {
+    constexpr uint32_t EMPTY_INSTRUCTION = 0xFFFFFFFF;
     // Note: manual here refers to vr4300 manual
     union TLBEntry32 {
         struct {

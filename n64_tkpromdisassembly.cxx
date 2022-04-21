@@ -53,7 +53,7 @@ namespace TKPEmu::Applications {
                             ImGui::PopStyleColor();
                             // Draw arguments
                             if (instr.IType.op != 0) {
-                                if (cur_instr != 0xFFFFFFFF) [[likely]] {
+                                if (cur_instr != N64::EMPTY_INSTRUCTION) [[likely]] {
                                     ImGui::SameLine(0, 0);
                                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
                                     ImGui::Text(" $r%02d", instr.IType.rt);
@@ -97,7 +97,7 @@ namespace TKPEmu::Applications {
                                     ImGui::TextUnformatted("                   ");
                                 }
                             }
-                            if (cur_instr != 0xFFFFFFFF) {
+                            if (cur_instr != N64::EMPTY_INSTRUCTION) {
                                 ImGui::SameLine(0, 0);
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
                                 ImGui::Text("  ; %08x", instr.Full);
