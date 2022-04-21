@@ -130,24 +130,24 @@ namespace TKPEmu::N64 {
         } FLOAT;
     };
     const static std::array<std::string, 64> OperationCodes = {
-        "SPECIAL", "REGIMM ", "J      ", "JAL    ", "BEQ    ", "BNE    ", "BLEZ   ", "BGTZ   ",
-        "ADDI   ", "ADDIU  ", "SLTI   ", "STLIU  ", "ANDI   ", "ORI    ", "XORI   ", "LUI    ",
-        "COP0   ", "COP1   ", "COP2   ", "23ERR  ", "BEQL   ", "BNEL   ", "BLEZL  ", "BGTZL  ",
-        "DADDI  ", "DADDIU ", "LDL    ", "LDR    ", "34ERR  ", "35ERR  ", "36ERR  ", "37ERR  ",
-        "LB     ", "LH     ", "LWL    ", "LW     ", "LBU    ", "LHU    ", "LWR    ", "LWU    ",
-        "SB     ", "SH     ", "SWL    ", "SW     ", "SDL    ", "SDR    ", "SWR    ", "CACHE  ",
-        "LL     ", "LWC1   ", "LWC2   ", "63ERR  ", "LLD    ", "LDC1   ", "LDC2   ", "LD     ",
-        "SC     ", "SWC1   ", "SWC2   ", "73ERR  ", "SCD    ", "SDC1   ", "SDC2   ", "SD     ",
+        "special", "regimm", "j", "jal", "beq", "bne", "blez", "bgtz",
+        "addi", "addiu", "slti", "stliu", "andi", "ori", "xori", "lui",
+        "cop0", "cop1", "cop2", "23err", "beql", "bnel", "blezl", "bgtzl",
+        "daddi", "daddiu", "ldl", "ldr", "34err", "35err", "36err", "37err",
+        "lb", "lh", "lwl", "lw", "lbu", "lhu", "lwr", "lwu",
+        "sb", "sh", "swl", "sw", "sdl", "sdr", "swr", "cache",
+        "ll", "lwc1", "lwc2", "63err", "lld", "ldc1", "ldc2", "ld",
+        "sc", "swc1", "swc2", "73err", "scd", "sdc1", "sdc2", "sd",
     };
     const static std::array<std::string, 64> SpecialCodes = {
-        "SLL    ", "S2ERR  ", "SRL    ", "SRA    ", "SLLV   ", "S5ERR  ", "SRLV   ", "SRAV   ",
-        "JR     ", "JALR   ", "S12ERR ", "S13ERR ", "SYSCALL", "BREAK  ", "S16ERR ", "SYNC   ",
-        "MFHI   ", "MTHI   ", "MFLO   ", "MTLO   ", "DSLLV  ", "S25ERR ", "DSRLV  ", "DSRAV  ",
-        "MULT   ", "MULTU  ", "DIV    ", "DIVU   ", "DMULT  ", "DMULTU ", "DDIV   ", "DDIVU  ",
-        "ADD    ", "ADDU   ", "SUB    ", "SUBU   ", "AND    ", "OR     ", "XOR    ", "NOR    ",
-        "S50ERR ", "S51ERR ", "SLT    ", "SLTU   ", "DADD   ", "DADDU  ", "DSUB   ", "DSUBU  ",
-        "TGE    ", "TGEU   ", "TLT    ", "TLTU   ", "TEQ    ", "S65ERR ", "TNE    ", "S67ERR ",
-        "DSLL   ", "S71ERR ", "DSRL   ", "DSRA   ", "DSLL32 ", "S75ERR ", "DSRL32 ", "DSRA32 ",
+        "sll", "s2err", "srl", "sra", "sllv", "s5err", "srlv", "srav",
+        "jr", "jalr", "s12err", "s13err", "syscall", "break", "s16err", "sync",
+        "mfhi", "mthi", "mflo", "mtlo", "dsllv", "s25err", "dsrlv", "dsrav",
+        "mult", "multu", "div", "divu", "dmult", "dmultu", "ddiv", "ddivu",
+        "add", "addu", "sub", "subu", "and", "or", "xor", "nor",
+        "s50err", "s51err", "slt", "sltu", "dadd", "daddu", "dsub", "dsubu",
+        "tge", "tgeu", "tlt", "tltu", "teq", "s65err", "tne", "s67err",
+        "dsll", "s71err", "dsrl", "dsra", "dsll32", "s75err", "dsrl32", "dsra32",
     };
     enum class InstructionType {
         SPECIAL, REGIMM, J, JAL, BEQ, BNE, BLEZ, BGTZ,

@@ -1,6 +1,8 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 
+constexpr uint32_t EMPTY_INSTRUCTION = 0xFFFFFFFF;
+
 namespace TKPEmu::N64::Devices {
     CPU::CPU() :
         gpr_regs_{},
@@ -12,30 +14,30 @@ namespace TKPEmu::N64::Devices {
     }
     void CPU::Reset() {
         pc_ = 0x80001000;
-        pipeline_.resize(1);
-        pipeline_[0] = PipelineStage::IC;
+        pipeline_.push_back(PipelineStage::IC);
+        pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
     }
 
-    bool CPU::execute_stage(PipelineStage stage, size_t process_no) {
+    bool CPU::execute_stage(PipelineStage stage) {
         switch(stage) {
             case PipelineStage::IC: {
-                IC(process_no);
+                IC();
                 return true;
             }
             case PipelineStage::RF: {
-                RF(process_no);
+                RF();
                 return true;
             }
             case PipelineStage::EX: {
-                EX(process_no);
+                EX();
                 return true;
             }
             case PipelineStage::DC: {
-                DC(process_no);
+                DC();
                 return true;
             }
             case PipelineStage::WB: {
-                WB(process_no);
+                WB();
                 return true;
             }
             default: {
@@ -44,14 +46,16 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
-    CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
+    CPU::PipelineStageRet CPU::IC(PipelineStageArgs) {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
+        // IC instructions are always at the back
+        pipeline_cur_instr_.back() = icrf_latch_.instruction.Full;
         pc_ += 4;
     }
 
-    CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
+    CPU::PipelineStageRet CPU::RF(PipelineStageArgs) {
         // Fetch the registers
         auto fetched_rs = gpr_regs_[icrf_latch_.instruction.RType.rs];
         auto fetched_rt = gpr_regs_[icrf_latch_.instruction.RType.rt];
@@ -79,11 +83,11 @@ namespace TKPEmu::N64::Devices {
         rfex_latch_.instruction_type = type;
     }
 
-    CPU::PipelineStageRet CPU::EX(PipelineStageArgs process_no) {
-        execute_instruction(process_no);
+    CPU::PipelineStageRet CPU::EX(PipelineStageArgs) {
+        execute_instruction();
     }
 
-    CPU::PipelineStageRet CPU::DC(PipelineStageArgs process_no) {
+    CPU::PipelineStageRet CPU::DC(PipelineStageArgs) {
         // unimplemented atm
         dcwb_latch_.data.reset();
         dcwb_latch_.access_type = exdc_latch_.access_type;
@@ -108,7 +112,7 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
-    CPU::PipelineStageRet CPU::WB(PipelineStageArgs process_no) {
+    CPU::PipelineStageRet CPU::WB(PipelineStageArgs) {
         if (dcwb_latch_.data.has_value()) {
             switch(dcwb_latch_.write_type) {
                 case WriteType::MMU: {
@@ -133,14 +137,15 @@ namespace TKPEmu::N64::Devices {
     void CPU::update_pipeline() {
         for (auto& process : pipeline_) {
             PipelineStage& ps = process;
-            execute_stage(ps, 0);
+            execute_stage(ps);
             ps = static_cast<PipelineStage>(static_cast<int>(ps) + 1);
         }
         if (pipeline_.front() == PipelineStage::NOP) {
             pipeline_.pop_front();
+            pipeline_cur_instr_.pop_front();
         }
         pipeline_.push_back(PipelineStage::IC);
-        //pipeline_cur_instr_.push_back({});
+        pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
     }
 
     uint32_t CPU::translate_kseg0(uint32_t vaddr) noexcept {

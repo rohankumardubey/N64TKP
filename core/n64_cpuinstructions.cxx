@@ -1,7 +1,7 @@
 #include "n64_cpu.hxx"
 
 namespace TKPEmu::N64::Devices {
-    void CPU::execute_instruction(PipelineStageArgs process_no) {
+    void CPU::execute_instruction() {
         EXDC_latch temp {};
         std::swap(exdc_latch_, temp);
         auto& cur_instr = rfex_latch_.instruction;

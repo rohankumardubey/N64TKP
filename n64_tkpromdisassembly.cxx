@@ -34,29 +34,81 @@ namespace TKPEmu::Applications {
             if (mem.DataPtr) {
                 switch(mem.Type) {
                     case MemoryType::PIPELINE: {
+                        auto& n64cpu = n64_ptr->GetCPU();
+                        ImGui::BeginChild("pipeline view", ImVec2(0, 300));
                         static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
-                        ImGui::Text("Stages");
-                        for (size_t i = 0; i < n64_ptr->GetCPU().pipeline_.size(); i++) {
-                            int cur_num = static_cast<int>(n64_ptr->GetCPU().pipeline_[i]);
+                        ImGui::Text("Stages:");
+                        for (size_t i = 0; i < n64cpu.pipeline_.size(); i++) {
+                            int cur_num = static_cast<int>(n64cpu.pipeline_[i]);
                             std::string cur_stage = chars[cur_num];
-                            // auto cur_instr = n64_ptr->GetCPU().pipeline_cur_instr_[i];
-                            // std::string dis_string = TKPEmu::GeneralDisassembler::GetDisassembledString(EmuType::N64, cur_instr);
-                            ImGui::Text("%s", cur_stage.c_str());//, cur_instr, dis_string.c_str());
+                            auto cur_instr = n64cpu.pipeline_cur_instr_[i];
+                            N64::Instruction instr; instr.Full = cur_instr;
+                            std::string dis_string = TKPEmu::GeneralDisassembler::GetOpcodeName(EmuType::N64, cur_instr);
+                            ImGui::Text("%s", cur_stage.c_str());
+                            ImGui::SameLine();
+                            std::stringstream ss;
+                            ss << std::setw(7) << std::setfill(' ') << dis_string;
+                            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(115, 120, 46, 255));
+                            ImGui::Text("%s", ss.str().c_str());
+                            ImGui::PopStyleColor();
+                            // Draw arguments
+                            if (instr.IType.op != 0) {
+                                if (cur_instr != 0xFFFFFFFF) [[likely]] {
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                    ImGui::Text(" $r%02d", instr.IType.rt);
+                                    ImGui::PopStyleColor();
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::TextUnformatted(", ");
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                    ImGui::PushItemWidth(20);
+                                    ImGui::Text("$r%02d", instr.IType.rs);
+                                    ImGui::PopItemWidth();
+                                    ImGui::PopStyleColor();
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::TextUnformatted(", ");
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                                    ImGui::Text("0x%04x", instr.IType.immediate);
+                                    ImGui::PopStyleColor();
+                                }
+                            } else {
+                                if (cur_instr != 0)[[likely]] {
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                    ImGui::Text(" $r%02d", instr.IType.rt);
+                                    ImGui::PopStyleColor();
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::TextUnformatted(", ");
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                    ImGui::Text("$r%02d", instr.IType.rs);
+                                    ImGui::PopStyleColor();
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::TextUnformatted(", ");
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                                    ImGui::Text("0x%02x  ", instr.RType.func);
+                                    ImGui::PopStyleColor();
+                                } else {
+                                    // NOP doesn't have arguments
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::TextUnformatted("                   ");
+                                }
+                            }
+                            if (cur_instr != 0xFFFFFFFF) {
+                                ImGui::SameLine(0, 0);
+                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
+                                ImGui::Text("  ; %08x", instr.Full);
+                                ImGui::PopStyleColor();
+                            }
                         }
-                        ImGui::Text("PC: %08x", static_cast<uint32_t>(n64_ptr->GetCPU().pc_));
+                        ImGui::EndChild();
+                        ImGui::BeginChild("pipeline rest", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
                         ImGui::Separator();
-                        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
-                        ImGui::Button("IC", ImVec2(40, 20));
-                        ImGui::SameLine();
-                        ImGui::Button("RF", ImVec2(40, 20));
-                        ImGui::SameLine();
-                        ImGui::Button("EX", ImVec2(40, 20));
-                        ImGui::SameLine();
-                        ImGui::Button("DC", ImVec2(40, 20));
-                        ImGui::SameLine();
-                        ImGui::Button("WB", ImVec2(40, 20));
-                        ImGui::Button("IC", ImVec2(40, 20));
-                        ImGui::PopItemFlag();
+                        ImGui::Text("PC: %08x", static_cast<uint32_t>(n64cpu.pc_));
+                        ImGui::EndChild();
                         break;
                     }
                     case MemoryType::GPR_REGS: {

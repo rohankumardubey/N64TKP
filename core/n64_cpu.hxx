@@ -111,7 +111,7 @@ namespace TKPEmu::N64::Devices {
         void Reset();
     private:
         using PipelineStageRet  = void;
-        using PipelineStageArgs = size_t;
+        using PipelineStageArgs = void;
         CPUBus cpubus_;
         std::deque<PipelineStage> pipeline_;
         std::deque<uint32_t> pipeline_cur_instr_ {};
@@ -211,17 +211,17 @@ namespace TKPEmu::N64::Devices {
         inline void store_memory(bool cached, AccessType type, std::any data_any, uint32_t paddr);
         void store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any data);
 
-        PipelineStageRet IC(PipelineStageArgs process_no);
-        PipelineStageRet RF(PipelineStageArgs process_no);
-        PipelineStageRet EX(PipelineStageArgs process_no);
-        PipelineStageRet DC(PipelineStageArgs process_no);
-        PipelineStageRet WB(PipelineStageArgs process_no);
+        PipelineStageRet IC(PipelineStageArgs);
+        PipelineStageRet RF(PipelineStageArgs);
+        PipelineStageRet EX(PipelineStageArgs);
+        PipelineStageRet DC(PipelineStageArgs);
+        PipelineStageRet WB(PipelineStageArgs);
 
-        inline bool execute_stage(PipelineStage stage, size_t process_no);
+        inline bool execute_stage(PipelineStage stage);
         /**
          * Called during EX stage, handles the logic execution of each instruction
          */
-        void execute_instruction(PipelineStageArgs process_no);
+        void execute_instruction();
         void update_pipeline();
 
         friend class TKPEmu::N64::N64;
