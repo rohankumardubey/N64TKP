@@ -188,6 +188,7 @@ namespace TKPEmu::N64 {
 
         DOUBLEWORD_DIRECT = 8,
         HALFWORD_UNSIGNED = 9,
+        NONE
     };
     enum class WriteType {
         REGISTER,     // for writing to register on EX

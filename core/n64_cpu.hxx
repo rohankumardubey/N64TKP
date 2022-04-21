@@ -63,8 +63,8 @@ namespace TKPEmu::N64::Devices {
         MemDataUnionDW  fetched_rs;
     };
     struct EXDC_latch {
-        WriteType       write_type;
-        AccessType      access_type;
+        WriteType       write_type = WriteType::NONE;
+        AccessType      access_type = AccessType::NONE;
         std::any        data;
         uint32_t        dest;
         uint32_t        vaddr;
@@ -72,11 +72,17 @@ namespace TKPEmu::N64::Devices {
         bool            cached;
     };
     struct DCWB_latch {
-        WriteType       write_type;
-        AccessType      access_type;
+        WriteType       write_type = WriteType::NONE;
+        AccessType      access_type = AccessType::NONE;
         std::any        data;
         uint32_t        dest;
         bool            cached;
+    };
+    struct Latch {
+        ICRF_latch icrf_latch_ {};
+        RFEX_latch rfex_latch_ {};
+        EXDC_latch exdc_latch_ {};
+        DCWB_latch dcwb_latch_ {};
     };
     struct TranslatedAddress {
         uint32_t paddr;
@@ -116,10 +122,8 @@ namespace TKPEmu::N64::Devices {
         CPUBus cpubus_;
         std::array<std::queue<PipelineStage>, 5> pipeline_;
         std::array<uint32_t, 5>                  pipeline_cur_instr_ {};
-        ICRF_latch icrf_latch_, icrf_next_ {};
-        RFEX_latch rfex_latch_, rfex_next_ {};
-        EXDC_latch exdc_latch_, exdc_next_ {};
-        DCWB_latch dcwb_latch_, dcwb_next_ {};
+        std::array<Latch, 5>                     pipeline_latches_ {};
+        
         OperatingMode opmode_ = OperatingMode::Kernel;
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])
         bool mode64_ = false;
@@ -221,7 +225,7 @@ namespace TKPEmu::N64::Devices {
         /**
          * Called during EX stage, handles the logic execution of each instruction
          */
-        void execute_instruction();
+        void execute_instruction(PipelineStageArgs process_no);
         void update_pipeline();
 
         friend class TKPEmu::N64::N64;

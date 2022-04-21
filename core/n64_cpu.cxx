@@ -1,5 +1,4 @@
 #include "n64_cpu.hxx"
-#include <iostream>
 #include <cstring> // memcpy
 
 namespace TKPEmu::N64::Devices {
@@ -63,26 +62,29 @@ namespace TKPEmu::N64::Devices {
     }
 
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
+        ICRF_latch& icrf_latch = pipeline_latches_[process_no].icrf_latch_;
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
-        icrf_next_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        pipeline_cur_instr_[process_no] = icrf_next_.instruction.Full;
+        icrf_latch.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
+        pipeline_cur_instr_[process_no] = icrf_latch.instruction.Full;
         pc_ += 4;
     }
 
     CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
+        ICRF_latch& icrf_latch = pipeline_latches_[process_no].icrf_latch_;
+        RFEX_latch& rfex_latch = pipeline_latches_[process_no].rfex_latch_;
         // Fetch the registers
-        auto fetched_rs = gpr_regs_[icrf_latch_.instruction.RType.rs];
-        auto fetched_rt = gpr_regs_[icrf_latch_.instruction.RType.rt];
+        auto fetched_rs = gpr_regs_[icrf_latch.instruction.RType.rs];
+        auto fetched_rt = gpr_regs_[icrf_latch.instruction.RType.rt];
         InstructionType type;
         // Get instruction from previous fetch
-        if (icrf_latch_.instruction.Full == 0) {
+        if (icrf_latch.instruction.Full == 0) {
             type = InstructionType::NOP;
         } else {
-            auto opcode = icrf_latch_.instruction.IType.op;
+            auto opcode = icrf_latch.instruction.IType.op;
             switch(opcode) {
                 case 0: {
-                    auto func = icrf_latch_.instruction.RType.func;
+                    auto func = icrf_latch.instruction.RType.func;
                     type = SpecialInstructionTypeTable[func];
                     break;
                 }
@@ -92,51 +94,54 @@ namespace TKPEmu::N64::Devices {
                 }
             }
         }
-        rfex_next_.fetched_rs.UD = fetched_rs.UD;
-        rfex_next_.fetched_rt.UD = fetched_rt.UD;
-        rfex_next_.instruction = icrf_latch_.instruction;
-        rfex_next_.instruction_type = type;
+        rfex_latch.fetched_rs.UD = fetched_rs.UD;
+        rfex_latch.fetched_rt.UD = fetched_rt.UD;
+        rfex_latch.instruction = icrf_latch.instruction;
+        rfex_latch.instruction_type = type;
     }
 
     CPU::PipelineStageRet CPU::EX(PipelineStageArgs process_no) {
-        execute_instruction();
+        execute_instruction(process_no);
     }
 
     CPU::PipelineStageRet CPU::DC(PipelineStageArgs process_no) {
+        EXDC_latch& exdc_latch = pipeline_latches_[process_no].exdc_latch_;
+        DCWB_latch& dcwb_latch = pipeline_latches_[process_no].dcwb_latch_;
         // unimplemented atm
-        dcwb_next_.data.reset();
-        dcwb_next_.access_type = exdc_latch_.access_type;
-        dcwb_next_.dest = exdc_latch_.dest;
-        dcwb_next_.write_type = exdc_latch_.write_type;
-        dcwb_next_.cached = exdc_latch_.cached;
-        switch (exdc_latch_.write_type) {
+        dcwb_latch.data.reset();
+        dcwb_latch.access_type = exdc_latch.access_type;
+        dcwb_latch.dest = exdc_latch.dest;
+        dcwb_latch.write_type = exdc_latch.write_type;
+        dcwb_latch.cached = exdc_latch.cached;
+        switch (exdc_latch.write_type) {
             case WriteType::LATEREGISTER: {
-                auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
+                auto paddr_s = translate_vaddr(exdc_latch.vaddr);
                 uint32_t paddr = paddr_s.paddr;
-                dcwb_next_.cached = paddr_s.cached;
-                load_memory(dcwb_next_.cached, dcwb_next_.access_type,
-                            dcwb_next_.data, paddr);
+                dcwb_latch.cached = paddr_s.cached;
+                load_memory(dcwb_latch.cached, dcwb_latch.access_type,
+                            dcwb_latch.data, paddr);
                 break;
             }
             default: {
                 break;
             }
         }
-        if (!dcwb_next_.data.has_value()) {
-            dcwb_next_.data = exdc_latch_.data;
+        if (!dcwb_latch.data.has_value()) {
+            dcwb_latch.data = exdc_latch.data;
         }
     }
 
     CPU::PipelineStageRet CPU::WB(PipelineStageArgs process_no) {
-        if (dcwb_latch_.data.has_value()) {
-            switch(dcwb_latch_.write_type) {
+        DCWB_latch& dcwb_latch = pipeline_latches_[process_no].dcwb_latch_;
+        if (dcwb_latch.data.has_value()) {
+            switch(dcwb_latch.write_type) {
                 case WriteType::MMU: {
-                    store_memory(dcwb_latch_.cached, dcwb_latch_.access_type,
-                            dcwb_latch_.data, dcwb_latch_.dest);
+                    store_memory(dcwb_latch.cached, dcwb_latch.access_type,
+                            dcwb_latch.data, dcwb_latch.dest);
                     break;
                 }
                 case WriteType::LATEREGISTER: {
-                    store_register(dcwb_latch_.access_type, dcwb_latch_.dest, nullptr, dcwb_latch_.data);
+                    store_register(dcwb_latch.access_type, dcwb_latch.dest, nullptr, dcwb_latch.data);
                     break;
                 }
                 case WriteType::REGISTER: {
@@ -156,10 +161,6 @@ namespace TKPEmu::N64::Devices {
             process.pop();
             execute_stage(ps, i);
         }
-        std::swap(icrf_latch_, icrf_next_);
-        std::swap(rfex_latch_, rfex_next_);
-        std::swap(exdc_latch_, exdc_next_);
-        std::swap(dcwb_latch_, dcwb_next_);
     }
 
     uint32_t CPU::translate_kseg0(uint32_t vaddr) noexcept {
@@ -303,26 +304,26 @@ namespace TKPEmu::N64::Devices {
             switch(type) {
                 case AccessType::DOUBLEWORD: {
                     uint64_t data = 0;
-                    std::memcpy(&data, &loc, 8);
+                    std::memcpy(&data, loc, 8);
                     data_any = __builtin_bswap64(data);
                     break;
                 }
                 case AccessType::WORD: {
                     uint32_t data = 0;
-                    std::memcpy(&data, &loc, 4);
+                    std::memcpy(&data, loc, 4);
                     data_any = __builtin_bswap32(data);
                     break;
                 }
                 case AccessType::HALFWORD: {
                     uint16_t data = 0;
                     int32_t sedata = static_cast<int16_t>(data);
-                    std::memcpy(&data, &loc, 2);
+                    std::memcpy(&data, loc, 2);
                     data_any = __builtin_bswap16(data);
                     break;
                 }
                 case AccessType::HALFWORD_UNSIGNED: {
                     uint16_t data = 0;
-                    std::memcpy(&data, &loc, 2);
+                    std::memcpy(&data, loc, 2);
                     data_any = __builtin_bswap16(data);
                     break;
                 }
