@@ -219,7 +219,6 @@ namespace TKPEmu::N64 {
     using Instruction = InstructionBase;
     using InstructionCacheLine = InstructionCacheLineBase;
     using GPRRegister = MemDataUnionDW;
-    using OptionalRegister = std::optional<std::reference_wrapper<GPRRegister>>;
     static_assert(std::endian::native == std::endian::little, "This emulator does not work on big endian systems!");
     static_assert(sizeof(InstructionCacheLine) == 32, "InstructionCacheLine should be 32 bytes!");
     static_assert(sizeof(Instruction) == sizeof(uint32_t), "N64 instruction should be 4 bytes!");

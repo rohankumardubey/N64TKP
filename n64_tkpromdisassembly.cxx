@@ -1,6 +1,7 @@
 #include "n64_tkpromdisassembly.hxx"
 #include "../include/emulator_disassembler.hxx"
 #include <sstream>
+#include <iostream>
 
 namespace TKPEmu::Applications {
     N64_RomDisassembly::N64_RomDisassembly(std::string menu_title, std::string window_title) 
@@ -36,7 +37,8 @@ namespace TKPEmu::Applications {
                         static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
                         ImGui::Text("Stages");
                         for (int i = 0; i < 5; i++) {
-                            std::string cur_stage = chars[static_cast<int>(n64_ptr->GetCPU().pipeline_[i].front())];
+                            int cur_num = static_cast<int>(n64_ptr->GetCPU().pipeline_[i].front());
+                            std::string cur_stage = chars[cur_num];
                             auto cur_instr = n64_ptr->GetCPU().pipeline_cur_instr_[i];
                             std::string dis_string = TKPEmu::GeneralDisassembler::GetDisassembledString(EmuType::N64, cur_instr);
                             ImGui::Text("%s %08x %s", cur_stage.c_str(), cur_instr, dis_string.c_str());
@@ -86,7 +88,9 @@ namespace TKPEmu::Applications {
             }
             ImGui::EndChild();
             if (ImGui::Button("update")) {
-                n64_ptr->update();
+                for (int i = 0; i < 1; i++) {
+                    n64_ptr->update();
+                }
             }
             ImGui::EndGroup();
         }

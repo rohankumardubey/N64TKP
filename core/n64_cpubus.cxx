@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iterator>
 #include <sstream>
+#include <iostream>
 #include "n64_cpu.hxx"
 
 namespace TKPEmu::N64::Devices {
@@ -45,9 +46,11 @@ namespace TKPEmu::N64::Devices {
                 return &pif_ram_[paddr - 0x1FC007C0u];
             }
         }
-        return &temp_addresses_[paddr & 0xFF];
+        temp_addresses_.fill(0);
         std::stringstream ss;
         ss << "Tried to access bad address: 0x" << std::hex << paddr << std::endl;
+        std::cout << ss.str() << std::endl;
+        return &temp_addresses_[paddr & 0xFF];
         throw NotImplementedException(ss.str().c_str());
     }
 
