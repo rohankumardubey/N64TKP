@@ -43,6 +43,7 @@ namespace TKPEmu::Applications {
                             std::string dis_string = TKPEmu::GeneralDisassembler::GetDisassembledString(EmuType::N64, cur_instr);
                             ImGui::Text("%s %08x %s", cur_stage.c_str(), cur_instr, dis_string.c_str());
                         }
+                        ImGui::Text("PC: %08x", n64_ptr->GetCPU().pc_);
                         break;
                     }
                     case MemoryType::GPR_REGS: {

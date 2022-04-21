@@ -6,9 +6,7 @@
 #include <array>
 #include <queue>
 #include <vector>
-#include <bit>
 #include <memory>
-#include <optional>
 #include <any>
 #include "n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
