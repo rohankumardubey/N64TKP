@@ -38,6 +38,7 @@ namespace TKPEmu::Applications {
                         ImGui::BeginChild("pipeline view", ImVec2(0, 300));
                         static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
                         ImGui::Text("Stages:");
+                        ImGui::Separator();
                         for (size_t i = 0; i < n64cpu.pipeline_.size(); i++) {
                             int cur_num = static_cast<int>(n64cpu.pipeline_[i]);
                             std::string cur_stage = chars[cur_num];
@@ -117,7 +118,7 @@ namespace TKPEmu::Applications {
                             ImGui::Text("r%02u:", i);
                             ImGui::SameLine();
                             if (data == 0) {
-                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180,180,180,255));
+                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
                             }
                             ImGui::Text("%08x", data);
                             if (data == 0) {
@@ -137,7 +138,7 @@ namespace TKPEmu::Applications {
                         for (uint32_t i = 0; i < mem.Size; ++i) {
                             auto data = *(static_cast<uint8_t*>(mem.DataPtr) + i);
                             if (data == 0) {
-                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(180,180,180,255));
+                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
                             }
                             ImGui::Text("%02x", data);
                             if (data == 0) {

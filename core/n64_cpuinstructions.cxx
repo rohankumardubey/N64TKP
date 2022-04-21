@@ -178,6 +178,38 @@ namespace TKPEmu::N64::Devices {
                 }
                 break;
             }
+            /**
+             * s_JALR
+             * 
+             * throws Address error exception
+             */
+            case InstructionType::s_JALR: {
+                auto jump_addr = rfex_latch_.fetched_rs.UD;
+                exdc_latch_.data = jump_addr;
+                exdc_latch_.dest_direct = &pc_;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::DOUBLEWORD_DIRECT;
+                //The default value of rd, if omitted in the assembly language instruction, is 31.
+                auto reg = (rfex_latch_.instruction.RType.rd == 0) ? 31 : rfex_latch_.instruction.RType.rd;
+                gpr_regs_[reg].UD = pc_ + 8;
+                #if SKIPEXCEPTIONS == 0
+                if ((jump_addr & 0b11) != 0) {
+                    // From manual:
+                    // Since instructions must be word-aligned, a Jump Register instruction must
+                    // specify a target register (rs) which contains an address whose low-order two bits
+                    // are zero. If these low-order two bits are not zero, an address exception will occur
+                    // when the jump target instruction is fetched.
+                    // TODO: when the jump target instruction is *fetched*. Does it matter that the exc is thrown here?
+                    throw InstructionAddressErrorException();
+                }
+                #endif
+                break;
+            }
+            /**
+             * s_JR
+             * 
+             * throws Address error exception
+             */
             case InstructionType::s_JR: {
                 auto jump_addr = rfex_latch_.fetched_rs.UD;
                 exdc_latch_.data = jump_addr;
