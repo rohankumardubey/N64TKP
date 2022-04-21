@@ -12,47 +12,30 @@ namespace TKPEmu::N64::Devices {
     }
     void CPU::Reset() {
         pc_ = 0x80001000;
-        // Initialize pipeline like this:
-        // 1. IC
-        // 2. NOP IC
-        // 3. NOP NOP IC
-        // 4. NOP NOP NOP IC
-        // 5. NOP NOP NOP NOP IC
-        for (int i = 0; i < 5; i++) {
-            std::queue<PipelineStage> empty;
-            std::swap(pipeline_[i], empty);
-            for (int j = 0; j < i; j++) {
-                pipeline_[i].push(PipelineStage::NOP);
-            }
-            pipeline_[i].push(PipelineStage::IC);
-        }
+        pipeline_.resize(1);
+        pipeline_[0] = PipelineStage::IC;
     }
 
     bool CPU::execute_stage(PipelineStage stage, size_t process_no) {
         switch(stage) {
             case PipelineStage::IC: {
                 IC(process_no);
-                pipeline_[process_no].push(PipelineStage::RF);
                 return true;
             }
             case PipelineStage::RF: {
                 RF(process_no);
-                pipeline_[process_no].push(PipelineStage::EX);
                 return true;
             }
             case PipelineStage::EX: {
                 EX(process_no);
-                pipeline_[process_no].push(PipelineStage::DC);
                 return true;
             }
             case PipelineStage::DC: {
                 DC(process_no);
-                pipeline_[process_no].push(PipelineStage::WB);
                 return true;
             }
             case PipelineStage::WB: {
                 WB(process_no);
-                pipeline_[process_no].push(PipelineStage::IC);
                 return true;
             }
             default: {
@@ -62,29 +45,25 @@ namespace TKPEmu::N64::Devices {
     }
 
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs process_no) {
-        ICRF_latch& icrf_latch = pipeline_latches_[process_no].icrf_latch_;
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
-        icrf_latch.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        pipeline_cur_instr_[process_no] = icrf_latch.instruction.Full;
+        icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
         pc_ += 4;
     }
 
     CPU::PipelineStageRet CPU::RF(PipelineStageArgs process_no) {
-        ICRF_latch& icrf_latch = pipeline_latches_[process_no].icrf_latch_;
-        RFEX_latch& rfex_latch = pipeline_latches_[process_no].rfex_latch_;
         // Fetch the registers
-        auto fetched_rs = gpr_regs_[icrf_latch.instruction.RType.rs];
-        auto fetched_rt = gpr_regs_[icrf_latch.instruction.RType.rt];
+        auto fetched_rs = gpr_regs_[icrf_latch_.instruction.RType.rs];
+        auto fetched_rt = gpr_regs_[icrf_latch_.instruction.RType.rt];
         InstructionType type;
         // Get instruction from previous fetch
-        if (icrf_latch.instruction.Full == 0) {
+        if (icrf_latch_.instruction.Full == 0) {
             type = InstructionType::NOP;
         } else {
-            auto opcode = icrf_latch.instruction.IType.op;
+            auto opcode = icrf_latch_.instruction.IType.op;
             switch(opcode) {
                 case 0: {
-                    auto func = icrf_latch.instruction.RType.func;
+                    auto func = icrf_latch_.instruction.RType.func;
                     type = SpecialInstructionTypeTable[func];
                     break;
                 }
@@ -94,10 +73,10 @@ namespace TKPEmu::N64::Devices {
                 }
             }
         }
-        rfex_latch.fetched_rs.UD = fetched_rs.UD;
-        rfex_latch.fetched_rt.UD = fetched_rt.UD;
-        rfex_latch.instruction = icrf_latch.instruction;
-        rfex_latch.instruction_type = type;
+        rfex_latch_.fetched_rs.UD = fetched_rs.UD;
+        rfex_latch_.fetched_rt.UD = fetched_rt.UD;
+        rfex_latch_.instruction = icrf_latch_.instruction;
+        rfex_latch_.instruction_type = type;
     }
 
     CPU::PipelineStageRet CPU::EX(PipelineStageArgs process_no) {
@@ -105,43 +84,40 @@ namespace TKPEmu::N64::Devices {
     }
 
     CPU::PipelineStageRet CPU::DC(PipelineStageArgs process_no) {
-        EXDC_latch& exdc_latch = pipeline_latches_[process_no].exdc_latch_;
-        DCWB_latch& dcwb_latch = pipeline_latches_[process_no].dcwb_latch_;
         // unimplemented atm
-        dcwb_latch.data.reset();
-        dcwb_latch.access_type = exdc_latch.access_type;
-        dcwb_latch.dest = exdc_latch.dest;
-        dcwb_latch.write_type = exdc_latch.write_type;
-        dcwb_latch.cached = exdc_latch.cached;
-        switch (exdc_latch.write_type) {
+        dcwb_latch_.data.reset();
+        dcwb_latch_.access_type = exdc_latch_.access_type;
+        dcwb_latch_.dest = exdc_latch_.dest;
+        dcwb_latch_.write_type = exdc_latch_.write_type;
+        dcwb_latch_.cached = exdc_latch_.cached;
+        switch (exdc_latch_.write_type) {
             case WriteType::LATEREGISTER: {
-                auto paddr_s = translate_vaddr(exdc_latch.vaddr);
+                auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
                 uint32_t paddr = paddr_s.paddr;
-                dcwb_latch.cached = paddr_s.cached;
-                load_memory(dcwb_latch.cached, dcwb_latch.access_type,
-                            dcwb_latch.data, paddr);
+                dcwb_latch_.cached = paddr_s.cached;
+                load_memory(dcwb_latch_.cached, dcwb_latch_.access_type,
+                            dcwb_latch_.data, paddr);
                 break;
             }
             default: {
                 break;
             }
         }
-        if (!dcwb_latch.data.has_value()) {
-            dcwb_latch.data = exdc_latch.data;
+        if (!dcwb_latch_.data.has_value()) {
+            dcwb_latch_.data = exdc_latch_.data;
         }
     }
 
     CPU::PipelineStageRet CPU::WB(PipelineStageArgs process_no) {
-        DCWB_latch& dcwb_latch = pipeline_latches_[process_no].dcwb_latch_;
-        if (dcwb_latch.data.has_value()) {
-            switch(dcwb_latch.write_type) {
+        if (dcwb_latch_.data.has_value()) {
+            switch(dcwb_latch_.write_type) {
                 case WriteType::MMU: {
-                    store_memory(dcwb_latch.cached, dcwb_latch.access_type,
-                            dcwb_latch.data, dcwb_latch.dest);
+                    store_memory(dcwb_latch_.cached, dcwb_latch_.access_type,
+                            dcwb_latch_.data, dcwb_latch_.dest);
                     break;
                 }
                 case WriteType::LATEREGISTER: {
-                    store_register(dcwb_latch.access_type, dcwb_latch.dest, nullptr, dcwb_latch.data);
+                    store_register(dcwb_latch_.access_type, dcwb_latch_.dest, nullptr, dcwb_latch_.data);
                     break;
                 }
                 case WriteType::REGISTER: {
@@ -155,12 +131,16 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::update_pipeline() {
-        for (size_t i = 0; i < 5; i++) {
-            auto& process = pipeline_[i];
-            PipelineStage ps = process.front();
-            process.pop();
-            execute_stage(ps, i);
+        for (auto& process : pipeline_) {
+            PipelineStage& ps = process;
+            execute_stage(ps, 0);
+            ps = static_cast<PipelineStage>(static_cast<int>(ps) + 1);
         }
+        if (pipeline_.front() == PipelineStage::NOP) {
+            pipeline_.pop_front();
+        }
+        pipeline_.push_back(PipelineStage::IC);
+        //pipeline_cur_instr_.push_back({});
     }
 
     uint32_t CPU::translate_kseg0(uint32_t vaddr) noexcept {

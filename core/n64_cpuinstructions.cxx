@@ -2,12 +2,10 @@
 
 namespace TKPEmu::N64::Devices {
     void CPU::execute_instruction(PipelineStageArgs process_no) {
-        RFEX_latch& rfex_latch = pipeline_latches_[process_no].rfex_latch_;
         EXDC_latch temp {};
-        std::swap(pipeline_latches_[process_no].exdc_latch_, temp);
-        EXDC_latch& exdc_latch = pipeline_latches_[process_no].exdc_latch_;
-        auto& cur_instr = rfex_latch.instruction;
-        switch(rfex_latch.instruction_type) {
+        std::swap(exdc_latch_, temp);
+        auto& cur_instr = rfex_latch_.instruction;
+        switch(rfex_latch_.instruction_type) {
             /**
              * LUI
              * 
@@ -17,10 +15,10 @@ namespace TKPEmu::N64::Devices {
                 int32_t imm = cur_instr.IType.immediate << 16;
                 // Sign extend the immediate
                 uint64_t seimm = static_cast<int64_t>(imm);
-                exdc_latch.dest = cur_instr.IType.rt;
-                exdc_latch.data = seimm;
-                exdc_latch.write_type = WriteType::REGISTER;
-                exdc_latch.access_type = AccessType::DOUBLEWORD;
+                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.data = seimm;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::DOUBLEWORD;
                 break;
             }
             /**
@@ -29,10 +27,10 @@ namespace TKPEmu::N64::Devices {
              * doesn't throw
              */
             case InstructionType::ORI: {
-                exdc_latch.dest = cur_instr.IType.rt;
-                exdc_latch.data = rfex_latch.fetched_rs.UD | cur_instr.IType.immediate;
-                exdc_latch.write_type = WriteType::REGISTER;
-                exdc_latch.access_type = AccessType::DOUBLEWORD;
+                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.data = rfex_latch_.fetched_rs.UD | cur_instr.IType.immediate;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::DOUBLEWORD;
                 break;
             }
             /**
@@ -56,15 +54,15 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::SW: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                auto write_vaddr = seoffset + rfex_latch.fetched_rs.UW._0;
+                auto write_vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 auto paddr_s = translate_vaddr(write_vaddr);
-                exdc_latch.dest = paddr_s.paddr;
-                exdc_latch.cached = paddr_s.cached;
-                exdc_latch.data = rfex_latch.fetched_rt.UW._0;
-                exdc_latch.write_type = WriteType::MMU;
-                exdc_latch.access_type = AccessType::WORD;
+                exdc_latch_.dest = paddr_s.paddr;
+                exdc_latch_.cached = paddr_s.cached;
+                exdc_latch_.data = rfex_latch_.fetched_rt.UW._0;
+                exdc_latch_.write_type = WriteType::MMU;
+                exdc_latch_.access_type = AccessType::WORD;
                 #if SKIPEXCEPTIONS == 0
-                if ((exdc_latch.dest & 0b11) != 0) {
+                if ((exdc_latch_.dest & 0b11) != 0) {
                     // From manual:
                     // If either of the loworder two bits of the address are not zero, an address error exception occurs.
                     throw InstructionAddressErrorException();
@@ -83,12 +81,12 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::LD: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                exdc_latch.dest = cur_instr.IType.rt;
-                exdc_latch.vaddr = seoffset + rfex_latch.fetched_rs.UW._0;
-                exdc_latch.write_type = WriteType::LATEREGISTER;
-                exdc_latch.access_type = AccessType::DOUBLEWORD;
+                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+                exdc_latch_.write_type = WriteType::LATEREGISTER;
+                exdc_latch_.access_type = AccessType::DOUBLEWORD;
                 #if SKIPEXCEPTIONS == 0
-                if ((exdc_latch.vaddr & 0b111) != 0) { 
+                if ((exdc_latch_.vaddr & 0b111) != 0) { 
                     // From manual:
                     // If either of the loworder two bits of the address are not zero, an address error exception occurs.
                     throw InstructionAddressErrorException();
@@ -114,12 +112,12 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::LHU: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                exdc_latch.dest = cur_instr.IType.rt;
-                exdc_latch.vaddr = seoffset + rfex_latch.fetched_rs.UW._0;
-                exdc_latch.write_type = WriteType::LATEREGISTER;
-                exdc_latch.access_type = AccessType::HALFWORD_UNSIGNED;
+                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+                exdc_latch_.write_type = WriteType::LATEREGISTER;
+                exdc_latch_.access_type = AccessType::HALFWORD_UNSIGNED;
                 #if SKIPEXCEPTIONS == 0
-                if ((exdc_latch.vaddr & 0b1) != 0) {
+                if ((exdc_latch_.vaddr & 0b1) != 0) {
                     // From manual:
                     // If the least-significant bit of the address is not zero, an address error exception occurs.
                     throw InstructionAddressErrorException();
@@ -138,12 +136,12 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::LW: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                exdc_latch.dest = cur_instr.IType.rt;
-                exdc_latch.vaddr = seoffset + rfex_latch.fetched_rs.UW._0;
-                exdc_latch.write_type = WriteType::LATEREGISTER;
-                exdc_latch.access_type = AccessType::WORD;
+                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+                exdc_latch_.write_type = WriteType::LATEREGISTER;
+                exdc_latch_.access_type = AccessType::WORD;
                 #if SKIPEXCEPTIONS == 0
-                if ((exdc_latch.vaddr & 0b11) != 0) {
+                if ((exdc_latch_.vaddr & 0b11) != 0) {
                     // From manual:
                     // If either of the loworder two bits of the address are not zero, an address error exception occurs.
                     throw InstructionAddressErrorException();
@@ -157,10 +155,10 @@ namespace TKPEmu::N64::Devices {
              * doesn't throw
              */
             case InstructionType::ANDI: {
-                exdc_latch.dest = cur_instr.IType.rt;
-                exdc_latch.data = rfex_latch.fetched_rs.UD & cur_instr.IType.immediate;
-                exdc_latch.write_type = WriteType::REGISTER;
-                exdc_latch.access_type = AccessType::DOUBLEWORD;
+                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.data = rfex_latch_.fetched_rs.UD & cur_instr.IType.immediate;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::DOUBLEWORD;
                 break;
             }
             /**
@@ -172,20 +170,20 @@ namespace TKPEmu::N64::Devices {
                 // Shifts immediate left by 2 and sign extends
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
-                if (rfex_latch.fetched_rs.UD != rfex_latch.fetched_rt.UD) {
-                    exdc_latch.data = pc_ + seoffset;
-                    exdc_latch.dest_direct = &pc_;
-                    exdc_latch.write_type = WriteType::REGISTER;
-                    exdc_latch.access_type = AccessType::DOUBLEWORD_DIRECT;
+                if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
+                    exdc_latch_.data = pc_ + seoffset;
+                    exdc_latch_.dest_direct = &pc_;
+                    exdc_latch_.write_type = WriteType::REGISTER;
+                    exdc_latch_.access_type = AccessType::DOUBLEWORD_DIRECT;
                 }
                 break;
             }
             case InstructionType::s_JR: {
-                auto jump_addr = rfex_latch.fetched_rs.UD;
-                exdc_latch.data = jump_addr;
-                exdc_latch.dest_direct = &pc_;
-                exdc_latch.write_type = WriteType::REGISTER;
-                exdc_latch.access_type = AccessType::DOUBLEWORD_DIRECT;
+                auto jump_addr = rfex_latch_.fetched_rs.UD;
+                exdc_latch_.data = jump_addr;
+                exdc_latch_.dest_direct = &pc_;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::DOUBLEWORD_DIRECT;
                 #if SKIPEXCEPTIONS == 0
                 if ((jump_addr & 0b11) != 0) {
                     // From manual:
@@ -211,14 +209,14 @@ namespace TKPEmu::N64::Devices {
                 throw InstructionNotImplementedException(OperationCodes[cur_instr.IType.op]);
             }
         }
-        if (exdc_latch.write_type == WriteType::REGISTER) {
+        if (exdc_latch_.write_type == WriteType::REGISTER) {
             // Bypassing (from manual)
             // result is stored during EX instead of waiting for WB when it comes
             // to writing to a register
             // for instructions like ADD that don't need DC stage to write back
-            store_register(exdc_latch.access_type, exdc_latch.dest, exdc_latch.dest_direct, exdc_latch.data);
-            exdc_latch.data.reset();
-            exdc_latch.write_type = WriteType::NONE;
+            store_register(exdc_latch_.access_type, exdc_latch_.dest, exdc_latch_.dest_direct, exdc_latch_.data);
+            exdc_latch_.data.reset();
+            exdc_latch_.write_type = WriteType::NONE;
         }
     }
 }

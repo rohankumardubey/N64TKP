@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <any>
+#include <deque>
 #include "n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
 
@@ -76,12 +77,6 @@ namespace TKPEmu::N64::Devices {
         uint32_t        dest;
         bool            cached;
     };
-    struct Latch {
-        ICRF_latch icrf_latch_ {};
-        RFEX_latch rfex_latch_ {};
-        EXDC_latch exdc_latch_ {};
-        DCWB_latch dcwb_latch_ {};
-    };
     struct TranslatedAddress {
         uint32_t paddr;
         bool cached;
@@ -118,9 +113,12 @@ namespace TKPEmu::N64::Devices {
         using PipelineStageRet  = void;
         using PipelineStageArgs = size_t;
         CPUBus cpubus_;
-        std::array<std::queue<PipelineStage>, 5> pipeline_;
-        std::array<uint32_t, 5>                  pipeline_cur_instr_ {};
-        std::array<Latch, 5>                     pipeline_latches_ {};
+        std::deque<PipelineStage> pipeline_;
+        std::deque<uint32_t> pipeline_cur_instr_ {};
+        ICRF_latch icrf_latch_ {};
+        RFEX_latch rfex_latch_ {};
+        EXDC_latch exdc_latch_ {};
+        DCWB_latch dcwb_latch_ {};
         
         OperatingMode opmode_ = OperatingMode::Kernel;
         // To be used with OpcodeMasks (OpcodeMasks[mode64_])

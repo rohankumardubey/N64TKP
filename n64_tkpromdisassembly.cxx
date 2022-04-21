@@ -36,14 +36,27 @@ namespace TKPEmu::Applications {
                     case MemoryType::PIPELINE: {
                         static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
                         ImGui::Text("Stages");
-                        for (int i = 0; i < 5; i++) {
-                            int cur_num = static_cast<int>(n64_ptr->GetCPU().pipeline_[i].front());
+                        for (size_t i = 0; i < n64_ptr->GetCPU().pipeline_.size(); i++) {
+                            int cur_num = static_cast<int>(n64_ptr->GetCPU().pipeline_[i]);
                             std::string cur_stage = chars[cur_num];
-                            auto cur_instr = n64_ptr->GetCPU().pipeline_cur_instr_[i];
-                            std::string dis_string = TKPEmu::GeneralDisassembler::GetDisassembledString(EmuType::N64, cur_instr);
-                            ImGui::Text("%s %08x %s", cur_stage.c_str(), cur_instr, dis_string.c_str());
+                            // auto cur_instr = n64_ptr->GetCPU().pipeline_cur_instr_[i];
+                            // std::string dis_string = TKPEmu::GeneralDisassembler::GetDisassembledString(EmuType::N64, cur_instr);
+                            ImGui::Text("%s", cur_stage.c_str());//, cur_instr, dis_string.c_str());
                         }
-                        ImGui::Text("PC: %08x", n64_ptr->GetCPU().pc_);
+                        ImGui::Text("PC: %08x", static_cast<uint32_t>(n64_ptr->GetCPU().pc_));
+                        ImGui::Separator();
+                        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+                        ImGui::Button("IC", ImVec2(40, 20));
+                        ImGui::SameLine();
+                        ImGui::Button("RF", ImVec2(40, 20));
+                        ImGui::SameLine();
+                        ImGui::Button("EX", ImVec2(40, 20));
+                        ImGui::SameLine();
+                        ImGui::Button("DC", ImVec2(40, 20));
+                        ImGui::SameLine();
+                        ImGui::Button("WB", ImVec2(40, 20));
+                        ImGui::Button("IC", ImVec2(40, 20));
+                        ImGui::PopItemFlag();
                         break;
                     }
                     case MemoryType::GPR_REGS: {
