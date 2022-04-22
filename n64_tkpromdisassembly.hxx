@@ -3,7 +3,7 @@
 #define TKP_N64_TKPROMDIS_H
 #include "../include/base_application.h"
 #include "n64_tkpwrapper.hxx"
-#include "core/n64_types.hxx"
+#include "core/common/n64_types.hxx"
 
 namespace TKPEmu::Applications {
     enum class MemoryType {

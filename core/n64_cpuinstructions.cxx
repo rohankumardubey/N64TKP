@@ -7,18 +7,45 @@ namespace TKPEmu::N64::Devices {
         auto& cur_instr = rfex_latch_.instruction;
         switch(rfex_latch_.instruction_type) {
             /**
+             * ADDIU
+             * 
+             * doesn't throw
+             */
+            case InstructionType::ADDIU: {
+                int32_t imm = cur_instr.IType.immediate << 16;
+                uint64_t seimm = static_cast<int64_t>(imm);
+                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.data = rfex_latch_.fetched_rs.UD + seimm;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
+             * J
+             * 
+             * doesn't throw
+             */
+            case InstructionType::J: {
+                auto jump_addr = cur_instr.JType.target;
+                // combine first 3 bits of pc and jump_addr shifted left by 2
+                exdc_latch_.data = (pc_ & 0xE000'0000) | (jump_addr << 2);
+                exdc_latch_.dest_direct = &pc_;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+                break;
+            }
+            /**
              * LUI
              * 
              * doesn't throw
              */
             case InstructionType::LUI: {
                 int32_t imm = cur_instr.IType.immediate << 16;
-                // Sign extend the immediate
                 uint64_t seimm = static_cast<int64_t>(imm);
                 exdc_latch_.dest = cur_instr.IType.rt;
                 exdc_latch_.data = seimm;
                 exdc_latch_.write_type = WriteType::REGISTER;
-                exdc_latch_.access_type = AccessType::DOUBLEWORD;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
             }
             /**
@@ -30,16 +57,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.dest = cur_instr.IType.rt;
                 exdc_latch_.data = rfex_latch_.fetched_rs.UD | cur_instr.IType.immediate;
                 exdc_latch_.write_type = WriteType::REGISTER;
-                exdc_latch_.access_type = AccessType::DOUBLEWORD;
-                break;
-            }
-            /**
-             * s_ADD
-             * 
-             * throws IntegerOverflowException
-             */
-            case InstructionType::s_ADD: {
-                
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
             }
             /**
@@ -60,7 +78,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.cached = paddr_s.cached;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UW._0;
                 exdc_latch_.write_type = WriteType::MMU;
-                exdc_latch_.access_type = AccessType::WORD;
+                exdc_latch_.access_type = AccessType::UWORD;
                 #if SKIPEXCEPTIONS == 0
                 if ((exdc_latch_.dest & 0b11) != 0) {
                     // From manual:
@@ -84,7 +102,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.dest = cur_instr.IType.rt;
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
-                exdc_latch_.access_type = AccessType::DOUBLEWORD;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 #if SKIPEXCEPTIONS == 0
                 if ((exdc_latch_.vaddr & 0b111) != 0) { 
                     // From manual:
@@ -115,7 +133,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.dest = cur_instr.IType.rt;
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
-                exdc_latch_.access_type = AccessType::HALFWORD_UNSIGNED;
+                exdc_latch_.access_type = AccessType::UHALFWORD;
                 #if SKIPEXCEPTIONS == 0
                 if ((exdc_latch_.vaddr & 0b1) != 0) {
                     // From manual:
@@ -139,7 +157,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.dest = cur_instr.IType.rt;
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
-                exdc_latch_.access_type = AccessType::WORD;
+                exdc_latch_.access_type = AccessType::UWORD;
                 #if SKIPEXCEPTIONS == 0
                 if ((exdc_latch_.vaddr & 0b11) != 0) {
                     // From manual:
@@ -158,7 +176,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.dest = cur_instr.IType.rt;
                 exdc_latch_.data = rfex_latch_.fetched_rs.UD & cur_instr.IType.immediate;
                 exdc_latch_.write_type = WriteType::REGISTER;
-                exdc_latch_.access_type = AccessType::DOUBLEWORD;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
             }
             /**
@@ -167,15 +185,33 @@ namespace TKPEmu::N64::Devices {
              * doesn't throw
              */
             case InstructionType::BNE: {
-                // Shifts immediate left by 2 and sign extends
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
                 if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
                     exdc_latch_.data = pc_ + seoffset;
                     exdc_latch_.dest_direct = &pc_;
                     exdc_latch_.write_type = WriteType::REGISTER;
-                    exdc_latch_.access_type = AccessType::DOUBLEWORD_DIRECT;
+                    exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 }
+                break;
+            }
+            /**
+             * s_ADD
+             * 
+             * throws IntegerOverflowException
+             */
+            case InstructionType::s_ADD: {
+                int32_t result = 0;
+                bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rt.W._0, rfex_latch_.fetched_rs.W._0, &result);
+                exdc_latch_.dest = cur_instr.RType.rd;
+                exdc_latch_.data = result;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::WORD;
+                #if SKIPEXCEPTIONS == 0
+                if (overflow) {
+                    throw IntegerOverflowException();
+                }
+                #endif
                 break;
             }
             /**
@@ -188,7 +224,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.data = jump_addr;
                 exdc_latch_.dest_direct = &pc_;
                 exdc_latch_.write_type = WriteType::REGISTER;
-                exdc_latch_.access_type = AccessType::DOUBLEWORD_DIRECT;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 //The default value of rd, if omitted in the assembly language instruction, is 31.
                 auto reg = (rfex_latch_.instruction.RType.rd == 0) ? 31 : rfex_latch_.instruction.RType.rd;
                 gpr_regs_[reg].UD = pc_ + 8;
@@ -215,7 +251,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.data = jump_addr;
                 exdc_latch_.dest_direct = &pc_;
                 exdc_latch_.write_type = WriteType::REGISTER;
-                exdc_latch_.access_type = AccessType::DOUBLEWORD_DIRECT;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 #if SKIPEXCEPTIONS == 0
                 if ((jump_addr & 0b11) != 0) {
                     // From manual:
@@ -227,6 +263,18 @@ namespace TKPEmu::N64::Devices {
                     throw InstructionAddressErrorException();
                 }
                 #endif
+                break;
+            }
+            /**
+             * s_SLL
+             * 
+             * doesn't throw
+             */
+            case InstructionType::s_SLL: {
+                exdc_latch_.dest = cur_instr.RType.rd;
+                exdc_latch_.data = rfex_latch_.fetched_rt.UD << cur_instr.RType.sa;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
             }
             /**

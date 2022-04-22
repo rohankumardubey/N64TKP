@@ -9,7 +9,7 @@
 #include <memory>
 #include <any>
 #include <deque>
-#include "n64_types.hxx"
+#include "common/n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
 
 // TODO: Move these to cmake
@@ -67,7 +67,7 @@ namespace TKPEmu::N64::Devices {
         std::any        data;
         uint32_t        dest;
         uint32_t        vaddr;
-        uint64_t*       dest_direct;
+        uint64_t*       dest_direct = nullptr;
         bool            cached;
     };
     struct DCWB_latch {

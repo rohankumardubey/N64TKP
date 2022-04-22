@@ -19,5 +19,9 @@ namespace TKPEmu::N64 {
     public:
         ReservedInstructionException() : std::runtime_error{"ReservedInstruction exception"} {};
     };
+    class IntegerOverflowException : public std::runtime_error {
+    public:
+        IntegerOverflowException() : std::runtime_error{"IntegerOverflow exception"} {};
+    };
 }
 #endif

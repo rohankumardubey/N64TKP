@@ -1,5 +1,6 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
+#include <cassert> // assert
 
 namespace TKPEmu::N64::Devices {
     CPU::CPU() :
@@ -198,32 +199,44 @@ namespace TKPEmu::N64::Devices {
 
     void CPU::store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any data) {
         switch(access_type) {
-            case AccessType::BYTE: {
+            case AccessType::UBYTE: {
+                assert((typeid(uint8_t) == data.type()) && "Assertion failed - bad any cast: expected uint8_t");
                 gpr_regs_[dest].UB._0
                     = std::any_cast<uint8_t>(data);
                 break;
             }
-            case AccessType::HALFWORD: {
-                int64_t temp = static_cast<int16_t>(std::any_cast<uint16_t>(data));
-                gpr_regs_[dest].UD = temp;
-                break;
-            }
-            case AccessType::HALFWORD_UNSIGNED: {
+            case AccessType::UHALFWORD: {
+                assert((typeid(uint16_t) == data.type()) && "Assertion failed - bad any cast: expected uint16_t");
                 uint64_t temp = std::any_cast<uint16_t>(data);
                 gpr_regs_[dest].UD = temp;
                 break;
             }
-            case AccessType::WORD: {
+            case AccessType::HALFWORD: {
+                assert((typeid(int16_t) == data.type()) && "Assertion failed - bad any cast: expected int16_t");
+                int64_t temp = static_cast<int16_t>(std::any_cast<uint16_t>(data));
+                gpr_regs_[dest].UD = temp;
+                break;
+            }
+            case AccessType::UWORD: {
+                assert((typeid(uint32_t) == data.type()) && "Assertion failed - bad any cast: expected uint32_t");
                 gpr_regs_[dest].UW._0
                     = std::any_cast<uint32_t>(data);
                 break;
             }
-            case AccessType::DOUBLEWORD: {
+            case AccessType::WORD: {
+                assert((typeid(int32_t) == data.type()) && "Assertion failed - bad any cast: expected int32_t");
+                gpr_regs_[dest].W._0
+                    = std::any_cast<int32_t>(data);
+                break;
+            }
+            case AccessType::UDOUBLEWORD: {
+                assert((typeid(uint64_t) == data.type()) && "Assertion failed - bad any cast: expected uint64_t");
                 gpr_regs_[dest].UD
                     = std::any_cast<uint64_t>(data);
                 break;
             }
-            case AccessType::DOUBLEWORD_DIRECT: {
+            case AccessType::UDOUBLEWORD_DIRECT: {
+                assert((typeid(uint64_t) == data.type()) && "Assertion failed - bad any cast: expected uint64_t direct");
                 if (dest_direct) {
                     *dest_direct = std::any_cast<uint64_t>(data);
                 } else {
@@ -241,7 +254,30 @@ namespace TKPEmu::N64::Devices {
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
             switch(type) {
-                case AccessType::DOUBLEWORD: {
+                case AccessType::UBYTE: {
+                    assert((typeid(uint8_t) == data.type()) && "Assertion failed - bad any cast: expected uint8_t");
+                    auto data = std::any_cast<uint8_t>(data_any);
+                    *(loc) = data & 0xFF;
+                    break;
+                }
+                case AccessType::UHALFWORD: {
+                    assert((typeid(uint16_t) == data.type()) && "Assertion failed - bad any cast: expected uint16_t");
+                    auto data = std::any_cast<uint16_t>(data_any);
+                    *(loc++) = (data >> 8) & 0xFF;
+                    *(loc)   = data & 0xFF;
+                    break;
+                }
+                case AccessType::UWORD: {
+                    assert((typeid(uint32_t) == data.type()) && "Assertion failed - bad any cast: expected uint32_t");
+                    auto data = std::any_cast<uint32_t>(data_any);
+                    *(loc++) = (data >> 24) & 0xFF;
+                    *(loc++) = (data >> 16) & 0xFF;
+                    *(loc++) = (data >> 8)  & 0xFF;
+                    *(loc)   = data & 0xFF;
+                    break;
+                }
+                case AccessType::UDOUBLEWORD: {
+                    assert((typeid(uint64_t) == data.type()) && "Assertion failed - bad any cast: expected uint64_t");
                     auto data = std::any_cast<uint64_t>(data_any);
                     *(loc++) = (data >> 56) & 0xFF;
                     *(loc++) = (data >> 48) & 0xFF;
@@ -251,25 +287,6 @@ namespace TKPEmu::N64::Devices {
                     *(loc++) = (data >> 16) & 0xFF;
                     *(loc++) = (data >> 8)  & 0xFF;
                     *(loc)   = data & 0xFF;
-                    break;
-                }
-                case AccessType::WORD: {
-                    auto data = std::any_cast<uint32_t>(data_any);
-                    *(loc++) = (data >> 24) & 0xFF;
-                    *(loc++) = (data >> 16) & 0xFF;
-                    *(loc++) = (data >> 8)  & 0xFF;
-                    *(loc)   = data & 0xFF;
-                    break;
-                }
-                case AccessType::HALFWORD: {
-                    auto data = std::any_cast<uint16_t>(data_any);
-                    *(loc++) = (data >> 8) & 0xFF;
-                    *(loc)   = data & 0xFF;
-                    break;
-                }
-                case AccessType::BYTE: {
-                    auto data = std::any_cast<uint8_t>(data_any);
-                    *(loc) = data & 0xFF;
                     break;
                 }
                 default: {
@@ -285,32 +302,32 @@ namespace TKPEmu::N64::Devices {
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
             switch(type) {
-                case AccessType::DOUBLEWORD: {
+                case AccessType::UDOUBLEWORD: {
                     uint64_t data = 0;
                     std::memcpy(&data, loc, 8);
                     data_any = __builtin_bswap64(data);
                     break;
                 }
-                case AccessType::WORD: {
+                case AccessType::UWORD: {
                     uint32_t data = 0;
                     std::memcpy(&data, loc, 4);
                     data_any = __builtin_bswap32(data);
                     break;
                 }
-                case AccessType::HALFWORD: {
+                case AccessType::UHALFWORD: {
                     uint16_t data = 0;
                     int32_t sedata = static_cast<int16_t>(data);
                     std::memcpy(&data, loc, 2);
                     data_any = __builtin_bswap16(data);
                     break;
                 }
-                case AccessType::HALFWORD_UNSIGNED: {
+                case AccessType::HALFWORD: {
                     uint16_t data = 0;
                     std::memcpy(&data, loc, 2);
                     data_any = __builtin_bswap16(data);
                     break;
                 }
-                case AccessType::BYTE: {
+                case AccessType::UBYTE: {
                     uint8_t data = 0;
                     data = *(loc);
                     data_any = data;

@@ -1,6 +1,6 @@
 #pragma once
-#ifndef TKP_N64_TYPES_H
-#define TKP_N64_TYPES_H
+#ifndef TKP_N64_COMMON_TYPES_H
+#define TKP_N64_COMMON_TYPES_H
 #include <cstdint>
 #include <limits>
 #include <immintrin.h>
@@ -178,17 +178,15 @@ namespace TKPEmu::N64 {
      * @see manual Table 16-3
      */
     enum class AccessType {
-        BYTE       = 0,
-        HALFWORD   = 1,
-        TRIPLEWORD = 2,
-        WORD       = 3,
-        QUINTIBYTE = 4,
-        SEXTIBYTE  = 5,
-        SEPTIBYTE  = 6,
-        DOUBLEWORD = 7,
-
-        DOUBLEWORD_DIRECT = 8,
-        HALFWORD_UNSIGNED = 9,
+        UBYTE       = 0,
+        BYTE        = 1,
+        UHALFWORD   = 2,
+        HALFWORD    = 3,
+        UWORD       = 4,
+        WORD        = 5,
+        UDOUBLEWORD = 6,
+        DOUBLEWORD  = 7,
+        UDOUBLEWORD_DIRECT = 8,
         NONE
     };
     enum class WriteType {
