@@ -24,6 +24,7 @@ constexpr uint32_t KSEG1_END   = 0xBFFF'FFFF;
 namespace TKPEmu {
     namespace N64 {
         class N64;
+        class QA;
     }
     namespace Applications {
         class N64_RomDisassembly;
@@ -228,6 +229,7 @@ namespace TKPEmu::N64::Devices {
 
         friend class TKPEmu::N64::N64;
         friend class TKPEmu::Applications::N64_RomDisassembly;
+        friend class TKPEmu::N64::QA;
     };
 }
 #endif
