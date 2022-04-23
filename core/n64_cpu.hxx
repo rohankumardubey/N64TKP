@@ -224,6 +224,8 @@ namespace TKPEmu::N64::Devices {
         void execute_instruction();
         void update_pipeline();
 
+        void clear_registers();
+
         friend class TKPEmu::N64::N64;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };

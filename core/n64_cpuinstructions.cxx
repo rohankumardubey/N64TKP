@@ -15,7 +15,7 @@ namespace TKPEmu::N64::Devices {
              */
             case InstructionType::ADDI: 
             case InstructionType::ADDIU: {
-                int32_t imm = cur_instr.IType.immediate;
+                int32_t imm = static_cast<int16_t>(cur_instr.IType.immediate);
                 uint64_t seimm = static_cast<int64_t>(imm);
                 uint64_t result = 0;
                 bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.UD, seimm, &result);
@@ -141,6 +141,10 @@ namespace TKPEmu::N64::Devices {
             /**
              * LBU
              * 
+             * throws TLB miss exception
+             *        TLB invalid exception
+             *        Bus error exception
+             *        Address error exception (?)
              */
             case InstructionType::LBU: {
                 int16_t offset = cur_instr.IType.immediate;
@@ -149,13 +153,6 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UBYTE;
-                #if SKIPEXCEPTIONS == 0
-                if ((exdc_latch_.vaddr & 0b111) != 0) { 
-                    // From manual:
-                    // If either of the loworder two bits of the address are not zero, an address error exception occurs.
-                    throw InstructionAddressErrorException();
-                }
-                #endif
                 break;
             }
             /**

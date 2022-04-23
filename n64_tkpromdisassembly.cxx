@@ -78,7 +78,7 @@ namespace TKPEmu::Applications {
                                 if (cur_instr != 0)[[likely]] {
                                     ImGui::SameLine(0, 0);
                                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                    ImGui::Text(" $r%02d", instr.IType.rt);
+                                    ImGui::Text(" $r%02d", instr.IType.rs);
                                     ImGui::PopStyleColor();
                                     ImGui::SameLine(0, 0);
                                     ImGui::TextUnformatted(", ");
@@ -90,7 +90,7 @@ namespace TKPEmu::Applications {
                                     ImGui::TextUnformatted(", ");
                                     ImGui::SameLine(0, 0);
                                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
-                                    ImGui::Text("0x%02x  ", instr.RType.func);
+                                    ImGui::Text("0x%02x  ", instr.RType.sa);
                                     ImGui::PopStyleColor();
                                 } else {
                                     // NOP doesn't have arguments
@@ -114,17 +114,23 @@ namespace TKPEmu::Applications {
                     }
                     case MemoryType::GPR_REGS: {
                         for (uint32_t i = 0; i < mem.Size; ++i) {
-                            auto data = (static_cast<N64::MemDataUnionDW*>(mem.DataPtr) + i)->UW._0;
+                            auto data = (static_cast<N64::MemDataUnionDW*>(mem.DataPtr) + i);
                             ImGui::Text("r%02u:", i);
                             ImGui::SameLine();
-                            if (data == 0) {
+                            if (data->UD == 0) {
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
                             }
-                            ImGui::Text("%08x", data);
-                            if (data == 0) {
+                            ImGui::Text("%016lx", data->UD);
+                            if (ImGui::IsItemHovered()) {
+                                ImGui::BeginTooltip();
+                                ImGui::Text("Signed: %ld", data->D);
+                                ImGui::Text("Unsigned: %lu", data->UD);
+                                ImGui::EndTooltip();
+                            }
+                            if (data->UD == 0) {
                                 ImGui::PopStyleColor();
                             }
-                            if (i % 4 != 3) {
+                            if (i % 3 != 2) {
                                 ImGui::SameLine();
                             }
                         }
@@ -154,10 +160,19 @@ namespace TKPEmu::Applications {
                 fill_memory_views();
             }
             ImGui::EndChild();
+            static int steps = 1;
+            ImGui::PushItemWidth(300);
+            ImGui::InputInt("##steps", &steps);
+            ImGui::PopItemWidth();
+            ImGui::SameLine();
             if (ImGui::Button("update")) {
-                for (int i = 0; i < 10; i++) {
+                for (int i = 0; i < steps; i++) {
                     n64_ptr->update();
                 }
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("reset")) {
+                n64_ptr->Reset();
             }
             ImGui::EndGroup();
         }

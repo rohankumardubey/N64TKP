@@ -24,7 +24,9 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPUBus::Reset() {
-
+        rdram_.fill(0);
+        rdram_xpk_.fill(0);
+        pif_ram_.fill(0);
     }
     
     uint32_t CPUBus::fetch_instruction_uncached(uint32_t paddr) {
@@ -42,8 +44,8 @@ namespace TKPEmu::N64::Devices {
         if (ptr) {
             return ptr;
         } else {
-            if (paddr - 0x1FC007C0u < 64u) {
-                return &pif_ram_[paddr - 0x1FC007C0u];
+            if (paddr - 0x1FC0'0'7C0u < 64u) {
+                return &pif_ram_[paddr - 0x1FC0'07C0u];
             }
         }
         temp_addresses_.fill(0);
@@ -64,9 +66,10 @@ namespace TKPEmu::N64::Devices {
         }
         // Map rdram from expansion pak
         for (int i = 4; i < 8; i++) {
-            page_table_[i] = &rdram_[PAGE_SIZE * i];
-            page_table_[i] = &rdram_[PAGE_SIZE * i];
+            page_table_[i] = &rdram_xpk_[PAGE_SIZE * i];
+            page_table_[i] = &rdram_xpk_[PAGE_SIZE * i];
         }
+        // Map cartridge rom
         for (int i = 0x100; i < 0x1FB; i++) {
             page_table_[i] = &cart_rom_[PAGE_SIZE * i];
             page_table_[i] = &cart_rom_[PAGE_SIZE * i];

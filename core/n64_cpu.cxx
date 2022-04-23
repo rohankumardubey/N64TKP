@@ -11,10 +11,15 @@ namespace TKPEmu::N64::Devices {
     {
         Reset();
     }
+
     void CPU::Reset() {
         pc_ = 0x80001000;
+        clear_registers();
+        pipeline_.clear();
+        pipeline_cur_instr_.clear();
         pipeline_.push_back(PipelineStage::IC);
         pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
+        cpubus_.Reset();
     }
 
     bool CPU::execute_stage(PipelineStage stage) {
@@ -343,6 +348,14 @@ namespace TKPEmu::N64::Devices {
             }
         } else {
             // currently not implemented
+        }
+    }
+    void CPU::clear_registers() {
+        for (auto& reg : gpr_regs_) {
+            reg.UD = 0;
+        }
+        for (auto& reg : fpr_regs_) {
+            reg = 0.0;
         }
     }
 }

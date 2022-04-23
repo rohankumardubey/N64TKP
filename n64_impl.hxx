@@ -9,6 +9,7 @@ namespace TKPEmu::N64 {
     public:
         bool LoadCartridge(std::string path);
         void Update();
+        void Reset();
         Devices::CPU& GetCPU() {
             return cpu_;
         }

@@ -14,6 +14,10 @@ namespace TKPEmu::N64 {
 	void N64_TKPWrapper::start_debug() {
 
 	}
+
+	void N64_TKPWrapper::reset_skip() {
+		n64_impl_.Reset();
+	}
 	
 	float* N64_TKPWrapper::GetScreenData() {
 		return nullptr;
