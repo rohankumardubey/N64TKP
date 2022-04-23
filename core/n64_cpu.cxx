@@ -204,48 +204,48 @@ namespace TKPEmu::N64::Devices {
         return { paddr, cached };
     }
 
-    void CPU::store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any data) {
+    void CPU::store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any data_any) {
         switch(access_type) {
             case AccessType::UBYTE: {
                 assert((typeid(uint8_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint8_t");
                 gpr_regs_[dest].UB._0
-                    = std::any_cast<uint8_t>(data);
+                    = std::any_cast<uint8_t>(data_any);
                 break;
             }
             case AccessType::UHALFWORD: {
                 assert((typeid(uint16_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint16_t");
-                uint64_t temp = std::any_cast<uint16_t>(data);
+                uint64_t temp = std::any_cast<uint16_t>(data_any);
                 gpr_regs_[dest].UD = temp;
                 break;
             }
             case AccessType::HALFWORD: {
                 assert((typeid(int16_t) == data_any.type()) && "Assertion failed - bad any cast: expected int16_t");
-                int64_t temp = static_cast<int16_t>(std::any_cast<uint16_t>(data));
+                int64_t temp = static_cast<int16_t>(std::any_cast<uint16_t>(data_any));
                 gpr_regs_[dest].UD = temp;
                 break;
             }
             case AccessType::UWORD: {
                 assert((typeid(uint32_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint32_t");
                 gpr_regs_[dest].UW._0
-                    = std::any_cast<uint32_t>(data);
+                    = std::any_cast<uint32_t>(data_any);
                 break;
             }
             case AccessType::WORD: {
                 assert((typeid(int32_t) == data_any.type()) && "Assertion failed - bad any cast: expected int32_t");
                 gpr_regs_[dest].W._0
-                    = std::any_cast<int32_t>(data);
+                    = std::any_cast<int32_t>(data_any);
                 break;
             }
             case AccessType::UDOUBLEWORD: {
                 assert((typeid(uint64_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint64_t");
                 gpr_regs_[dest].UD
-                    = std::any_cast<uint64_t>(data);
+                    = std::any_cast<uint64_t>(data_any);
                 break;
             }
             case AccessType::UDOUBLEWORD_DIRECT: {
                 assert((typeid(uint64_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint64_t direct");
                 if (dest_direct) {
-                    *dest_direct = std::any_cast<uint64_t>(data);
+                    *dest_direct = std::any_cast<uint64_t>(data_any);
                 } else {
                     throw std::logic_error("Tried to dereference a null ptr");
                 }
@@ -306,6 +306,7 @@ namespace TKPEmu::N64::Devices {
         }
     }
     void CPU::load_memory(bool cached, AccessType type, std::any& data_any, uint32_t paddr) {
+        assert((!data_any.has_value()) && "Assertion failed - data_any should be empty when it reaches load_memory");
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
             switch(type) {
