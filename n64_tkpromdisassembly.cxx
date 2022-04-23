@@ -46,62 +46,89 @@ namespace TKPEmu::Applications {
                             N64::Instruction instr; instr.Full = cur_instr;
                             std::string dis_string = TKPEmu::GeneralDisassembler::GetOpcodeName(EmuType::N64, cur_instr);
                             ImGui::Text("%s", cur_stage.c_str());
-                            ImGui::SameLine();
+                            ImGui::SameLine(0, 0);
                             std::stringstream ss;
                             ss << std::setw(7) << std::setfill(' ') << dis_string;
                             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(115, 120, 46, 255));
                             ImGui::Text("%s", ss.str().c_str());
                             ImGui::PopStyleColor();
                             // Draw arguments
+                            N64::InstructionType itype = N64::InstructionTypeTable[instr.IType.op];
+                            switch (itype) {
+                                case N64::InstructionType::SPECIAL: {
+                                    if (cur_instr != 0)[[likely]] {
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                        ImGui::Text(" rt:$r%02d", instr.RType.rt);
+                                        ImGui::PopStyleColor();
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::TextUnformatted(", ");
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                        ImGui::Text("rs:$r%02d", instr.RType.rs);
+                                        ImGui::PopStyleColor();
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::TextUnformatted(", ");
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                        ImGui::Text("rd:$r%02d", instr.RType.rd);
+                                        ImGui::PopStyleColor();
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::TextUnformatted(", ");
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                                        ImGui::Text("sa:0x%02x", instr.RType.sa);
+                                        ImGui::PopStyleColor();
+                                    } else {
+                                        // NOP doesn't have arguments
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::TextUnformatted("                                   ");
+                                    }
+                                    break;
+                                }
+                                case N64::InstructionType::J: 
+                                case N64::InstructionType::JAL: {
+                                    ImGui::SameLine(0, 0);
+                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                                    ImGui::Text("target:0x%026x", instr.JType.target);
+                                    ImGui::PopStyleColor();
+                                    break;
+                                }
+                                default: {
+                                    if (cur_instr != N64::EMPTY_INSTRUCTION) [[likely]] {
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                        ImGui::Text(" rt:$r%02d", instr.IType.rt);
+                                        ImGui::PopStyleColor();
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::TextUnformatted(", ");
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                                        ImGui::PushItemWidth(20);
+                                        ImGui::Text("rs:$r%02d", instr.IType.rs);
+                                        ImGui::PopItemWidth();
+                                        ImGui::PopStyleColor();
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::TextUnformatted(", ");
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                                        ImGui::Text("imm:0x%04x", instr.IType.immediate);
+                                        ImGui::PopStyleColor();
+                                        ImGui::SameLine(0, 0);
+                                        ImGui::TextUnformatted("      ");
+                                    }
+                                    break;
+                                }
+                            }
                             if (instr.IType.op != 0) {
-                                if (cur_instr != N64::EMPTY_INSTRUCTION) [[likely]] {
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                    ImGui::Text(" $r%02d", instr.IType.rt);
-                                    ImGui::PopStyleColor();
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::TextUnformatted(", ");
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                    ImGui::PushItemWidth(20);
-                                    ImGui::Text("$r%02d", instr.IType.rs);
-                                    ImGui::PopItemWidth();
-                                    ImGui::PopStyleColor();
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::TextUnformatted(", ");
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
-                                    ImGui::Text("0x%04x", instr.IType.immediate);
-                                    ImGui::PopStyleColor();
-                                }
+                                
                             } else {
-                                if (cur_instr != 0)[[likely]] {
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                    ImGui::Text(" $r%02d", instr.IType.rs);
-                                    ImGui::PopStyleColor();
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::TextUnformatted(", ");
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                    ImGui::Text("$r%02d", instr.IType.rs);
-                                    ImGui::PopStyleColor();
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::TextUnformatted(", ");
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
-                                    ImGui::Text("0x%02x  ", instr.RType.sa);
-                                    ImGui::PopStyleColor();
-                                } else {
-                                    // NOP doesn't have arguments
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::TextUnformatted("                   ");
-                                }
+                                
                             }
                             if (cur_instr != N64::EMPTY_INSTRUCTION) {
                                 ImGui::SameLine(0, 0);
                                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
-                                ImGui::Text("  ; %08x", instr.Full);
+                                ImGui::Text(" ; %08x", instr.Full);
                                 ImGui::PopStyleColor();
                             }
                         }

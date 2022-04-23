@@ -35,14 +35,19 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
-             * J
+             * J, JAL
              * 
              * doesn't throw
              */
+            case InstructionType::JAL: {
+                gpr_regs_[31].UD = pc_; // By the time this instruction is executed, pc is already incremented by 8
+                                         // so there's no need to increment here
+                [[fallthrough]];
+            }
             case InstructionType::J: {
                 auto jump_addr = cur_instr.JType.target;
                 // combine first 3 bits of pc and jump_addr shifted left by 2
-                exdc_latch_.data = (pc_ & 0xE000'0000) | (jump_addr << 2);
+                exdc_latch_.data = (pc_ & 0xF000'0000) | (jump_addr << 2);
                 exdc_latch_.dest_direct = &pc_;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
@@ -292,7 +297,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::WORD;
                 #if SKIPEXCEPTIONS == 0
-                if (overflow && type == InstructionType::s_ADD) {
+                if (overflow) {
                     // An integer overflow exception occurs if carries out of bits 30 and 31 differ (2’s
                     // complement overflow). The contents of destination register rd is not modified
                     // when an integer overflow exception occurs.
@@ -303,17 +308,11 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
-             * s_JALR
+             * s_JR, s_JALR
              * 
              * throws Address error exception
              */
             case InstructionType::s_JALR: {
-                auto jump_addr = rfex_latch_.fetched_rs.UD;
-                exdc_latch_.data = jump_addr;
-                exdc_latch_.dest_direct = &pc_;
-                exdc_latch_.write_type = WriteType::REGISTER;
-                exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
-                //The default value of rd, if omitted in the assembly language instruction, is 31.
                 auto reg = (rfex_latch_.instruction.RType.rd == 0) ? 31 : rfex_latch_.instruction.RType.rd;
                 gpr_regs_[reg].UD = pc_; // By the time this instruction is executed, pc is already incremented by 8
                                          // so there's no need to increment here
@@ -325,23 +324,9 @@ namespace TKPEmu::N64::Devices {
                 // this instruction, an exception will not occur, and the result of executing such an
                 // instruction is undefined.
                 assert(rfex_latch_.instruction.RType.rd != rfex_latch_.instruction.RType.rs);
-                if ((jump_addr & 0b11) != 0) {
-                    // From manual:
-                    // Since instructions must be word-aligned, a Jump Register instruction must
-                    // specify a target register (rs) which contains an address whose low-order two bits
-                    // are zero. If these low-order two bits are not zero, an address exception will occur
-                    // when the jump target instruction is fetched.
-                    // TODO: when the jump target instruction is *fetched*. Does it matter that the exc is thrown here?
-                    throw InstructionAddressErrorException();
-                }
                 #endif
-                break;
+                [[fallthrough]];
             }
-            /**
-             * s_JR
-             * 
-             * throws Address error exception
-             */
             case InstructionType::s_JR: {
                 auto jump_addr = rfex_latch_.fetched_rs.UD;
                 exdc_latch_.data = jump_addr;
