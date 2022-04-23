@@ -100,6 +100,8 @@ namespace TKPEmu::N64::Devices {
                 dcwb_latch_.cached = paddr_s.cached;
                 load_memory(dcwb_latch_.cached, dcwb_latch_.access_type,
                             dcwb_latch_.data, paddr);
+                // Result is cast to uint64_t in order to zero extend
+                dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
             }
             default: {
@@ -305,32 +307,32 @@ namespace TKPEmu::N64::Devices {
                 case AccessType::UDOUBLEWORD: {
                     uint64_t data = 0;
                     std::memcpy(&data, loc, 8);
-                    data_any = __builtin_bswap64(data);
+                    data_any = static_cast<uint64_t>(__builtin_bswap64(data));
                     break;
                 }
                 case AccessType::UWORD: {
                     uint32_t data = 0;
                     std::memcpy(&data, loc, 4);
-                    data_any = __builtin_bswap32(data);
+                    data_any = static_cast<uint64_t>(__builtin_bswap32(data));
                     break;
                 }
                 case AccessType::UHALFWORD: {
                     uint16_t data = 0;
                     int32_t sedata = static_cast<int16_t>(data);
                     std::memcpy(&data, loc, 2);
-                    data_any = __builtin_bswap16(data);
+                    data_any = static_cast<uint64_t>(__builtin_bswap16(data));
                     break;
                 }
                 case AccessType::HALFWORD: {
                     uint16_t data = 0;
                     std::memcpy(&data, loc, 2);
-                    data_any = __builtin_bswap16(data);
+                    data_any = static_cast<uint64_t>(__builtin_bswap16(data));
                     break;
                 }
                 case AccessType::UBYTE: {
                     uint8_t data = 0;
                     data = *(loc);
-                    data_any = data;
+                    data_any = static_cast<uint64_t>(data);
                     break;
                 }
                 default: {

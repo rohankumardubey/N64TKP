@@ -155,7 +155,7 @@ namespace TKPEmu::Applications {
             }
             ImGui::EndChild();
             if (ImGui::Button("update")) {
-                for (int i = 0; i < 1; i++) {
+                for (int i = 0; i < 10; i++) {
                     n64_ptr->update();
                 }
             }
