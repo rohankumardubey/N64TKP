@@ -90,7 +90,7 @@ namespace TKPEmu::Applications {
                                 case N64::InstructionType::JAL: {
                                     ImGui::SameLine(0, 0);
                                     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
-                                    ImGui::Text("target:0x%026x", instr.JType.target);
+                                    ImGui::Text(" target:0x%07x                  ", instr.JType.target);
                                     ImGui::PopStyleColor();
                                     break;
                                 }
@@ -136,6 +136,7 @@ namespace TKPEmu::Applications {
                         ImGui::BeginChild("pipeline rest", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
                         ImGui::Separator();
                         ImGui::Text("PC: %08x", static_cast<uint32_t>(n64cpu.pc_));
+                        ImGui::Text("Instructions ran: %u", n64cpu.instructions_ran_);
                         ImGui::EndChild();
                         break;
                     }

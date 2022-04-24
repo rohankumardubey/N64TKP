@@ -136,6 +136,7 @@ namespace TKPEmu::N64::Devices {
         uint64_t pc_, hi_, lo_;
         bool llbit_;
         float fcr0_, fcr31_;
+        uint64_t instructions_ran_ = 0;
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 

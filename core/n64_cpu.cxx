@@ -18,6 +18,7 @@ namespace TKPEmu::N64::Devices {
         pipeline_.clear();
         pipeline_cur_instr_.clear();
         pipeline_.push_back(PipelineStage::IC);
+        instructions_ran_ = 1;
         pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
         cpubus_.Reset();
     }
@@ -151,6 +152,7 @@ namespace TKPEmu::N64::Devices {
             pipeline_cur_instr_.pop_front();
         }
         pipeline_.push_back(PipelineStage::IC);
+        ++instructions_ran_;
         pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
     }
 

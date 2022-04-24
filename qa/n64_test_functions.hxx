@@ -7,7 +7,7 @@
 
 namespace TKPEmu::N64 {
     struct QA {
-        static std::string TestResult;
+        static std::string TestError;
         // These test functions operate differently on different
         // test roms depending on what each test rom outputs
         // when it passes
