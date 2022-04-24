@@ -39,10 +39,10 @@ namespace TKPEmu::Applications {
                         static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
                         ImGui::Text("Stages:");
                         ImGui::Separator();
-                        for (size_t i = 0; i < n64cpu.pipeline_.size(); i++) {
-                            int cur_num = static_cast<int>(n64cpu.pipeline_[i]);
+                        for (size_t i = 0; i < 5; i++) {
+                            int cur_num = i;
                             std::string cur_stage = chars[cur_num];
-                            auto cur_instr = n64cpu.pipeline_cur_instr_[i];
+                            uint32_t cur_instr = 0;//n64cpu.pipeline_cur_instr_[i];
                             N64::Instruction instr; instr.Full = cur_instr;
                             std::string dis_string = TKPEmu::GeneralDisassembler::GetOpcodeName(EmuType::N64, cur_instr);
                             ImGui::Text("%s", cur_stage.c_str());

@@ -14,7 +14,7 @@
 
 // TODO: Move these to cmake
 #define SKIP64BITCHECK 1
-#define SKIPEXCEPTIONS 0
+#define SKIPEXCEPTIONS 1
 #define KB(x) (static_cast<size_t>(x << 10))
 #define check_bit(x, y) ((x) & (1u << y))
 constexpr uint32_t KSEG0_START = 0x8000'0000;
@@ -46,12 +46,12 @@ namespace TKPEmu::N64::Devices {
         Kernel
     };
     enum class PipelineStage {
-        IC = 0, // Instruction cache fetch
-        RF = 1, // Register fetch
-        EX = 2, // Execution
-        DC = 3, // Data cache fetch
-        WB = 4, // Write back
-        NOP = 5,    // No operation
+        NOP = 0,    // No operation
+        IC = 1, // Instruction cache fetch
+        RF = 2, // Register fetch
+        EX = 4, // Execution
+        DC = 8, // Data cache fetch
+        WB = 16, // Write back
     };
     struct ICRF_latch {
         Instruction     instruction;
@@ -114,7 +114,7 @@ namespace TKPEmu::N64::Devices {
         using PipelineStageRet  = void;
         using PipelineStageArgs = void;
         CPUBus cpubus_;
-        std::deque<PipelineStage> pipeline_;
+        uint8_t pipeline_ = 0b00001; // the 5 stages
         std::deque<uint32_t> pipeline_cur_instr_ {};
         ICRF_latch icrf_latch_ {};
         RFEX_latch rfex_latch_ {};
@@ -210,8 +210,8 @@ namespace TKPEmu::N64::Devices {
          * @param data data to store
          * @param paddr physical address to write to
          */
-        inline void store_memory(bool cached, AccessType type, std::any data_any, uint32_t paddr);
-        void store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any data);
+        inline void store_memory(bool cached, AccessType type, std::any& data_any, uint32_t paddr);
+        inline void store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any& data);
 
         PipelineStageRet IC(PipelineStageArgs);
         PipelineStageRet RF(PipelineStageArgs);
@@ -223,7 +223,7 @@ namespace TKPEmu::N64::Devices {
         /**
          * Called during EX stage, handles the logic execution of each instruction
          */
-        void execute_instruction();
+        inline void execute_instruction();
         void update_pipeline();
 
         void clear_registers();

@@ -8,6 +8,7 @@ namespace TKPEmu::N64 {
 		if (SkipBoot) {
 			
 		}
+		Loaded = opened;
 		return opened;
 	}
 	

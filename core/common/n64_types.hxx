@@ -177,15 +177,15 @@ namespace TKPEmu::N64 {
      * 
      * @see manual Table 16-3
      */
-    enum class AccessType {
-        UBYTE       = 0,
+    enum AccessType {
+        UBYTE       = 1,
         BYTE        = 1,
         UHALFWORD   = 2,
-        HALFWORD    = 3,
+        HALFWORD    = 2,
         UWORD       = 4,
-        WORD        = 5,
-        UDOUBLEWORD = 6,
-        DOUBLEWORD  = 7,
+        WORD        = 4,
+        UDOUBLEWORD = 8,
+        DOUBLEWORD  = 8,
         UDOUBLEWORD_DIRECT = 8,
         NONE
     };

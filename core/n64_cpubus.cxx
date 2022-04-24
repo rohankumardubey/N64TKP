@@ -1,7 +1,5 @@
 #include <fstream>
-#include <iterator>
 #include <sstream>
-#include <iostream>
 #include "n64_cpu.hxx"
 
 namespace TKPEmu::N64::Devices {
@@ -30,13 +28,11 @@ namespace TKPEmu::N64::Devices {
     }
     
     uint32_t CPUBus::fetch_instruction_uncached(uint32_t paddr) {
-        if (paddr >= cart_rom_.size()) [[unlikely]] {
-            // TODO: remove this check for speed?
-            throw std::exception();
-        }
         // Loads in big endian
         // should only work for .z64 files
-        return cart_rom_[paddr] << 24 | cart_rom_[paddr + 1] << 16 | cart_rom_[paddr + 2] << 8 | cart_rom_[paddr + 3];
+        uint8_t* ptr = cart_rom_.data() + paddr;
+        uint32_t ret = __builtin_bswap32(*reinterpret_cast<uint32_t*>(ptr));
+        return ret;
     }
 
     uint8_t* CPUBus::redirect_paddress (uint32_t paddr) {
@@ -48,11 +44,13 @@ namespace TKPEmu::N64::Devices {
                 return &pif_ram_[paddr - 0x1FC0'07C0u];
             }
         }
-        temp_addresses_.fill(0);
+        temp_addresses_[(paddr) & 0xFF] = 0;
+        temp_addresses_[(paddr + 1) & 0xFF] = 0;
+        temp_addresses_[(paddr + 2) & 0xFF] = 0;
+        temp_addresses_[(paddr + 3) & 0xFF] = 0;
+        return &temp_addresses_[paddr & 0xFF];
         std::stringstream ss;
         ss << "Tried to access bad address: 0x" << std::hex << paddr << std::endl;
-        std::cout << ss.str() << std::endl;
-        return &temp_addresses_[paddr & 0xFF];
         throw NotImplementedException(ss.str().c_str());
     }
 
