@@ -94,7 +94,7 @@ namespace TKPEmu::N64::Devices {
 
     CPU::PipelineStageRet CPU::DC(PipelineStageArgs) {
         // unimplemented atm
-        dcwb_latch_.data.reset();
+        dcwb_latch_.data = 0;
         dcwb_latch_.access_type = exdc_latch_.access_type;
         dcwb_latch_.dest = exdc_latch_.dest;
         dcwb_latch_.write_type = exdc_latch_.write_type;
@@ -104,39 +104,33 @@ namespace TKPEmu::N64::Devices {
                 auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
                 uint32_t paddr = paddr_s.paddr;
                 dcwb_latch_.cached = paddr_s.cached;
-                load_memory(dcwb_latch_.cached, dcwb_latch_.access_type,
-                            dcwb_latch_.data, paddr);
+                load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
                 // Result is cast to uint64_t in order to zero extend
                 dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
             }
             default: {
+                dcwb_latch_.data = exdc_latch_.data;
                 break;
             }
-        }
-        if (!dcwb_latch_.data.has_value()) {
-            dcwb_latch_.data = exdc_latch_.data;
         }
     }
 
     CPU::PipelineStageRet CPU::WB(PipelineStageArgs) {
-        if (dcwb_latch_.data.has_value()) {
-            switch(dcwb_latch_.write_type) {
-                case WriteType::MMU: {
-                    store_memory(dcwb_latch_.cached, dcwb_latch_.access_type,
-                            dcwb_latch_.data, dcwb_latch_.dest);
-                    break;
-                }
-                case WriteType::LATEREGISTER: {
-                    store_register(dcwb_latch_.access_type, dcwb_latch_.dest, nullptr, dcwb_latch_.data);
-                    break;
-                }
-                case WriteType::REGISTER: {
-                    throw std::logic_error("Bad write type: should've used LATEREGISTER");
-                }
-                default: {
-                    break;
-                }
+        switch(dcwb_latch_.write_type) {
+            case WriteType::MMU: {
+                store_memory(dcwb_latch_.cached, dcwb_latch_.paddr, dcwb_latch_.data, dcwb_latch_.access_type);
+                break;
+            }
+            case WriteType::LATEREGISTER: {
+                store_register(dcwb_latch_.dest, dcwb_latch_.data, dcwb_latch_.access_type);
+                break;
+            }
+            case WriteType::REGISTER: {
+                throw std::logic_error("Bad write type: should've used LATEREGISTER");
+            }
+            default: {
+                break;
             }
         }
     }
@@ -192,142 +186,28 @@ namespace TKPEmu::N64::Devices {
         return std::move(t_addr);
     }
 
-    void CPU::store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::array<uint8_t, 4>& data) {
-        switch(access_type) {
-            case AccessType::UBYTE: {
-                assert((typeid(uint8_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint8_t");
-                gpr_regs_[dest].UB._0
-                    = std::any_cast<uint8_t>(data_any);
-                break;
-            }
-            case AccessType::HALFWORD: {
-                uint16_t temp = *reinterpret_cast<uint16_t*>(data.data());
-                gpr_regs_[dest].UH._0 = temp;
-                break;
-            }
-            case AccessType::UWORD: {
-                assert((typeid(uint32_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint32_t");
-                gpr_regs_[dest].UW._0
-                    = std::any_cast<uint32_t>(data_any);
-                break;
-            }
-            case AccessType::WORD: {
-                assert((typeid(int32_t) == data_any.type()) && "Assertion failed - bad any cast: expected int32_t");
-                gpr_regs_[dest].W._0
-                    = std::any_cast<int32_t>(data_any);
-                break;
-            }
-            case AccessType::UDOUBLEWORD: {
-                assert((typeid(uint64_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint64_t");
-                gpr_regs_[dest].UD
-                    = std::any_cast<uint64_t>(data_any);
-                break;
-            }
-            case AccessType::UDOUBLEWORD_DIRECT: {
-                assert((typeid(uint64_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint64_t direct");
-                if (dest_direct) {
-                    *dest_direct = std::any_cast<uint64_t>(data_any);
-                } else {
-                    throw std::logic_error("Tried to dereference a null ptr");
-                }
-                break;
-            }
-            default: {
-                throw NotImplementedException(__func__);
-            }
-        }
+    void CPU::store_register(uint8_t* dest, uint64_t data, int size) {
+        std::memcpy(dest, &data, size);
     }
 
-void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_t paddr) {
-    if (!cached) {
-        uint8_t* loc = cpubus_.redirect_paddress(paddr);
-        switch(type) {
-            case AccessType::UBYTE: {
-                assert((typeid(uint8_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint8_t");
-                auto data = std::any_cast<uint8_t>(data_any);
-                *(loc) = data & 0xFF;
-                break;
-            }
-            case AccessType::UHALFWORD: {
-                assert((typeid(uint16_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint16_t");
-                auto data = std::any_cast<uint16_t>(data_any);
-                *(loc++) = (data >> 8) & 0xFF;
-                *(loc)   = data & 0xFF;
-                break;
-            }
-            case AccessType::UWORD: {
-                assert((typeid(uint32_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint32_t");
-                auto data = std::any_cast<uint32_t>(data_any);
-                *(loc++) = (data >> 24) & 0xFF;
-                *(loc++) = (data >> 16) & 0xFF;
-                *(loc++) = (data >> 8)  & 0xFF;
-                *(loc)   = data & 0xFF;
-                break;
-            }
-            case AccessType::UDOUBLEWORD: {
-                assert((typeid(uint64_t) == data_any.type()) && "Assertion failed - bad any cast: expected uint64_t");
-                auto data = std::any_cast<uint64_t>(data_any);
-                *(loc++) = (data >> 56) & 0xFF;
-                *(loc++) = (data >> 48) & 0xFF;
-                *(loc++) = (data >> 40) & 0xFF;
-                *(loc++) = (data >> 32) & 0xFF;
-                *(loc++) = (data >> 24) & 0xFF;
-                *(loc++) = (data >> 16) & 0xFF;
-                *(loc++) = (data >> 8)  & 0xFF;
-                *(loc)   = data & 0xFF;
-                break;
-            }
-            default: {
-                // Do nothing purposefully
-                break;
-            }
-        }
-    } else {
-        // currently not implemented
-    }
-}
-    void CPU::load_memory(bool cached, AccessType type, std::any& data_any, uint32_t paddr) {
-        assert((!data_any.has_value()) && "Assertion failed - data_any should be empty when it reaches load_memory");
+    void CPU::store_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
-            switch(type) {
-                case AccessType::UDOUBLEWORD: {
-                    uint64_t data = 0;
-                    std::memcpy(&data, loc, 8);
-                    data_any = static_cast<uint64_t>(__builtin_bswap64(data));
-                    break;
-                }
-                case AccessType::UWORD: {
-                    uint32_t data = 0;
-                    std::memcpy(&data, loc, 4);
-                    data_any = static_cast<uint64_t>(__builtin_bswap32(data));
-                    break;
-                }
-                case AccessType::UHALFWORD: {
-                    uint16_t data = 0;
-                    int32_t sedata = static_cast<int16_t>(data);
-                    std::memcpy(&data, loc, 2);
-                    data_any = static_cast<uint64_t>(__builtin_bswap16(data));
-                    break;
-                }
-                case AccessType::HALFWORD: {
-                    uint16_t data = 0;
-                    std::memcpy(&data, loc, 2);
-                    data_any = static_cast<uint64_t>(__builtin_bswap16(data));
-                    break;
-                }
-                case AccessType::UBYTE: {
-                    uint8_t data = 0;
-                    data = *(loc);
-                    data_any = static_cast<uint64_t>(data);
-                    break;
-                }
-                default: {
-                    // Do nothing purposefully
-                    // TODO: figure out if other access types are used and remove this
-                    break;
-                }
-            }
+            uint64_t temp = __builtin_bswap64(data);
+            temp >>= 8 * (AccessType::UDOUBLEWORD - size);
+            std::memcpy(&temp, loc, size);
+        } else {
+            // currently not implemented
+        }
+    }
+    void CPU::load_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
+        if (!cached) {
+            uint8_t* loc = cpubus_.redirect_paddress(paddr);
+            uint64_t temp = 0;
+            std::memcpy(&temp, loc, size);
+            temp = __builtin_bswap64(temp);
+            temp >>= 8 * (AccessType::UDOUBLEWORD - size);
+            data = temp;
         } else {
             // currently not implemented
         }
@@ -375,7 +255,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
                 uint64_t seimm = static_cast<int64_t>(imm);
                 uint64_t result = 0;
                 bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.UD, seimm, &result);
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.data = result;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
@@ -404,7 +284,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
                 auto jump_addr = cur_instr.JType.target;
                 // combine first 3 bits of pc and jump_addr shifted left by 2
                 exdc_latch_.data = (pc_ & 0xF000'0000) | (jump_addr << 2);
-                exdc_latch_.dest_direct = &pc_;
+                exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 break;
@@ -417,7 +297,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             case InstructionType::LUI: {
                 int32_t imm = cur_instr.IType.immediate << 16;
                 uint64_t seimm = static_cast<int64_t>(imm);
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.data = seimm;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
@@ -429,7 +309,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
              * doesn't throw
              */
             case InstructionType::ORI: {
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.data = rfex_latch_.fetched_rs.UD | cur_instr.IType.immediate;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
@@ -450,7 +330,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
                 int32_t seoffset = offset;
                 auto write_vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 auto paddr_s = translate_vaddr(write_vaddr);
-                exdc_latch_.dest = paddr_s.paddr;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.cached = paddr_s.cached;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UD;
                 exdc_latch_.write_type = WriteType::MMU;
@@ -485,7 +365,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
                 int32_t seoffset = offset;
                 auto write_vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 auto paddr_s = translate_vaddr(write_vaddr);
-                exdc_latch_.dest = paddr_s.paddr;
+                exdc_latch_.paddr = paddr_s.paddr;
                 exdc_latch_.cached = paddr_s.cached;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UW._0;
                 exdc_latch_.write_type = WriteType::MMU;
@@ -510,7 +390,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             case InstructionType::LBU: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UBYTE;
@@ -527,7 +407,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             case InstructionType::LD: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
@@ -558,7 +438,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             case InstructionType::LHU: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UHALFWORD;
@@ -582,7 +462,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             case InstructionType::LW: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UWORD;
@@ -601,7 +481,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
              * doesn't throw
              */
             case InstructionType::ANDI: {
-                exdc_latch_.dest = cur_instr.IType.rt;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.data = rfex_latch_.fetched_rs.UD & cur_instr.IType.immediate;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
@@ -617,7 +497,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
                 int32_t seoffset = offset;
                 if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
-                    exdc_latch_.dest_direct = &pc_;
+                    exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 }
@@ -633,7 +513,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
                 int32_t seoffset = offset;
                 if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
-                    exdc_latch_.dest_direct = &pc_;
+                    exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 }
@@ -648,7 +528,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             case InstructionType::s_ADDU: {
                 int32_t result = 0;
                 bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rt.W._0, rfex_latch_.fetched_rs.W._0, &result);
-                exdc_latch_.dest = cur_instr.RType.rd;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
                 exdc_latch_.data = result;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::WORD;
@@ -686,7 +566,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             case InstructionType::s_JR: {
                 auto jump_addr = rfex_latch_.fetched_rs.UD;
                 exdc_latch_.data = jump_addr;
-                exdc_latch_.dest_direct = &pc_;
+                exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 #if SKIPEXCEPTIONS == 0
@@ -708,7 +588,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
              * doesn't throw
              */
             case InstructionType::s_SLL: {
-                exdc_latch_.dest = cur_instr.RType.rd;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UD << cur_instr.RType.sa;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
@@ -725,7 +605,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
                 } else {
                     exdc_latch_.data = static_cast<uint64_t>(0);
                 }
-                exdc_latch_.dest = cur_instr.RType.rd;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
@@ -753,8 +633,7 @@ void CPU::store_memory(bool cached, AccessType type, std::any& data_any, uint32_
             // result is stored during EX instead of waiting for WB when it comes
             // to writing to a register
             // for instructions like ADD that don't need DC stage to write back
-            store_register(exdc_latch_.access_type, exdc_latch_.dest, exdc_latch_.dest_direct, exdc_latch_.data);
-            exdc_latch_.data.reset();
+            store_register( exdc_latch_.dest, exdc_latch_.data, exdc_latch_.access_type);
             exdc_latch_.write_type = WriteType::NONE;
         }
     }

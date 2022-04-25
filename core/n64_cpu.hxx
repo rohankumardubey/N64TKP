@@ -7,8 +7,6 @@
 #include <queue>
 #include <vector>
 #include <memory>
-#include <any>
-#include <deque>
 #include "common/n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
 
@@ -65,17 +63,18 @@ namespace TKPEmu::N64::Devices {
     struct EXDC_latch {
         WriteType       write_type = WriteType::NONE;
         AccessType      access_type = AccessType::NONE;
-        std::any        data;
-        uint32_t        dest;
+        uint64_t        data;
+        uint8_t*        dest = nullptr;
         uint32_t        vaddr;
-        uint64_t*       dest_direct = nullptr;
+        uint32_t        paddr;
         bool            cached;
     };
     struct DCWB_latch {
         WriteType       write_type = WriteType::NONE;
         AccessType      access_type = AccessType::NONE;
-        std::any        data;
-        uint32_t        dest;
+        uint64_t        data;
+        uint8_t*        dest = nullptr;
+        uint32_t        paddr;
         bool            cached;
     };
     struct TranslatedAddress {
@@ -195,7 +194,7 @@ namespace TKPEmu::N64::Devices {
          * @param data the result is stored here
          * @param paddr physical address to read from
          */
-        inline void load_memory(bool cached, AccessType type, std::any& data_any, uint32_t paddr);
+        inline void load_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
         /**
          * Searches the cache, write buffer, and main memory to store the
          * contents of a specified data length to a specified physical address.
@@ -210,8 +209,8 @@ namespace TKPEmu::N64::Devices {
          * @param data data to store
          * @param paddr physical address to write to
          */
-        inline void store_memory(bool cached, AccessType type, std::any& data_any, uint32_t paddr);
-        inline void store_register(AccessType access_type, uint32_t dest, uint64_t* dest_direct, std::any& data);
+        inline void store_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
+        inline void store_register(uint8_t* dest, uint64_t data, int size);
 
         PipelineStageRet IC(PipelineStageArgs);
         PipelineStageRet RF(PipelineStageArgs);
