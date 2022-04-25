@@ -1,7 +1,7 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 #include <cassert> // assert
-#include <valgrind/callgrind.h>
+// #include <valgrind/callgrind.h>
 
 namespace TKPEmu::N64::Devices {
     CPU::CPU() :
@@ -223,7 +223,8 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::update_pipeline() {
-        CALLGRIND_START_INSTRUMENTATION;
+        // CALLGRIND_START_INSTRUMENTATION;
+        #pragma GCC unroll 5
         for (int i = 4; i >= 0; --i) {
             execute_stage(static_cast<PipelineStage>(pipeline_ & (1 << i)));
         }
@@ -235,7 +236,7 @@ namespace TKPEmu::N64::Devices {
         pipeline_ |= 1;
         ++instructions_ran_;
         //pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
-        CALLGRIND_STOP_INSTRUMENTATION;
+        // CALLGRIND_STOP_INSTRUMENTATION;
     }
 
     void CPU::execute_instruction() {
