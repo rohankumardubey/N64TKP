@@ -13,6 +13,7 @@
 // TODO: Move these to cmake
 #define SKIP64BITCHECK 1
 #define SKIPEXCEPTIONS 1
+#define DONTDEBUGSTUFF 0
 #define KB(x) (static_cast<size_t>(x << 10))
 #define check_bit(x, y) ((x) & (1u << y))
 constexpr uint32_t KSEG0_START = 0x8000'0000;

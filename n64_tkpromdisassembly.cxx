@@ -36,13 +36,17 @@ namespace TKPEmu::Applications {
                     case MemoryType::PIPELINE: {
                         auto& n64cpu = n64_ptr->GetCPU();
                         ImGui::BeginChild("pipeline view", ImVec2(0, 300));
-                        static std::array<std::string, 6> chars {"IC", "RF", "EX", "DC", "WB", "  "};
+                        static std::array<std::string, 6> chars {"WB", "DC", "EX", "RF", "IC", "  "};
                         ImGui::Text("Stages:");
                         ImGui::Separator();
-                        for (size_t i = 0; i < 5; i++) {
+                        for (size_t i = 0; i < n64cpu.pipeline_cur_instr_.size(); i++) {
                             int cur_num = i;
                             std::string cur_stage = chars[cur_num];
-                            uint32_t cur_instr = 0;//n64cpu.pipeline_cur_instr_[i];
+                            #if SKIPDEBUGSTUFF == 0
+                            uint32_t cur_instr = n64cpu.pipeline_cur_instr_[i];
+                            #else 
+                            uint32_t cur_instr = 0;
+                            #endif
                             N64::Instruction instr; instr.Full = cur_instr;
                             std::string dis_string = TKPEmu::GeneralDisassembler::GetOpcodeName(EmuType::N64, cur_instr);
                             ImGui::Text("%s", cur_stage.c_str());

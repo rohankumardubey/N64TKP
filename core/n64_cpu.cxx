@@ -43,6 +43,9 @@ namespace TKPEmu::N64::Devices {
             }
             case PipelineStage::WB: {
                 WB();
+                #if SKIPDEBUGSTUFF == 0
+                pipeline_cur_instr_.pop_front();
+                #endif
                 return true;
             }
             default: {
@@ -55,8 +58,9 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        // IC instructions are always at the back
-        // pipeline_cur_instr_.back() = icrf_latch_.instruction.Full;
+        #if SKIPDEBUGSTUFF == 0
+        pipeline_cur_instr_.back() = icrf_latch_.instruction.Full;
+        #endif
         pc_ += 4;
     }
 
@@ -99,6 +103,7 @@ namespace TKPEmu::N64::Devices {
         dcwb_latch_.dest = exdc_latch_.dest;
         dcwb_latch_.write_type = exdc_latch_.write_type;
         dcwb_latch_.cached = exdc_latch_.cached;
+        dcwb_latch_.paddr = exdc_latch_.paddr;
         switch (exdc_latch_.write_type) {
             case WriteType::LATEREGISTER: {
                 auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
@@ -195,7 +200,7 @@ namespace TKPEmu::N64::Devices {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
             uint64_t temp = __builtin_bswap64(data);
             temp >>= 8 * (AccessType::UDOUBLEWORD - size);
-            std::memcpy(&temp, loc, size);
+            std::memcpy(loc, &temp, size);
         } else {
             // currently not implemented
         }
@@ -234,8 +239,10 @@ namespace TKPEmu::N64::Devices {
         // }
         pipeline_ <<= 1;
         pipeline_ |= 1;
+        #if SKIPDEBUGSTUFF == 0
         ++instructions_ran_;
-        //pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
+        pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
+        #endif
         // CALLGRIND_STOP_INSTRUMENTATION;
     }
 
@@ -497,6 +504,7 @@ namespace TKPEmu::N64::Devices {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
                 if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
+                    // TODO: failing because no load interlock
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;

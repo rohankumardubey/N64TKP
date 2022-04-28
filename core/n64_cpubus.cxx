@@ -40,7 +40,7 @@ namespace TKPEmu::N64::Devices {
         if (ptr) {
             return ptr;
         } else {
-            if (paddr - 0x1FC0'0'7C0u < 64u) {
+            if (paddr - 0x1FC0'07C0u < 64u) {
                 return &pif_ram_[paddr - 0x1FC0'07C0u];
             }
         }
