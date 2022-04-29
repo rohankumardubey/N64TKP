@@ -191,9 +191,9 @@ namespace TKPEmu::N64::Devices {
          * enabled. 
          * 
          * @param cached whether to store in cache
-         * @param type access type - see AccessType enum
-         * @param data the result is stored here
          * @param paddr physical address to read from
+         * @param data the result is stored here
+         * @param size size to load
          */
         inline void load_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
         /**
@@ -206,9 +206,9 @@ namespace TKPEmu::N64::Devices {
          * a data word.
          * 
          * @param cached whether to store in cache
-         * @param type access type - see AccessType enum
-         * @param data data to store
          * @param paddr physical address to write to
+         * @param data data to store
+         * @param size size to store
          */
         inline void store_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
         inline void store_register(uint8_t* dest, uint64_t data, int size);
