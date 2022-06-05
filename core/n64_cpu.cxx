@@ -1,6 +1,7 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 #include <cassert> // assert
+#include "../../include/error_factory.hxx"
 // #include <valgrind/callgrind.h>
 
 namespace TKPEmu::N64::Devices {
@@ -86,6 +87,8 @@ namespace TKPEmu::N64::Devices {
                 }
             }
         }
+        rfex_latch_.fetched_rs_i = icrf_latch_.instruction.RType.rs;
+        rfex_latch_.fetched_rt_i = icrf_latch_.instruction.RType.rt;
         rfex_latch_.fetched_rs.UD = fetched_rs.UD;
         rfex_latch_.fetched_rt.UD = fetched_rt.UD;
         rfex_latch_.instruction = icrf_latch_.instruction;
@@ -112,6 +115,14 @@ namespace TKPEmu::N64::Devices {
                 load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
                 // Result is cast to uint64_t in order to zero extend
                 dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
+                if (rfex_latch_.fetched_rt_i == exdc_latch_.fetched_rt_i) {
+                    // TODO: LoadInterlock hack This may be wrong
+                    rfex_latch_.fetched_rt.UD = dcwb_latch_.data;
+                }
+                if (rfex_latch_.fetched_rs_i == exdc_latch_.fetched_rt_i) {
+                    // TODO: LoadInterlock hack This may be wrong
+                    rfex_latch_.fetched_rs.UD = dcwb_latch_.data;
+                }
                 break;
             }
             default: {
@@ -129,6 +140,10 @@ namespace TKPEmu::N64::Devices {
             }
             case WriteType::LATEREGISTER: {
                 store_register(dcwb_latch_.dest, dcwb_latch_.data, dcwb_latch_.access_type);
+                // Bypass the rfex latch and update regs
+                // TODO: Wrong? Don't know
+                rfex_latch_.fetched_rs = gpr_regs_[rfex_latch_.fetched_rs_i];
+                rfex_latch_.fetched_rt = gpr_regs_[rfex_latch_.fetched_rt_i];
                 break;
             }
             case WriteType::REGISTER: {
@@ -324,6 +339,18 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
+             * s_AND
+             * 
+             * doesn't throw
+             */
+            case InstructionType::s_AND: {
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
+                exdc_latch_.data = rfex_latch_.fetched_rs.UD & rfex_latch_.fetched_rt.UD;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
              * SD
              * 
              * throws TLB miss exception
@@ -419,6 +446,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                exdc_latch_.fetched_rt_i = cur_instr.IType.rt;
                 #if SKIPEXCEPTIONS == 0
                 if ((exdc_latch_.vaddr & 0b111) != 0) { 
                     // From manual:
@@ -450,6 +478,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UHALFWORD;
+                exdc_latch_.fetched_rt_i = cur_instr.IType.rt;
                 #if SKIPEXCEPTIONS == 0
                 if ((exdc_latch_.vaddr & 0b1) != 0) {
                     // From manual:
@@ -474,6 +503,7 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UWORD;
+                exdc_latch_.fetched_rt_i = cur_instr.IType.rt;
                 #if SKIPEXCEPTIONS == 0
                 if ((exdc_latch_.vaddr & 0b11) != 0) {
                     // From manual:
@@ -634,7 +664,7 @@ namespace TKPEmu::N64::Devices {
                 } else {
                     instr_name = OperationCodes[cur_instr.IType.op];
                 }
-                throw InstructionNotImplementedException(instr_name);
+                throw ErrorFactory::generate_exception(__func__, __LINE__, std::string("Instruction not yet implemented: ") + instr_name);
             }
         }
         if (exdc_latch_.write_type == WriteType::REGISTER) {

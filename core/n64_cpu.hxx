@@ -60,6 +60,8 @@ namespace TKPEmu::N64::Devices {
         InstructionType instruction_type;
         MemDataUnionDW  fetched_rt;
         MemDataUnionDW  fetched_rs;
+        size_t fetched_rt_i = -1;
+        size_t fetched_rs_i = -1;
     };
     struct EXDC_latch {
         WriteType       write_type = WriteType::NONE;
@@ -69,6 +71,8 @@ namespace TKPEmu::N64::Devices {
         uint32_t        vaddr;
         uint32_t        paddr;
         bool            cached;
+        size_t fetched_rt_i = -1;
+        size_t fetched_rs_i = -1;
     };
     struct DCWB_latch {
         WriteType       write_type = WriteType::NONE;
