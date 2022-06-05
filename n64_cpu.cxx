@@ -117,9 +117,6 @@ namespace TKPEmu::N64::Devices {
             case WriteType::LATEREGISTER: {
                 auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
                 uint32_t paddr = paddr_s.paddr;
-                std::cout << std::hex << "hex:" << paddr << std::endl;
-                std::cout << std::hex << "data:" << (int)cpubus_.cart_rom_[paddr] << std::endl;
-                std::cout << std::hex << "loc:" << static_cast<void*>(&cpubus_.cart_rom_[paddr]) << std::endl;
                 dcwb_latch_.cached = paddr_s.cached;
                 load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
                 // Result is cast to uint64_t in order to zero extend
@@ -220,7 +217,6 @@ namespace TKPEmu::N64::Devices {
     }
     void CPU::invalidate_hwio(uint32_t addr, uint64_t data) {
         if (data != 0)
-        std::cout << std::hex << addr << " " << data << std::endl;
         switch (addr) {
             case PI_WR_LEN_REG: {
                 std::cout << std::hex << __builtin_bswap32(cpubus_.pi_dram_addr_) << " " << __builtin_bswap32(cpubus_.pi_cart_addr_) << std::endl;
@@ -232,11 +228,11 @@ namespace TKPEmu::N64::Devices {
                 if (format == 0b10)
                     text_format_ = GL_RGB5;
                 else if (format == 0b11)
-                    text_format_ = GL_RGBA8;
+                    text_format_ = GL_RGBA;
                 break;
             }
             case VI_ORIGIN_REG: {
-                rcp_.framebuffer_ptr_ = &cpubus_.rdram_[data & 0xFFFFFF];
+                rcp_.framebuffer_ptr_ = cpubus_.redirect_paddress(data & 0xFFFFFF);
                 break;
             }
         }
@@ -255,8 +251,6 @@ namespace TKPEmu::N64::Devices {
     void CPU::load_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
-            std::cout << "next:" << (int)*loc << std::endl;
-            std::cout << "next_loc:"<< std::hex << static_cast<void*>(loc) << std::endl;
             uint64_t temp = 0;
             std::memcpy(&temp, loc, size);
             temp = __builtin_bswap64(temp);

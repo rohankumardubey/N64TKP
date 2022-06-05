@@ -23,14 +23,13 @@ namespace TKPEmu::N64 {
         void Update();
         void Reset();
         void* GetColorData() {
-            return nullptr;
+            return rcp_.framebuffer_ptr_;
         }
     private:
         GLuint& text_format_;
         Devices::RCP rcp_;
         Devices::CPUBus cpubus_;
         Devices::CPU cpu_;
-        void clear_screen();
 		friend class TKPEmu::N64::N64_TKPWrapper;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };

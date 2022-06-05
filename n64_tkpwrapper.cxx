@@ -6,6 +6,7 @@ namespace TKPEmu::N64 {
 		// TODO: rarely some games have different resolutions
 		EmulatorImage.width = 320;
 		EmulatorImage.height = 240;
+		EmulatorImage.type = GL_UNSIGNED_BYTE;
 		GLuint image_texture;
 		glGenTextures(1, &image_texture);
 		glBindTexture(GL_TEXTURE_2D, image_texture);
@@ -17,17 +18,16 @@ namespace TKPEmu::N64 {
 		glTexImage2D(
 			GL_TEXTURE_2D,
 			0,
-			GL_RGBA,
+			GL_RGB,
 			EmulatorImage.width,
 			EmulatorImage.height,
 			0,
-			GL_RGBA,
-			GL_FLOAT,
+			GL_RGB,
+			GL_UNSIGNED_BYTE,
 			NULL
 		);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		EmulatorImage.texture = image_texture;
-		clear_screen();
 	}
 
 	N64_TKPWrapper::N64_TKPWrapper(std::any args) : N64_TKPWrapper() {
@@ -40,19 +40,12 @@ namespace TKPEmu::N64 {
 	}
 
 	bool& N64_TKPWrapper::IsReadyToDraw() {
+		should_draw_ = true;
 		return should_draw_;
 	}
 	
-	void N64_TKPWrapper::clear_screen() {
-        n64_impl_.clear_screen();
-		should_draw_ = true;
-    }
-
 	bool N64_TKPWrapper::load_file(std::string path) {
 		bool opened = n64_impl_.LoadCartridge(path);
-		if (SkipBoot) {
-			
-		}
 		Loaded = opened;
 		return opened;
 	}

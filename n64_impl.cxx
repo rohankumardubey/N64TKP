@@ -16,13 +16,4 @@ namespace TKPEmu::N64 {
     void N64::Reset() {
         cpu_.Reset();
     }
-
-    void N64::clear_screen() {
-        // if (rcp_.screen_color_data_) {
-        //     for (std::size_t i = 0; i < 320 * 240 * 4; i++) {
-        //         if ((i & 0b11) == 0b11)
-        //             rcp_.screen_color_data_[i] = 1.0f;
-        //     }
-        // }
-    }
 }

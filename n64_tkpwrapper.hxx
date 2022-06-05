@@ -37,7 +37,6 @@ namespace TKPEmu::N64 {
 		// void reset_normal() override;
 		void reset_skip() override;
 		bool load_file(std::string path) override;
-		void clear_screen();
 		// void update() override;
 		// std::string print() const override;
 		friend class TKPEmu::Applications::N64_RomDisassembly;

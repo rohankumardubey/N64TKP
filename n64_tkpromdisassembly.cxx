@@ -172,6 +172,7 @@ namespace TKPEmu::Applications {
                         ImGui::Text("TODO");
                         break;
                     }
+                    case MemoryType::FRAMEBUFFER:
                     case MemoryType::MEMORY: {
                         for (uint32_t i = 0; i < mem.Size; ++i) {
                             auto data = *(static_cast<uint8_t*>(mem.DataPtr) + i);
@@ -234,6 +235,9 @@ namespace TKPEmu::Applications {
                     case MemoryType::PIPELINE: {
                         mem.DataPtr = n64_ptr;
                         break;
+                    }
+                    case MemoryType::FRAMEBUFFER: {
+                        mem.DataPtr = n64_ptr->n64_impl_.GetColorData();
                     }
                 }
             }
