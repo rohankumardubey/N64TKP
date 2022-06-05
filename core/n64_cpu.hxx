@@ -16,6 +16,7 @@
 #define DONTDEBUGSTUFF 0
 #define KB(x) (static_cast<size_t>(x << 10))
 #define check_bit(x, y) ((x) & (1u << y))
+
 constexpr uint32_t KSEG0_START = 0x8000'0000;
 constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
 constexpr uint32_t KSEG1_START = 0xA000'0000;
@@ -99,14 +100,49 @@ namespace TKPEmu::N64::Devices {
     private:
         uint32_t  fetch_instruction_uncached(uint32_t paddr);
         uint32_t  fetch_instruction_cached  (uint32_t paddr);
-        uint8_t*  redirect_paddress (uint32_t paddr);
+        uint8_t*  redirect_paddress         (uint32_t paddr);
+        uint8_t*  redirect_paddress_slow    (uint32_t paddr);
         void      map_direct_addresses();
+
         std::array<uint8_t, 0xFC00000> cart_rom_;
         std::array<uint8_t, 0x400000> rdram_ {};
         std::array<uint8_t, 0x400000> rdram_xpk_ {};
         std::array<uint8_t, 64> pif_ram_ {};
-        std::array<uint8_t, 0x100> temp_addresses_{};
         std::array<uint8_t*, 0x1000> page_table_ {};
+
+        // Video Interface
+        uint32_t vi_ctrl_ = 0;
+        uint32_t vi_origin_ = 0;
+        uint32_t vi_width_ = 0;
+        uint32_t vi_v_intr_ = 0;
+        uint32_t vi_v_current_ = 0;
+        uint32_t vi_burst_ = 0;
+        uint32_t vi_v_sync_ = 0;
+        uint32_t vi_h_sync_ = 0;
+        uint32_t vi_h_sync_leap_ = 0;
+        uint32_t vi_h_video_ = 0;
+        uint32_t vi_v_video_ = 0;
+        uint32_t vi_v_burst_ = 0;
+        uint32_t vi_x_scale_ = 0;
+        uint32_t vi_y_scale_ = 0;
+        uint32_t vi_test_addr_ = 0;
+        uint32_t vi_staged_data_ = 0;
+
+        // Peripheral Interface
+        uint32_t pi_dram_addr_ = 0;
+        uint32_t pi_cart_addr_ = 0;
+        uint32_t pi_rd_len_ = 0;
+        uint32_t pi_wr_len_ = 0;
+        uint32_t pi_status_ = 0;
+        uint32_t pi_bsd_dom1_lat_ = 0;
+        uint32_t pi_bsd_dom1_pwd_ = 0;
+        uint32_t pi_bsd_dom1_pgs_ = 0;
+        uint32_t pi_bsd_dom1_rls_ = 0;
+        uint32_t pi_bsd_dom2_lat_ = 0;
+        uint32_t pi_bsd_dom2_pwd_ = 0;
+        uint32_t pi_bsd_dom2_pgs_ = 0;
+        uint32_t pi_bsd_dom2_rls_ = 0;
+    
         friend class CPU;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };

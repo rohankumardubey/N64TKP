@@ -25,6 +25,7 @@ namespace TKPEmu::N64::Devices {
     }
 
     bool CPU::execute_stage(PipelineStage stage) {
+        gpr_regs_[0].UD = 0;
         switch(stage) {
             case PipelineStage::IC: {
                 IC();
@@ -415,13 +416,14 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
-             * LBU
+             * LB, LBU
              * 
              * throws TLB miss exception
              *        TLB invalid exception
              *        Bus error exception
              *        Address error exception (?)
              */
+            case InstructionType::LB:
             case InstructionType::LBU: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
@@ -558,6 +560,17 @@ namespace TKPEmu::N64::Devices {
                 }
                 break;
             }
+            case InstructionType::BGTZ: {
+                int16_t offset = cur_instr.IType.immediate << 2;
+                int32_t seoffset = offset;
+                if (rfex_latch_.fetched_rs.W._0 > 0) {
+                    exdc_latch_.data = pc_ - 4 + seoffset;
+                    exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
+                    exdc_latch_.write_type = WriteType::REGISTER;
+                    exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+                }
+                break;
+            }
             /**
              * s_ADD, s_ADDU
              * 
@@ -629,6 +642,18 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::s_SLL: {
                 exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UD << cur_instr.RType.sa;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
+             * s_SRL
+             * 
+             * doesn't throw
+             */
+            case InstructionType::s_SRL: {
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
+                exdc_latch_.data = rfex_latch_.fetched_rt.UD >> cur_instr.RType.sa;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
