@@ -5,6 +5,9 @@
 #include "n64_impl.hxx"
 
 namespace TKPEmu::N64 {
+	namespace Applications {
+		class N64_RomDisassembly;
+	}
     class N64_TKPWrapper : public Emulator {
 	public:
 		N64_TKPWrapper();
@@ -12,19 +15,18 @@ namespace TKPEmu::N64 {
 		~N64_TKPWrapper();
 		// void HandleKeyDown(SDL_Keycode key) override;
 		// void HandleKeyUp(SDL_Keycode key) override;
-		float* GetScreenData() override;
+		void* GetScreenData() override;
 		// std::string GetEmulatorName() override;
 		// std::string GetScreenshotHash() override;
 		bool& IsReadyToDraw() override;
 		Devices::CPU& GetCPU() {
-			return n64_impl_.GetCPU();
+			return n64_impl_.cpu_;
 		}
 		void update() {
 			n64_impl_.Update();
 		}
     private:
         N64 n64_impl_;
-		std::array<float, 4 * 320 * 240> screen_color_data_{};
 		bool should_draw_ = false;
         // void v_log_state() override;
 		// void save_state(std::ofstream& ofstream) override;
@@ -38,6 +40,7 @@ namespace TKPEmu::N64 {
 		void clear_screen();
 		// void update() override;
 		// std::string print() const override;
+		friend class TKPEmu::Applications::N64_RomDisassembly;
     };
 }
 #endif

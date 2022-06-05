@@ -5,7 +5,7 @@
 #include "../include/error_factory.hxx"
 
 namespace TKPEmu::N64::Devices {
-    CPUBus::CPUBus() {
+    CPUBus::CPUBus(Devices::RCP& rcp) : rcp_(rcp) {
         map_direct_addresses();
     }
 
@@ -55,22 +55,22 @@ namespace TKPEmu::N64::Devices {
         #define redir_case(A,B) case A: return reinterpret_cast<uint8_t*>(&B)
         switch (paddr) {
             // Video Interface
-            redir_case(VI_CTRL_REG, vi_ctrl_);
-            redir_case(VI_ORIGIN_REG, vi_origin_);
-            redir_case(VI_WIDTH_REG, vi_width_);
-            redir_case(VI_V_INTR_REG, vi_v_intr_);
-            redir_case(VI_V_CURRENT_REG, vi_v_current_);
-            redir_case(VI_BURST_REG, vi_burst_);
-            redir_case(VI_V_SYNC_REG, vi_v_sync_);
-            redir_case(VI_H_SYNC_REG, vi_h_sync_);
-            redir_case(VI_H_SYNC_LEAP_REG, vi_h_sync_leap_);
-            redir_case(VI_H_VIDEO_REG, vi_h_video_);
-            redir_case(VI_V_VIDEO_REG, vi_v_video_);
-            redir_case(VI_V_BURST_REG, vi_v_burst_);
-            redir_case(VI_X_SCALE_REG, vi_x_scale_);
-            redir_case(VI_Y_SCALE_REG, vi_y_scale_);
-            redir_case(VI_TEST_ADDR_REG, vi_test_addr_);
-            redir_case(VI_STAGED_DATA_REG, vi_staged_data_);
+            redir_case(VI_CTRL_REG, rcp_.vi_ctrl_);
+            redir_case(VI_ORIGIN_REG, rcp_.vi_origin_);
+            redir_case(VI_WIDTH_REG, rcp_.vi_width_);
+            redir_case(VI_V_INTR_REG, rcp_.vi_v_intr_);
+            redir_case(VI_V_CURRENT_REG, rcp_.vi_v_current_);
+            redir_case(VI_BURST_REG, rcp_.vi_burst_);
+            redir_case(VI_V_SYNC_REG, rcp_.vi_v_sync_);
+            redir_case(VI_H_SYNC_REG, rcp_.vi_h_sync_);
+            redir_case(VI_H_SYNC_LEAP_REG, rcp_.vi_h_sync_leap_);
+            redir_case(VI_H_VIDEO_REG, rcp_.vi_h_video_);
+            redir_case(VI_V_VIDEO_REG, rcp_.vi_v_video_);
+            redir_case(VI_V_BURST_REG, rcp_.vi_v_burst_);
+            redir_case(VI_X_SCALE_REG, rcp_.vi_x_scale_);
+            redir_case(VI_Y_SCALE_REG, rcp_.vi_y_scale_);
+            redir_case(VI_TEST_ADDR_REG, rcp_.vi_test_addr_);
+            redir_case(VI_STAGED_DATA_REG, rcp_.vi_staged_data_);
 
             // Peripheral Interface
             redir_case(PI_DRAM_ADDR_REG, pi_dram_addr_);
@@ -90,7 +90,7 @@ namespace TKPEmu::N64::Devices {
         if (paddr - 0x1FC0'07C0u < 64u) {
             return &pif_ram_[paddr - 0x1FC0'07C0u];
         }
-        #undef byte_ptr
+        #undef redir_case
         return nullptr;
     }
 

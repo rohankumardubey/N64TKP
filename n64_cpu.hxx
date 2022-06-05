@@ -9,6 +9,8 @@
 #include <memory>
 #include "n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
+#include "n64_rcp.hxx"
+#include <GL/glew.h>
 
 // TODO: Move these to cmake
 #define SKIP64BITCHECK 1
@@ -94,7 +96,7 @@ namespace TKPEmu::N64::Devices {
     */
     class CPUBus {
     public:
-        CPUBus();
+        CPUBus(Devices::RCP& rcp);
         bool LoadFromFile(std::string path);
         void Reset();
     private:
@@ -110,24 +112,6 @@ namespace TKPEmu::N64::Devices {
         std::array<uint8_t, 64> pif_ram_ {};
         std::array<uint8_t*, 0x1000> page_table_ {};
 
-        // Video Interface
-        uint32_t vi_ctrl_ = 0;
-        uint32_t vi_origin_ = 0;
-        uint32_t vi_width_ = 0;
-        uint32_t vi_v_intr_ = 0;
-        uint32_t vi_v_current_ = 0;
-        uint32_t vi_burst_ = 0;
-        uint32_t vi_v_sync_ = 0;
-        uint32_t vi_h_sync_ = 0;
-        uint32_t vi_h_sync_leap_ = 0;
-        uint32_t vi_h_video_ = 0;
-        uint32_t vi_v_video_ = 0;
-        uint32_t vi_v_burst_ = 0;
-        uint32_t vi_x_scale_ = 0;
-        uint32_t vi_y_scale_ = 0;
-        uint32_t vi_test_addr_ = 0;
-        uint32_t vi_staged_data_ = 0;
-
         // Peripheral Interface
         uint32_t pi_dram_addr_ = 0;
         uint32_t pi_cart_addr_ = 0;
@@ -142,18 +126,20 @@ namespace TKPEmu::N64::Devices {
         uint32_t pi_bsd_dom2_pwd_ = 0;
         uint32_t pi_bsd_dom2_pgs_ = 0;
         uint32_t pi_bsd_dom2_rls_ = 0;
-    
+
+        Devices::RCP& rcp_;
         friend class CPU;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };
     class CPU {
     public:
-        CPU();
+        CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_format);
         void Reset();
     private:
         using PipelineStageRet  = void;
         using PipelineStageArgs = void;
-        CPUBus cpubus_;
+        CPUBus& cpubus_;
+        RCP& rcp_;
         uint8_t pipeline_ = 0b00001; // the 5 stages
         std::deque<uint32_t> pipeline_cur_instr_ {};
         ICRF_latch icrf_latch_ {};
@@ -177,6 +163,8 @@ namespace TKPEmu::N64::Devices {
         bool llbit_;
         float fcr0_, fcr31_;
         uint64_t instructions_ran_ = 0;
+
+        GLuint& text_format_;
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 
@@ -252,6 +240,10 @@ namespace TKPEmu::N64::Devices {
          */
         inline void store_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
         inline void store_register(uint8_t* dest, uint64_t data, int size);
+        /**
+         * Executes memory mapped register related stuff
+         */
+        inline void invalidate_hwio(uint32_t addr, uint64_t data);
 
         PipelineStageRet IC(PipelineStageArgs);
         PipelineStageRet RF(PipelineStageArgs);

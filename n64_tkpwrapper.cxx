@@ -2,7 +2,7 @@
 #include <GL/glew.h>
 
 namespace TKPEmu::N64 {
-	N64_TKPWrapper::N64_TKPWrapper() {
+	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_(EmulatorImage.format) {
 		// TODO: rarely some games have different resolutions
 		EmulatorImage.width = 320;
 		EmulatorImage.height = 240;
@@ -44,11 +44,8 @@ namespace TKPEmu::N64 {
 	}
 	
 	void N64_TKPWrapper::clear_screen() {
-        for (std::size_t i = 0; i < screen_color_data_.size(); i++) {
-            if ((i & 0b11) == 0b11)
-                screen_color_data_[i] = 1.0f;
-        }
-        should_draw_ = true;
+        n64_impl_.clear_screen();
+		should_draw_ = true;
     }
 
 	bool N64_TKPWrapper::load_file(std::string path) {
@@ -68,7 +65,7 @@ namespace TKPEmu::N64 {
 		n64_impl_.Reset();
 	}
 	
-	float* N64_TKPWrapper::GetScreenData() {
-		return &screen_color_data_[0];
+	void* N64_TKPWrapper::GetScreenData() {
+		return n64_impl_.GetColorData();
 	}
 }

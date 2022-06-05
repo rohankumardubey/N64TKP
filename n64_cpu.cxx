@@ -1,15 +1,20 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 #include <cassert> // assert
+#include <iostream>
 #include "../include/error_factory.hxx"
+#include "n64_addresses.hxx"
 // #include <valgrind/callgrind.h>
 
 namespace TKPEmu::N64::Devices {
-    CPU::CPU() :
+    CPU::CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_format)  :
         gpr_regs_{},
         fpr_regs_{},
         instr_cache_(KB(16)),
-        data_cache_(KB(8))
+        data_cache_(KB(8)),
+        cpubus_(cpubus),
+        rcp_(rcp),
+        text_format_(text_format)
     {
         Reset();
     }
@@ -210,8 +215,31 @@ namespace TKPEmu::N64::Devices {
     void CPU::store_register(uint8_t* dest, uint64_t data, int size) {
         std::memcpy(dest, &data, size);
     }
-
+    void CPU::invalidate_hwio(uint32_t addr, uint64_t data) {
+        if (data != 0)
+        std::cout << std::hex << addr << " " << data << std::endl;
+        switch (addr) {
+            case PI_WR_LEN_REG: {
+                std::cout << std::hex << __builtin_bswap32(cpubus_.pi_dram_addr_) << " " << __builtin_bswap32(cpubus_.pi_cart_addr_) << std::endl;
+                std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data);
+                break;
+            }
+            case VI_CTRL_REG: {
+                auto format = data & 0b11;
+                if (format == 0b10)
+                    text_format_ = GL_RGB5;
+                else if (format == 0b11)
+                    text_format_ = GL_RGBA8;
+                break;
+            }
+            case VI_ORIGIN_REG: {
+                rcp_.framebuffer_ptr_ = &cpubus_.rdram_[data & 0xFFFFFF];
+                break;
+            }
+        }
+    }
     void CPU::store_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
+        invalidate_hwio(paddr, data);
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
             uint64_t temp = __builtin_bswap64(data);

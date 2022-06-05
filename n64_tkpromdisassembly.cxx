@@ -34,7 +34,7 @@ namespace TKPEmu::Applications {
             if (mem.DataPtr) {
                 switch(mem.Type) {
                     case MemoryType::PIPELINE: {
-                        auto& n64cpu = n64_ptr->GetCPU();
+                        auto& n64cpu = n64_ptr->n64_impl_.cpu_;
                         ImGui::BeginChild("pipeline view", ImVec2(0, 300));
                         static std::array<std::string, 6> chars {"WB", "DC", "EX", "RF", "IC", "  "};
                         ImGui::Text("Stages:");
@@ -220,15 +220,15 @@ namespace TKPEmu::Applications {
             for (auto& mem : memory_views_) {
                 switch(mem.Type) {
                     case MemoryType::GPR_REGS: {
-                        mem.DataPtr = n64_ptr->GetCPU().gpr_regs_.data();
+                        mem.DataPtr = n64_ptr->n64_impl_.cpu_.gpr_regs_.data();
                         break;
                     }
                     case MemoryType::FPR_REGS: {
-                        mem.DataPtr = n64_ptr->GetCPU().fpr_regs_.data();
+                        mem.DataPtr = n64_ptr->n64_impl_.cpu_.fpr_regs_.data();
                         break;
                     }
                     case MemoryType::MEMORY: {
-                        mem.DataPtr = n64_ptr->GetCPU().cpubus_.redirect_paddress(mem.StartAddress);
+                        mem.DataPtr = n64_ptr->n64_impl_.cpu_.cpubus_.redirect_paddress(mem.StartAddress);
                         break;
                     }
                     case MemoryType::PIPELINE: {

@@ -36,4 +36,5 @@ addr PI_BSD_DOM2_PWD_REG = 0x0460'0028;
 addr PI_BSD_DOM2_PGS_REG = 0x0460'002C;
 addr PI_BSD_DOM2_RLS_REG = 0x0460'0030;
 
+#undef addr
 #endif
