@@ -73,7 +73,7 @@ namespace TKPEmu::N64::Devices {
         uint8_t*        dest = nullptr;
         uint32_t        vaddr;
         uint32_t        paddr;
-        bool            cached;
+        bool            cached = false;
         size_t fetched_rt_i = -1;
         size_t fetched_rs_i = -1;
     };

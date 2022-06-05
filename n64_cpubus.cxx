@@ -40,6 +40,7 @@ namespace TKPEmu::N64::Devices {
     uint8_t* CPUBus::redirect_paddress(uint32_t paddr) {
         uint8_t* ptr = page_table_[paddr >> 20];
         if (ptr) {
+            ptr += (paddr & static_cast<uint32_t>(0xFFFFF));
             return ptr;
         } else {
             uint8_t* ptr_slow = redirect_paddress_slow(paddr);
@@ -100,16 +101,13 @@ namespace TKPEmu::N64::Devices {
         // Map rdram
         for (int i = 0; i < 4; i++) {
             page_table_[i] = &rdram_[PAGE_SIZE * i];
-            page_table_[i] = &rdram_[PAGE_SIZE * i];
         }
         // Map rdram from expansion pak
         for (int i = 4; i < 8; i++) {
             page_table_[i] = &rdram_xpk_[PAGE_SIZE * i];
-            page_table_[i] = &rdram_xpk_[PAGE_SIZE * i];
         }
         // Map cartridge rom
-        for (int i = 0x100; i < 0x1FB; i++) {
-            page_table_[i] = &cart_rom_[PAGE_SIZE * i];
+        for (int i = 0x00; i < 0xFB; i++) {
             page_table_[i] = &cart_rom_[PAGE_SIZE * i];
         }
     }

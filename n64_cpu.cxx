@@ -117,6 +117,9 @@ namespace TKPEmu::N64::Devices {
             case WriteType::LATEREGISTER: {
                 auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
                 uint32_t paddr = paddr_s.paddr;
+                std::cout << std::hex << "hex:" << paddr << std::endl;
+                std::cout << std::hex << "data:" << (int)cpubus_.cart_rom_[paddr] << std::endl;
+                std::cout << std::hex << "loc:" << static_cast<void*>(&cpubus_.cart_rom_[paddr]) << std::endl;
                 dcwb_latch_.cached = paddr_s.cached;
                 load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
                 // Result is cast to uint64_t in order to zero extend
@@ -183,7 +186,7 @@ namespace TKPEmu::N64::Devices {
             // kseg0
             // cached, non tlb
             paddr = translate_kseg0(addr);
-            cached = true;
+            //cached = true;
             break;
             case 0b101:
             // kseg1
@@ -252,6 +255,8 @@ namespace TKPEmu::N64::Devices {
     void CPU::load_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
         if (!cached) {
             uint8_t* loc = cpubus_.redirect_paddress(paddr);
+            std::cout << "next:" << (int)*loc << std::endl;
+            std::cout << "next_loc:"<< std::hex << static_cast<void*>(loc) << std::endl;
             uint64_t temp = 0;
             std::memcpy(&temp, loc, size);
             temp = __builtin_bswap64(temp);
@@ -302,7 +307,8 @@ namespace TKPEmu::N64::Devices {
              * ADDI throws Integer overflow exception
              */
             case InstructionType::ADDI: 
-            case InstructionType::ADDIU: {
+            case InstructionType::ADDIU:
+            case InstructionType::DADDI: {
                 int32_t imm = static_cast<int16_t>(cur_instr.IType.immediate);
                 uint64_t seimm = static_cast<int64_t>(imm);
                 uint64_t result = 0;
@@ -519,13 +525,14 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
-             * LW
+             * LW, LWU
              * 
              * throws TLB miss exception
              *        TLB invalid exception
              *        Bus error exception
              *        Address error exception
              */
+            case InstructionType::LWU:
             case InstructionType::LW: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
@@ -564,11 +571,29 @@ namespace TKPEmu::N64::Devices {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
                 if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
-                    // TODO: failing because no load interlock
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+                }
+                break;
+            }
+            /**
+             * BEQL
+             * 
+             * doesn't throw
+             */
+            case InstructionType::BEQL: {
+                 int16_t offset = cur_instr.IType.immediate << 2;
+                int32_t seoffset = offset;
+                if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
+                    exdc_latch_.data = pc_ - 4 + seoffset;
+                    exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
+                    exdc_latch_.write_type = WriteType::REGISTER;
+                    exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+                } else {
+                    // Discard delay slot instruction
+                    icrf_latch_.instruction.Full = 0;
                 }
                 break;
             }
@@ -585,6 +610,25 @@ namespace TKPEmu::N64::Devices {
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+                }
+                break;
+            }
+            /**
+             * BNEL
+             * 
+             * doesn't throw
+             */
+            case InstructionType::BNEL: {
+                int16_t offset = cur_instr.IType.immediate << 2;
+                int32_t seoffset = offset;
+                if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
+                    exdc_latch_.data = pc_ - 4 + seoffset;
+                    exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
+                    exdc_latch_.write_type = WriteType::REGISTER;
+                    exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+                } else {
+                    // Discard delay slot instruction
+                    icrf_latch_.instruction.Full = 0;
                 }
                 break;
             }
