@@ -2,7 +2,7 @@
 #ifndef TKP_N64_H
 #define TKP_N64_H
 #include <string>
-#include "core/n64_cpu.hxx"
+#include "n64_cpu.hxx"
 
 namespace TKPEmu::N64 {
     class N64 {

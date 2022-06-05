@@ -7,7 +7,7 @@
 #include <queue>
 #include <vector>
 #include <memory>
-#include "common/n64_types.hxx"
+#include "n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
 
 // TODO: Move these to cmake

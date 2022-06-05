@@ -1,7 +1,7 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 #include <cassert> // assert
-#include "../../include/error_factory.hxx"
+#include "../include/error_factory.hxx"
 // #include <valgrind/callgrind.h>
 
 namespace TKPEmu::N64::Devices {

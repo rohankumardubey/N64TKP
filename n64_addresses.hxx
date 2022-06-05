@@ -1,5 +1,5 @@
-#ifndef TKPEMU_N64_ADDRESSES_H
-#define TKPEMU_N64_ADDRESSES_H
+#ifndef TKP_N64_ADDRESSES_H
+#define TKP_N64_ADDRESSES_H
 #include <cstdint>
 #define addr constexpr uint32_t
 

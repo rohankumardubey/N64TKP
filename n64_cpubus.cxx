@@ -1,8 +1,8 @@
 #include <fstream>
 #include <sstream>
 #include "n64_cpu.hxx"
-#include "../../include/error_factory.hxx"
-#include "common/n64_addresses.hxx"
+#include "n64_addresses.hxx"
+#include "../include/error_factory.hxx"
 
 namespace TKPEmu::N64::Devices {
     CPUBus::CPUBus() {
