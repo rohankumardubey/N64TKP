@@ -40,7 +40,6 @@ namespace TKPEmu::N64 {
 	}
 
 	bool& N64_TKPWrapper::IsReadyToDraw() {
-		should_draw_ = true;
 		return should_draw_;
 	}
 	

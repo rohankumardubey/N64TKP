@@ -219,7 +219,6 @@ namespace TKPEmu::N64::Devices {
         if (data != 0)
         switch (addr) {
             case PI_WR_LEN_REG: {
-                std::cout << std::hex << __builtin_bswap32(cpubus_.pi_dram_addr_) << " " << __builtin_bswap32(cpubus_.pi_cart_addr_) << std::endl;
                 std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data);
                 break;
             }
@@ -444,6 +443,34 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
+             * SH
+             * 
+             * throws TLB miss exception
+             *        TLB invalid exception
+             *        TLB modification exception
+             *        Bus error exception
+             *        Address error exception
+             */
+            case InstructionType::SH: {
+                int16_t offset = cur_instr.IType.immediate;
+                int32_t seoffset = offset;
+                auto write_vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+                auto paddr_s = translate_vaddr(write_vaddr);
+                exdc_latch_.paddr = paddr_s.paddr;
+                exdc_latch_.cached = paddr_s.cached;
+                exdc_latch_.data = rfex_latch_.fetched_rt.UH._0;
+                exdc_latch_.write_type = WriteType::MMU;
+                exdc_latch_.access_type = AccessType::UHALFWORD;
+                #if SKIPEXCEPTIONS == 0
+                if ((exdc_latch_.dest & 0b11) != 0) {
+                    // From manual:
+                    // If either of the loworder two bits of the address are not zero, an address error exception occurs.
+                    throw InstructionAddressErrorException();
+                }
+                #endif
+                break;
+            }
+            /**
              * LB, LBU
              * 
              * throws TLB miss exception
@@ -502,6 +529,31 @@ namespace TKPEmu::N64::Devices {
              *        Address error exception
              */
             case InstructionType::LHU: {
+                int16_t offset = cur_instr.IType.immediate;
+                int32_t seoffset = offset;
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
+                exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+                exdc_latch_.write_type = WriteType::LATEREGISTER;
+                exdc_latch_.access_type = AccessType::UHALFWORD;
+                exdc_latch_.fetched_rt_i = cur_instr.IType.rt;
+                #if SKIPEXCEPTIONS == 0
+                if ((exdc_latch_.vaddr & 0b1) != 0) {
+                    // From manual:
+                    // If the least-significant bit of the address is not zero, an address error exception occurs.
+                    throw InstructionAddressErrorException();
+                }
+                #endif
+                break;
+            }
+            /**
+             * LH
+             * 
+             * throws TLB miss exception
+             *        TLB invalid exception
+             *        Bus error exception
+             *        Address error exception
+             */
+            case InstructionType::LH: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
                 exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;

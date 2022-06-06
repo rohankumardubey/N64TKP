@@ -202,6 +202,7 @@ namespace TKPEmu::Applications {
                 for (int i = 0; i < steps; i++) {
                     n64_ptr->update();
                 }
+                n64_ptr->should_draw_ = true;
             }
             ImGui::SameLine();
             if (ImGui::Button("reset")) {
@@ -238,6 +239,7 @@ namespace TKPEmu::Applications {
                     }
                     case MemoryType::FRAMEBUFFER: {
                         mem.DataPtr = n64_ptr->n64_impl_.GetColorData();
+                        break;
                     }
                 }
             }
