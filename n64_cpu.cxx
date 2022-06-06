@@ -793,6 +793,22 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
+             * s_SLTU
+             * 
+             * doesn't throw 
+             */
+            case InstructionType::s_SLTU: {
+                if (rfex_latch_.fetched_rs.UW._0 < rfex_latch_.fetched_rt.UW._0) {
+                    exdc_latch_.data = static_cast<uint64_t>(1);
+                } else {
+                    exdc_latch_.data = static_cast<uint64_t>(0);
+                }
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
              * NOP
              * 
              * doesn't throw
