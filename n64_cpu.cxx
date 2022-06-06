@@ -82,9 +82,13 @@ namespace TKPEmu::N64::Devices {
         } else {
             auto opcode = icrf_latch_.instruction.IType.op;
             switch(opcode) {
-                case 0: {
+                case static_cast<int>(InstructionType::SPECIAL): {
                     auto func = icrf_latch_.instruction.RType.func;
                     type = SpecialInstructionTypeTable[func];
+                    break;
+                }
+                case static_cast<int>(InstructionType::COP0): {
+                    
                     break;
                 }
                 default: {
@@ -274,11 +278,11 @@ namespace TKPEmu::N64::Devices {
         #pragma GCC unroll 5
         for (int i = 4; i >= 0; --i) {
             execute_stage(static_cast<PipelineStage>(pipeline_ & (1 << i)));
+            ++cp0_regs_[CP0_COUNT].UW._0;
+            if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
+                // interrupt
+            }
         }
-        // if (pipeline_.front() == PipelineStage::NOP) {
-        //     pipeline_.pop_front();
-        //     //pipeline_cur_instr_.pop_front();
-        // }
         pipeline_ <<= 1;
         pipeline_ |= 1;
         #if SKIPDEBUGSTUFF == 0
@@ -301,7 +305,8 @@ namespace TKPEmu::N64::Devices {
              */
             case InstructionType::ADDI: 
             case InstructionType::ADDIU:
-            case InstructionType::DADDI: {
+            case InstructionType::DADDI:
+            case InstructionType::DADDIU: {
                 int32_t imm = static_cast<int16_t>(cur_instr.IType.immediate);
                 uint64_t seimm = static_cast<int64_t>(imm);
                 uint64_t result = 0;
@@ -352,6 +357,17 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.data = seimm;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
+             * COP0
+             */
+            case InstructionType::COP0: {
+                if (cur_instr.Full & CPzOPERATION_BIT) {
+                    execute_cp0_instruction(cur_instr);
+                } else {
+                    throw ErrorFactory::generate_exception(__func__, __LINE__, "CP0 CFC/CTC operations are illegal");
+                }
                 break;
             }
             /**
@@ -753,10 +769,35 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
-             * s_SLL
+             * s_DSLL32
              * 
-             * doesn't throw
+             * throws Reserved instruction exception
              */
+            case InstructionType::s_DSLL32: {
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
+                exdc_latch_.data = rfex_latch_.fetched_rt.UD << (cur_instr.RType.sa + 32);
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
+             * s_DSLLV
+             * 
+             * throws Reserved instruction exception
+             */
+            case InstructionType::s_DSLLV: {
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
+                exdc_latch_.data = rfex_latch_.fetched_rt.UD << (rfex_latch_.fetched_rs.UD & 0b111111);
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
+             * s_SLL, s_DSLL
+             * 
+             * throws Reserved instruction exception
+             */
+            case InstructionType::s_DSLL:
             case InstructionType::s_SLL: {
                 exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UD << cur_instr.RType.sa;
@@ -772,6 +813,19 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::s_SRL: {
                 exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UD >> cur_instr.RType.sa;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
+             * s_DSRA32
+             * 
+             * throws Reserved instruction exception
+             */
+            case InstructionType::s_DSRA32: {
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
+                int64_t sedata = rfex_latch_.fetched_rt.D >> (cur_instr.RType.sa + 32);
+                exdc_latch_.data = sedata;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
@@ -809,6 +863,18 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
+             * s_NOR
+             * 
+             * doesn't throw
+             */
+            case InstructionType::s_NOR: {
+                exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
+                exdc_latch_.data = ~(rfex_latch_.fetched_rs.UD | rfex_latch_.fetched_rt.UD);
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
              * NOP
              * 
              * doesn't throw
@@ -831,8 +897,39 @@ namespace TKPEmu::N64::Devices {
             // result is stored during EX instead of waiting for WB when it comes
             // to writing to a register
             // for instructions like ADD that don't need DC stage to write back
-            store_register( exdc_latch_.dest, exdc_latch_.data, exdc_latch_.access_type);
+            store_register(exdc_latch_.dest, exdc_latch_.data, exdc_latch_.access_type);
             exdc_latch_.write_type = WriteType::NONE;
+        }
+    }
+    void CPU::execute_cp0_instruction(const Instruction& instr) {
+        uint32_t func = instr.RType.rs;
+        switch (func) {
+            /**
+             * MTC0
+             * 
+             * throws Coprocessor unusable exception
+             */
+            case 0b00100: {
+                int64_t sedata = gpr_regs_[instr.RType.rd].W._0;
+                exdc_latch_.dest = &cp0_regs_[instr.RType.rt].UB._0;
+                exdc_latch_.data = sedata;
+                exdc_latch_.write_type = WriteType::LATEREGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
+            /**
+             * MFC0
+             * 
+             * throws Coprocessor unusable exception
+             */
+            case 0b00000: {
+                int64_t sedata = cp0_regs_[instr.RType.rd].W._0;
+                exdc_latch_.dest = &gpr_regs_[instr.RType.rt].UB._0;
+                exdc_latch_.data = sedata;
+                exdc_latch_.write_type = WriteType::LATEREGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                break;
+            }
         }
     }
 }

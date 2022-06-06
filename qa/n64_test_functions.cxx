@@ -27,5 +27,6 @@ namespace TKPEmu::N64 {
         // error:
         // TestError = "Failed DillonB test: " + path.stem().string() + " - " + TestError;
         // return false;
+        return true;
     }
 }

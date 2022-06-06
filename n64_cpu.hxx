@@ -23,6 +23,10 @@ constexpr uint32_t KSEG0_START = 0x8000'0000;
 constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
 constexpr uint32_t KSEG1_START = 0xA000'0000;
 constexpr uint32_t KSEG1_END   = 0xBFFF'FFFF;
+
+constexpr auto CP0_COUNT = 9;
+constexpr auto CP0_COMPARE = 11;
+
 namespace TKPEmu {
     namespace N64 {
         class N64;
@@ -256,6 +260,7 @@ namespace TKPEmu::N64::Devices {
          * Called during EX stage, handles the logic execution of each instruction
          */
         inline void execute_instruction();
+        inline void execute_cp0_instruction(const Instruction& instr);
         void update_pipeline();
 
         void clear_registers();

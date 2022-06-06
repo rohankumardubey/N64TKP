@@ -215,6 +215,8 @@ namespace TKPEmu::N64 {
         InstructionType::s_TGE, InstructionType::s_TGEU, InstructionType::s_TLT, InstructionType::s_TLTU, InstructionType::s_TEQ, InstructionType::ERROR, InstructionType::s_TNE, InstructionType::ERROR,
         InstructionType::s_DSLL, InstructionType::ERROR, InstructionType::s_DSRL, InstructionType::s_DSRA, InstructionType::s_DSLL32, InstructionType::ERROR, InstructionType::s_DSRL32, InstructionType::s_DSRA32,
     };
+    constexpr static uint32_t CPzOPERATION_BIT = 0b00000010'00000000'00000000'00000000;
+    constexpr static uint32_t CPz_TO_GPR = 0b00010;
     using MemDataUnionDW = MemDataUnionDWBase;
     using Instruction = InstructionBase;
     using InstructionCacheLine = InstructionCacheLineBase;
