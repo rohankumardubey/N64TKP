@@ -694,6 +694,30 @@ namespace TKPEmu::N64::Devices {
                 }
                 break;
             }
+            /**
+             * BLEZL
+             * 
+             * doesn't throw
+             */
+            case InstructionType::BLEZL: {
+                int16_t offset = cur_instr.IType.immediate << 2;
+                int32_t seoffset = offset;
+                if (rfex_latch_.fetched_rs.W._0 <= 0) {
+                    exdc_latch_.data = pc_ - 4 + seoffset;
+                    exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
+                    exdc_latch_.write_type = WriteType::REGISTER;
+                    exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+                } else {
+                    // Discard delay slot instruction
+                    icrf_latch_.instruction.Full = 0;
+                }
+                break;
+            }
+            /**
+             * BGTZ
+             * 
+             * doesn't throw
+             */
             case InstructionType::BGTZ: {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
@@ -703,6 +727,16 @@ namespace TKPEmu::N64::Devices {
                     exdc_latch_.write_type = WriteType::REGISTER;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
                 }
+                break;
+            }
+            /**
+             * TGE
+             * 
+             * throws TrapException
+             */
+            case InstructionType::s_TGE: {
+                if (rfex_latch_.fetched_rs.UD >= rfex_latch_.fetched_rt.UD)
+                    throw ErrorFactory::generate_exception(__func__, __LINE__, "TrapException was thrown");
                 break;
             }
             /**
