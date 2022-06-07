@@ -51,14 +51,6 @@ namespace TKPEmu::N64::Devices {
         Supervisor,
         Kernel
     };
-    enum class PipelineStage {
-        NOP = 0,    // No operation
-        IC = 1, // Instruction cache fetch
-        RF = 2, // Register fetch
-        EX = 4, // Execution
-        DC = 8, // Data cache fetch
-        WB = 16, // Write back
-    };
     struct ICRF_latch {
         Instruction     instruction;
     };
@@ -301,8 +293,6 @@ namespace TKPEmu::N64::Devices {
         constexpr static std::array<const func_ptr*, 3> TableTable = {
             &NopTable, InstructionTable.data(), SpecialTable.data()
         };
-
-        __always_inline bool execute_stage(PipelineStage stage);
         __always_inline void bypass_register();
         /**
          * Called during EX stage, handles the logic execution of each instruction

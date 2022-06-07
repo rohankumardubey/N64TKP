@@ -185,7 +185,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::SPECIAL() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "SPECIAL opcode reached");
+        (this->*SpecialTable[rfex_latch_.instruction.RType.func])();
 	}
 
     TKP_INSTR_FUNC CPU::REGIMM() {
@@ -927,37 +927,13 @@ namespace TKPEmu::N64::Devices {
         // Fetch the registers
         auto fetched_rs = gpr_regs_[icrf_latch_.instruction.RType.rs];
         auto fetched_rt = gpr_regs_[icrf_latch_.instruction.RType.rt];
-        uint8_t type;
-        // Get instruction from previous fetch
-        if (icrf_latch_.instruction.Full == 0) {
-            type = 0;
-            rfex_latch_.instruction_target = 0;
-        } else {
-            auto opcode = icrf_latch_.instruction.IType.op;
-            switch(opcode) {
-                case static_cast<int>(InstructionType::SPECIAL): {
-                    auto func = icrf_latch_.instruction.RType.func;
-                    type = func;
-                    rfex_latch_.instruction_target = 2; //special
-                    break;
-                }
-                case static_cast<int>(InstructionType::COP0): {
-                    
-                    break;
-                }
-                default: {
-                    type = opcode;
-                    rfex_latch_.instruction_target = 1; //normal
-                    break;
-                }
-            }
-        }
+        rfex_latch_.instruction_target = !!(icrf_latch_.instruction.Full);
+        rfex_latch_.instruction_type = !!(icrf_latch_.instruction.Full) * icrf_latch_.instruction.IType.op;
         rfex_latch_.fetched_rs_i = icrf_latch_.instruction.RType.rs;
         rfex_latch_.fetched_rt_i = icrf_latch_.instruction.RType.rt;
         rfex_latch_.fetched_rs.UD = fetched_rs.UD;
         rfex_latch_.fetched_rt.UD = fetched_rt.UD;
         rfex_latch_.instruction = icrf_latch_.instruction;
-        rfex_latch_.instruction_type = type;
     }
 
     CPU::PipelineStageRet CPU::EX(PipelineStageArgs) {
