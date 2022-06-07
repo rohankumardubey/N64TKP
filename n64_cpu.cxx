@@ -6,7 +6,9 @@
 #include "n64_addresses.hxx"
 // #include <valgrind/callgrind.h>
 #define SKIPDEBUGSTUFF 1
-
+constexpr uint64_t LUT[] = {
+    0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF, 0, 0, 0, 0xFFFFFFFFFFFFFFFF,
+};
 namespace TKPEmu::N64::Devices {
     CPU::CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_format)  :
         gpr_regs_{},
@@ -29,38 +31,6 @@ namespace TKPEmu::N64::Devices {
         pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
         cpubus_.Reset();
         fill_pipeline();
-    }
-
-    bool CPU::execute_stage(PipelineStage stage) {
-        gpr_regs_[0].UD = 0;
-        switch(stage) {
-            case PipelineStage::IC: {
-                IC();
-                return true;
-            }
-            case PipelineStage::RF: {
-                RF();
-                return true;
-            }
-            case PipelineStage::EX: {
-                EX();
-                return true;
-            }
-            case PipelineStage::DC: {
-                DC();
-                return true;
-            }
-            case PipelineStage::WB: {
-                WB();
-                #if SKIPDEBUGSTUFF == 0
-                pipeline_cur_instr_.pop_front();
-                #endif
-                return true;
-            }
-            default: {
-                return false;
-            }
-        }
     }
 
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs) {
@@ -219,9 +189,11 @@ namespace TKPEmu::N64::Devices {
         TranslatedAddress t_addr = { paddr, cached };
         return t_addr;
     }
-
-    void CPU::store_register(uint8_t* dest, uint64_t data, int size) {
-        std::memcpy(dest, &data, size);
+    void CPU::store_register(uint8_t* dest8, uint64_t data, int size) {
+        // std::memcpy(dest, &data, size);
+        uint64_t* dest = (uint64_t*)(dest8);
+        uint64_t mask = LUT[size];
+        *dest = (*dest & ~mask) | (data & mask);
     }
     void CPU::invalidate_hwio(uint32_t addr, uint64_t data) {
         if (data != 0)
@@ -294,11 +266,16 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::update_pipeline() {
-        execute_stage(PipelineStage::WB);
-        execute_stage(PipelineStage::DC);
-        execute_stage(PipelineStage::EX);
-        execute_stage(PipelineStage::RF);
-        execute_stage(PipelineStage::IC);
+        gpr_regs_[0].UD = 0;
+        WB();
+        gpr_regs_[0].UD = 0;
+        DC();
+        gpr_regs_[0].UD = 0;
+        EX();
+        gpr_regs_[0].UD = 0;
+        RF();
+        gpr_regs_[0].UD = 0;
+        IC();
         ++cp0_regs_[CP0_COUNT].UD;
         if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
             // interrupt
@@ -320,7 +297,6 @@ namespace TKPEmu::N64::Devices {
              * 
              * ADDI throws Integer overflow exception
              */
-            // case InstructionType::DADDI:
             // case InstructionType::DADDIU:
             case InstructionType::ADDI: 
             case InstructionType::ADDIU: {
@@ -333,6 +309,31 @@ namespace TKPEmu::N64::Devices {
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 #if SKIPEXCEPTIONS == 0
                 if (overflow && type == InstructionType::ADDI) {
+                    // An integer overflow exception occurs if carries out of bits 30 and 31 differ (2’s
+                    // complement overflow). The contents of destination register rt is not modified
+                    // when an integer overflow exception occurs.
+                    exdc_latch_.write_type = WriteType::NONE;
+                    throw IntegerOverflowException();
+                }
+                #endif
+                break;
+            }
+            /**
+             * DADDI
+             * 
+             * throws IntegerOverflowException
+             *        ReservedInstructionException
+             */
+            case InstructionType::DADDI: {
+                int64_t seimm = static_cast<int16_t>(cur_instr.IType.immediate);
+                int64_t result = 0;
+                bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.D, seimm, &result);
+                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
+                exdc_latch_.data = result;
+                exdc_latch_.write_type = WriteType::REGISTER;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                #if SKIPEXCEPTIONS == 0
+                if (overflow) {
                     // An integer overflow exception occurs if carries out of bits 30 and 31 differ (2’s
                     // complement overflow). The contents of destination register rt is not modified
                     // when an integer overflow exception occurs.
@@ -553,38 +554,14 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             /**
-             * LHU
+             * LH, LHU
              * 
              * throws TLB miss exception
              *        TLB invalid exception
              *        Bus error exception
              *        Address error exception
              */
-            case InstructionType::LHU: {
-                int16_t offset = cur_instr.IType.immediate;
-                int32_t seoffset = offset;
-                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
-                exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
-                exdc_latch_.write_type = WriteType::LATEREGISTER;
-                exdc_latch_.access_type = AccessType::UHALFWORD;
-                exdc_latch_.fetched_rt_i = cur_instr.IType.rt;
-                #if SKIPEXCEPTIONS == 0
-                if ((exdc_latch_.vaddr & 0b1) != 0) {
-                    // From manual:
-                    // If the least-significant bit of the address is not zero, an address error exception occurs.
-                    throw InstructionAddressErrorException();
-                }
-                #endif
-                break;
-            }
-            /**
-             * LH
-             * 
-             * throws TLB miss exception
-             *        TLB invalid exception
-             *        Bus error exception
-             *        Address error exception
-             */
+            case InstructionType::LHU:
             case InstructionType::LH: {
                 int16_t offset = cur_instr.IType.immediate;
                 int32_t seoffset = offset;
@@ -764,10 +741,11 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::s_ADDU: {
                 int32_t result = 0;
                 bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rt.W._0, rfex_latch_.fetched_rs.W._0, &result);
+                int64_t seresult = result;
                 exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
-                exdc_latch_.data = result;
+                exdc_latch_.data = seresult;
                 exdc_latch_.write_type = WriteType::REGISTER;
-                exdc_latch_.access_type = AccessType::WORD;
+                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 #if SKIPEXCEPTIONS == 0
                 if (overflow) {
                     // An integer overflow exception occurs if carries out of bits 30 and 31 differ (2’s

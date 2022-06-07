@@ -6,7 +6,7 @@
 #include <chrono>
 
 namespace TKPEmu::N64 {
-	constexpr auto INSTRS_PER_FRAME = (93'750'000 / 60);
+	constexpr auto INSTRS_PER_FRAME = (93'750'000);
 	namespace Applications {
 		class N64_RomDisassembly;
 	}

@@ -87,6 +87,7 @@ namespace TKPEmu::N64::Devices {
         uint64_t        data;
         uint8_t*        dest = nullptr;
         uint32_t        paddr;
+        uint8_t         dest_reg = 0;
         bool            cached;
     };
     struct TranslatedAddress {
@@ -227,7 +228,7 @@ namespace TKPEmu::N64::Devices {
          * @param data the result is stored here
          * @param size size to load
          */
-        inline void load_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
+        __always_inline void load_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
         /**
          * Searches the cache, write buffer, and main memory to store the
          * contents of a specified data length to a specified physical address.
@@ -242,8 +243,8 @@ namespace TKPEmu::N64::Devices {
          * @param data data to store
          * @param size size to store
          */
-        inline void store_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
-        inline void store_register(uint8_t* dest, uint64_t data, int size);
+        __always_inline void store_memory(bool cached, uint32_t paddr, uint64_t& data, int size);
+        __always_inline void store_register(uint8_t* dest, uint64_t data, int size);
         /**
          * Executes memory mapped register related stuff
          */
@@ -255,12 +256,12 @@ namespace TKPEmu::N64::Devices {
         PipelineStageRet DC(PipelineStageArgs);
         PipelineStageRet WB(PipelineStageArgs);
 
-        inline bool execute_stage(PipelineStage stage);
+        __always_inline bool execute_stage(PipelineStage stage);
         /**
          * Called during EX stage, handles the logic execution of each instruction
          */
-        inline void execute_instruction();
-        inline void execute_cp0_instruction(const Instruction& instr);
+        void execute_instruction();
+        void execute_cp0_instruction(const Instruction& instr);
         void update_pipeline();
         // Fills the pipeline with the first 5 instructions
         void fill_pipeline();

@@ -1,5 +1,14 @@
 #include "n64_tkpwrapper.hxx"
 #include <GL/glew.h>
+//#include <valgrind/callgrind.h>
+
+#ifndef CALLGRIND_START_INSTRUMENTATION
+#define NO_PROFILING
+#define CALLGRIND_START_INSTRUMENTATION
+#endif
+#ifndef CALLGRIND_STOP_INSTRUMENTATION
+#define CALLGRIND_STOP_INSTRUMENTATION
+#endif
 
 namespace TKPEmu::N64 {
 	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_(EmulatorImage.format) {
@@ -60,11 +69,18 @@ namespace TKPEmu::N64 {
 			Reset();
 			bool stopped_break = false;
 			begin:
+			CALLGRIND_START_INSTRUMENTATION;
 			while (true) {
 				// std::lock_guard<std::mutex> lg(DebugUpdateMutex);
 				update();
 				++cur_frame_instrs_;
+				#ifdef NO_PROFILING
 				if (cur_frame_instrs_ == INSTRS_PER_FRAME) [[unlikely]] {
+				#else
+				if (cur_frame_instrs_ == 5000) [[unlikely]] {
+					stopped_break = true;
+					break;
+				#endif
 					auto end = std::chrono::system_clock::now();
 					auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - frame_start).count();
 					LastFrameTime = dur;
@@ -80,6 +96,7 @@ namespace TKPEmu::N64 {
 					frame_start = std::chrono::system_clock::now();
 				}
 			}
+			CALLGRIND_STOP_INSTRUMENTATION;
 			if (!stopped_break) {
 				Step.wait(false);
 				std::lock_guard<std::mutex> lg(DebugUpdateMutex);
