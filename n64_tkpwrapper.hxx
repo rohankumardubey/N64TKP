@@ -3,8 +3,10 @@
 #define TKP_N64_TKPWRAPPER_H
 #include "../include/emulator.h"
 #include "n64_impl.hxx"
+#include <chrono>
 
 namespace TKPEmu::N64 {
+	constexpr auto INSTRS_PER_FRAME = (93'750'000 / 60);
 	namespace Applications {
 		class N64_RomDisassembly;
 	}
@@ -22,9 +24,7 @@ namespace TKPEmu::N64 {
 		Devices::CPU& GetCPU() {
 			return n64_impl_.cpu_;
 		}
-		void update() {
-			n64_impl_.Update();
-		}
+		uint64_t LastFrameTime = 0;
     private:
         N64 n64_impl_;
 		bool should_draw_ = false;
@@ -37,7 +37,18 @@ namespace TKPEmu::N64 {
 		// void reset_normal() override;
 		void reset_skip() override;
 		bool load_file(std::string path) override;
-		// void update() override;
+		inline void update() override {
+			try {
+				n64_impl_.Update();
+			} catch (...) {
+				CurrentException = std::current_exception();
+				HasException = true;
+				cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
+				Stopped.store(true);
+			}
+		}
+		std::chrono::system_clock::time_point frame_start = std::chrono::system_clock::now();
+		uint64_t cur_frame_instrs_ = 0;
 		// std::string print() const override;
 		friend class TKPEmu::Applications::N64_RomDisassembly;
     };

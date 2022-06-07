@@ -141,6 +141,7 @@ namespace TKPEmu::Applications {
                         ImGui::Separator();
                         ImGui::Text("PC: %08x", static_cast<uint32_t>(n64cpu.pc_));
                         ImGui::Text("Instructions ran: %u", n64cpu.instructions_ran_);
+                        ImGui::Text("Last frame took: %ums", n64_ptr->LastFrameTime);
                         ImGui::EndChild();
                         break;
                     }

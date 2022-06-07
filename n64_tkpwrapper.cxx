@@ -50,7 +50,46 @@ namespace TKPEmu::N64 {
 	}
 	
 	void N64_TKPWrapper::start_debug() {
-		Paused = true;
+		auto func = [this]() {
+			std::lock_guard<std::mutex> lguard(ThreadStartedMutex);
+			Loaded = true;
+			Loaded.notify_all();
+			Paused = true;
+			Stopped = false;
+			Step = false;
+			Reset();
+			bool stopped_break = false;
+			begin:
+			while (true) {
+				// std::lock_guard<std::mutex> lg(DebugUpdateMutex);
+				update();
+				++cur_frame_instrs_;
+				if (cur_frame_instrs_ == INSTRS_PER_FRAME) [[unlikely]] {
+					auto end = std::chrono::system_clock::now();
+					auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - frame_start).count();
+					LastFrameTime = dur;
+					cur_frame_instrs_ = 0;
+					if (Stopped.load()) {
+						stopped_break = true;
+						break;
+					}
+					if (Paused.load()) {
+						break;
+					}
+					should_draw_ = true;
+					frame_start = std::chrono::system_clock::now();
+				}
+			}
+			if (!stopped_break) {
+				Step.wait(false);
+				std::lock_guard<std::mutex> lg(DebugUpdateMutex);
+				Step.store(false);
+				update();
+				goto begin;
+			}
+		};
+		UpdateThread = std::thread(func);
+		UpdateThread.detach();
 	}
 
 	void N64_TKPWrapper::reset_skip() {

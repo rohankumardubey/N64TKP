@@ -5,6 +5,7 @@
 #include "../include/error_factory.hxx"
 #include "n64_addresses.hxx"
 // #include <valgrind/callgrind.h>
+#define SKIPDEBUGSTUFF 1
 
 namespace TKPEmu::N64::Devices {
     CPU::CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_format)  :
@@ -27,6 +28,7 @@ namespace TKPEmu::N64::Devices {
         instructions_ran_ = 1;
         pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
         cpubus_.Reset();
+        fill_pipeline();
     }
 
     bool CPU::execute_stage(PipelineStage stage) {
@@ -110,7 +112,6 @@ namespace TKPEmu::N64::Devices {
     }
 
     CPU::PipelineStageRet CPU::DC(PipelineStageArgs) {
-        // unimplemented atm
         dcwb_latch_.data = 0;
         dcwb_latch_.access_type = exdc_latch_.access_type;
         dcwb_latch_.dest = exdc_latch_.dest;
@@ -178,6 +179,9 @@ namespace TKPEmu::N64::Devices {
     }
 
     TranslatedAddress CPU::translate_vaddr(uint32_t addr) {
+        // Fast vaddr translation
+        // TODO: broken if uses kuseg
+        return { addr - KSEG0_START - ((addr >> 29) & 1) * 0x2000'0000, false };
         // VR4300 manual page 136 table 5-3
         unsigned _3msb = addr >> 29;
         uint32_t paddr = 0;
@@ -213,7 +217,7 @@ namespace TKPEmu::N64::Devices {
             break;
         }
         TranslatedAddress t_addr = { paddr, cached };
-        return std::move(t_addr);
+        return t_addr;
     }
 
     void CPU::store_register(uint8_t* dest, uint64_t data, int size) {
@@ -273,23 +277,36 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
+    void CPU::fill_pipeline() {
+        IC();
+        
+        RF();
+        IC();
+
+        EX();
+        RF();
+        IC();
+
+        DC();
+        EX();
+        RF();
+        IC();
+    }
+
     void CPU::update_pipeline() {
-        // CALLGRIND_START_INSTRUMENTATION;
-        #pragma GCC unroll 5
-        for (int i = 4; i >= 0; --i) {
-            execute_stage(static_cast<PipelineStage>(pipeline_ & (1 << i)));
-            ++cp0_regs_[CP0_COUNT].UW._0;
-            if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
-                // interrupt
-            }
+        execute_stage(PipelineStage::WB);
+        execute_stage(PipelineStage::DC);
+        execute_stage(PipelineStage::EX);
+        execute_stage(PipelineStage::RF);
+        execute_stage(PipelineStage::IC);
+        ++cp0_regs_[CP0_COUNT].UD;
+        if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
+            // interrupt
         }
-        pipeline_ <<= 1;
-        pipeline_ |= 1;
         #if SKIPDEBUGSTUFF == 0
         ++instructions_ran_;
         pipeline_cur_instr_.push_back(EMPTY_INSTRUCTION);
         #endif
-        // CALLGRIND_STOP_INSTRUMENTATION;
     }
 
     void CPU::execute_instruction() {

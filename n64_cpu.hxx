@@ -196,7 +196,7 @@ namespace TKPEmu::N64::Devices {
             @return physical address
         */
         inline uint32_t translate_kuseg(uint32_t vaddr) noexcept;
-        TranslatedAddress translate_vaddr(uint32_t vaddr);
+        inline TranslatedAddress translate_vaddr(uint32_t vaddr);
         /**
          * Load and store instruction common functions
          * 
@@ -262,6 +262,8 @@ namespace TKPEmu::N64::Devices {
         inline void execute_instruction();
         inline void execute_cp0_instruction(const Instruction& instr);
         void update_pipeline();
+        // Fills the pipeline with the first 5 instructions
+        void fill_pipeline();
 
         void clear_registers();
 
