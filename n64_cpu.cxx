@@ -303,14 +303,13 @@ namespace TKPEmu::N64::Devices {
              * 
              * ADDI throws Integer overflow exception
              */
+            // case InstructionType::DADDI:
+            // case InstructionType::DADDIU:
             case InstructionType::ADDI: 
-            case InstructionType::ADDIU:
-            case InstructionType::DADDI:
-            case InstructionType::DADDIU: {
-                int32_t imm = static_cast<int16_t>(cur_instr.IType.immediate);
-                uint64_t seimm = static_cast<int64_t>(imm);
-                uint64_t result = 0;
-                bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.UD, seimm, &result);
+            case InstructionType::ADDIU: {
+                int32_t seimm = static_cast<int16_t>(cur_instr.IType.immediate);
+                int32_t result = 0;
+                bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.W._0, seimm, &result);
                 exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
                 exdc_latch_.data = result;
                 exdc_latch_.write_type = WriteType::REGISTER;
@@ -409,7 +408,7 @@ namespace TKPEmu::N64::Devices {
                 int32_t seoffset = offset;
                 auto write_vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
                 auto paddr_s = translate_vaddr(write_vaddr);
-                exdc_latch_.dest = &gpr_regs_[cur_instr.IType.rt].UB._0;
+                exdc_latch_.paddr = paddr_s.paddr;
                 exdc_latch_.cached = paddr_s.cached;
                 exdc_latch_.data = rfex_latch_.fetched_rt.UD;
                 exdc_latch_.write_type = WriteType::MMU;
@@ -632,7 +631,7 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::BEQ: {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
-                if (rfex_latch_.fetched_rs.UW._0 == rfex_latch_.fetched_rt.UW._0) {
+                if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
@@ -648,7 +647,7 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::BEQL: {
                  int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
-                if (rfex_latch_.fetched_rs.UW._0 == rfex_latch_.fetched_rt.UW._0) {
+                if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
@@ -667,7 +666,7 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::BNE: {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
-                if (rfex_latch_.fetched_rs.UW._0 != rfex_latch_.fetched_rt.UW._0) {
+                if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
@@ -683,7 +682,7 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::BNEL: {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
-                if (rfex_latch_.fetched_rs.UW._0 != rfex_latch_.fetched_rt.UW._0) {
+                if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
@@ -702,7 +701,7 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::BLEZL: {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
-                if (rfex_latch_.fetched_rs.W._0 <= 0) {
+                if (rfex_latch_.fetched_rs.D <= 0) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
@@ -721,7 +720,7 @@ namespace TKPEmu::N64::Devices {
             case InstructionType::BGTZ: {
                 int16_t offset = cur_instr.IType.immediate << 2;
                 int32_t seoffset = offset;
-                if (rfex_latch_.fetched_rs.W._0 > 0) {
+                if (rfex_latch_.fetched_rs.D > 0) {
                     exdc_latch_.data = pc_ - 4 + seoffset;
                     exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
                     exdc_latch_.write_type = WriteType::REGISTER;
@@ -831,10 +830,11 @@ namespace TKPEmu::N64::Devices {
              * 
              * throws Reserved instruction exception
              */
-            case InstructionType::s_DSLL:
+            // case InstructionType::s_DSLL:
             case InstructionType::s_SLL: {
                 exdc_latch_.dest = &gpr_regs_[cur_instr.RType.rd].UB._0;
-                exdc_latch_.data = rfex_latch_.fetched_rt.UD << cur_instr.RType.sa;
+                uint32_t zedata = rfex_latch_.fetched_rt.UW._0 << cur_instr.RType.sa;
+                exdc_latch_.data = zedata;
                 exdc_latch_.write_type = WriteType::REGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                 break;
