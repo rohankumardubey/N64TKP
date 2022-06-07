@@ -34,115 +34,115 @@ namespace TKPEmu::Applications {
             if (mem.DataPtr) {
                 switch(mem.Type) {
                     case MemoryType::PIPELINE: {
-                        auto& n64cpu = n64_ptr->n64_impl_.cpu_;
-                        ImGui::BeginChild("pipeline view", ImVec2(0, 300));
-                        static std::array<std::string, 6> chars {"WB", "DC", "EX", "RF", "IC", "  "};
-                        ImGui::Text("Stages:");
-                        ImGui::Separator();
-                        for (size_t i = 0; i < n64cpu.pipeline_cur_instr_.size(); i++) {
-                            int cur_num = i;
-                            std::string cur_stage = chars[cur_num];
-                            #if SKIPDEBUGSTUFF == 0
-                            uint32_t cur_instr = n64cpu.pipeline_cur_instr_[i];
-                            #else 
-                            uint32_t cur_instr = 0;
-                            #endif
-                            N64::Instruction instr; instr.Full = cur_instr;
-                            std::string dis_string = TKPEmu::GeneralDisassembler::GetOpcodeName(EmuType::N64, cur_instr);
-                            ImGui::Text("%s", cur_stage.c_str());
-                            ImGui::SameLine(0, 0);
-                            std::stringstream ss;
-                            ss << std::setw(7) << std::setfill(' ') << dis_string;
-                            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(115, 120, 46, 255));
-                            ImGui::Text("%s", ss.str().c_str());
-                            ImGui::PopStyleColor();
-                            // Draw arguments
-                            N64::InstructionType itype = N64::InstructionTypeTable[instr.IType.op];
-                            switch (itype) {
-                                case N64::InstructionType::SPECIAL: {
-                                    if (cur_instr != 0)[[likely]] {
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                        ImGui::Text(" rt:$r%02d", instr.RType.rt);
-                                        ImGui::PopStyleColor();
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::TextUnformatted(", ");
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                        ImGui::Text("rs:$r%02d", instr.RType.rs);
-                                        ImGui::PopStyleColor();
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::TextUnformatted(", ");
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                        ImGui::Text("rd:$r%02d", instr.RType.rd);
-                                        ImGui::PopStyleColor();
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::TextUnformatted(", ");
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
-                                        ImGui::Text("sa:0x%02x", instr.RType.sa);
-                                        ImGui::PopStyleColor();
-                                    } else {
-                                        // NOP doesn't have arguments
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::TextUnformatted("                                   ");
-                                    }
-                                    break;
-                                }
-                                case N64::InstructionType::J: 
-                                case N64::InstructionType::JAL: {
-                                    ImGui::SameLine(0, 0);
-                                    ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
-                                    ImGui::Text(" target:0x%07x                  ", instr.JType.target);
-                                    ImGui::PopStyleColor();
-                                    break;
-                                }
-                                default: {
-                                    if (cur_instr != N64::EMPTY_INSTRUCTION) [[likely]] {
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                        ImGui::Text(" rt:$r%02d", instr.IType.rt);
-                                        ImGui::PopStyleColor();
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::TextUnformatted(", ");
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
-                                        ImGui::PushItemWidth(20);
-                                        ImGui::Text("rs:$r%02d", instr.IType.rs);
-                                        ImGui::PopItemWidth();
-                                        ImGui::PopStyleColor();
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::TextUnformatted(", ");
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
-                                        ImGui::Text("imm:0x%04x", instr.IType.immediate);
-                                        ImGui::PopStyleColor();
-                                        ImGui::SameLine(0, 0);
-                                        ImGui::TextUnformatted("      ");
-                                    }
-                                    break;
-                                }
-                            }
-                            if (instr.IType.op != 0) {
+                        // auto& n64cpu = n64_ptr->n64_impl_.cpu_;
+                        // ImGui::BeginChild("pipeline view", ImVec2(0, 300));
+                        // static std::array<std::string, 6> chars {"WB", "DC", "EX", "RF", "IC", "  "};
+                        // ImGui::Text("Stages:");
+                        // ImGui::Separator();
+                        // for (size_t i = 0; i < n64cpu.pipeline_cur_instr_.size(); i++) {
+                        //     int cur_num = i;
+                        //     std::string cur_stage = chars[cur_num];
+                        //     #if SKIPDEBUGSTUFF == 0
+                        //     uint32_t cur_instr = n64cpu.pipeline_cur_instr_[i];
+                        //     #else 
+                        //     uint32_t cur_instr = 0;
+                        //     #endif
+                        //     N64::Instruction instr; instr.Full = cur_instr;
+                        //     std::string dis_string = TKPEmu::GeneralDisassembler::GetOpcodeName(EmuType::N64, cur_instr);
+                        //     ImGui::Text("%s", cur_stage.c_str());
+                        //     ImGui::SameLine(0, 0);
+                        //     std::stringstream ss;
+                        //     ss << std::setw(7) << std::setfill(' ') << dis_string;
+                        //     ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(115, 120, 46, 255));
+                        //     ImGui::Text("%s", ss.str().c_str());
+                        //     ImGui::PopStyleColor();
+                        //     // Draw arguments
+                        //     N64::InstructionType itype = N64::InstructionTypeTable[instr.IType.op];
+                        //     switch (itype) {
+                        //         case N64::InstructionType::SPECIAL: {
+                        //             if (cur_instr != 0)[[likely]] {
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                        //                 ImGui::Text(" rt:$r%02d", instr.RType.rt);
+                        //                 ImGui::PopStyleColor();
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::TextUnformatted(", ");
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                        //                 ImGui::Text("rs:$r%02d", instr.RType.rs);
+                        //                 ImGui::PopStyleColor();
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::TextUnformatted(", ");
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                        //                 ImGui::Text("rd:$r%02d", instr.RType.rd);
+                        //                 ImGui::PopStyleColor();
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::TextUnformatted(", ");
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                        //                 ImGui::Text("sa:0x%02x", instr.RType.sa);
+                        //                 ImGui::PopStyleColor();
+                        //             } else {
+                        //                 // NOP doesn't have arguments
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::TextUnformatted("                                   ");
+                        //             }
+                        //             break;
+                        //         }
+                        //         case N64::InstructionType::J: 
+                        //         case N64::InstructionType::JAL: {
+                        //             ImGui::SameLine(0, 0);
+                        //             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                        //             ImGui::Text(" target:0x%07x                  ", instr.JType.target);
+                        //             ImGui::PopStyleColor();
+                        //             break;
+                        //         }
+                        //         default: {
+                        //             if (cur_instr != N64::EMPTY_INSTRUCTION) [[likely]] {
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                        //                 ImGui::Text(" rt:$r%02d", instr.IType.rt);
+                        //                 ImGui::PopStyleColor();
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::TextUnformatted(", ");
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(160, 30, 40, 255));
+                        //                 ImGui::PushItemWidth(20);
+                        //                 ImGui::Text("rs:$r%02d", instr.IType.rs);
+                        //                 ImGui::PopItemWidth();
+                        //                 ImGui::PopStyleColor();
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::TextUnformatted(", ");
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(66, 135, 179, 255));
+                        //                 ImGui::Text("imm:0x%04x", instr.IType.immediate);
+                        //                 ImGui::PopStyleColor();
+                        //                 ImGui::SameLine(0, 0);
+                        //                 ImGui::TextUnformatted("      ");
+                        //             }
+                        //             break;
+                        //         }
+                        //     }
+                        //     if (instr.IType.op != 0) {
                                 
-                            } else {
+                        //     } else {
                                 
-                            }
-                            if (cur_instr != N64::EMPTY_INSTRUCTION) {
-                                ImGui::SameLine(0, 0);
-                                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
-                                ImGui::Text(" ; %08x", instr.Full);
-                                ImGui::PopStyleColor();
-                            }
-                        }
-                        ImGui::EndChild();
-                        ImGui::BeginChild("pipeline rest", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
-                        ImGui::Separator();
-                        ImGui::Text("PC: %08x", static_cast<uint32_t>(n64cpu.pc_));
-                        ImGui::Text("Instructions ran: %u", n64cpu.instructions_ran_);
-                        ImGui::Text("Last frame took: %ums", n64_ptr->LastFrameTime);
-                        ImGui::EndChild();
+                        //     }
+                        //     if (cur_instr != N64::EMPTY_INSTRUCTION) {
+                        //         ImGui::SameLine(0, 0);
+                        //         ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(80, 80, 80, 255));
+                        //         ImGui::Text(" ; %08x", instr.Full);
+                        //         ImGui::PopStyleColor();
+                        //     }
+                        // }
+                        // ImGui::EndChild();
+                        // ImGui::BeginChild("pipeline rest", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
+                        // ImGui::Separator();
+                        // ImGui::Text("PC: %08x", static_cast<uint32_t>(n64cpu.pc_));
+                        // ImGui::Text("Instructions ran: %u", n64cpu.instructions_ran_);
+                        ImGui::Text("Last 60 frames took: %ums", n64_ptr->LastFrameTime);
+                        // ImGui::EndChild();
                         break;
                     }
                     case MemoryType::GPR_REGS: {

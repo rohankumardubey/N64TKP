@@ -195,26 +195,6 @@ namespace TKPEmu::N64 {
         MMU,          // for writing to mmu
         NONE,         // don't write anything
     };
-    constexpr static std::array<InstructionType, 64> InstructionTypeTable = {
-        InstructionType::SPECIAL, InstructionType::REGIMM, InstructionType::J, InstructionType::JAL, InstructionType::BEQ, InstructionType::BNE, InstructionType::BLEZ, InstructionType::BGTZ,
-        InstructionType::ADDI, InstructionType::ADDIU, InstructionType::SLTI, InstructionType::STLIU, InstructionType::ANDI, InstructionType::ORI, InstructionType::XORI, InstructionType::LUI,
-        InstructionType::COP0, InstructionType::COP1, InstructionType::COP2, InstructionType::ERROR, InstructionType::BEQL, InstructionType::BNEL, InstructionType::BLEZL, InstructionType::BGTZL,
-        InstructionType::DADDI, InstructionType::DADDIU, InstructionType::LDL, InstructionType::LDR, InstructionType::ERROR, InstructionType::ERROR, InstructionType::ERROR, InstructionType::ERROR,
-        InstructionType::LB, InstructionType::LH, InstructionType::LWL, InstructionType::LW, InstructionType::LBU, InstructionType::LHU, InstructionType::LWR, InstructionType::LWU,
-        InstructionType::SB, InstructionType::SH, InstructionType::SWL, InstructionType::SW, InstructionType::SDL, InstructionType::SDR, InstructionType::SWR, InstructionType::CACHE,
-        InstructionType::LL, InstructionType::LWC1, InstructionType::LWC2, InstructionType::ERROR, InstructionType::LLD, InstructionType::LDC1, InstructionType::LDC2, InstructionType::LD,
-        InstructionType::SC, InstructionType::SWC1, InstructionType::SWC2, InstructionType::ERROR, InstructionType::SCD, InstructionType::SDC1, InstructionType::SDC2, InstructionType::SD,
-    };
-    constexpr static std::array<InstructionType, 64> SpecialInstructionTypeTable = {
-        InstructionType::s_SLL, InstructionType::ERROR, InstructionType::s_SRL, InstructionType::s_SRA, InstructionType::s_SLLV, InstructionType::ERROR, InstructionType::s_SRLV, InstructionType::s_SRAV,
-        InstructionType::s_JR, InstructionType::s_JALR, InstructionType::ERROR, InstructionType::ERROR, InstructionType::s_SYSCALL, InstructionType::s_BREAK, InstructionType::ERROR, InstructionType::s_SYNC,
-        InstructionType::s_MFHI, InstructionType::s_MTHI, InstructionType::s_MFLO, InstructionType::s_MTLO, InstructionType::s_DSLLV, InstructionType::ERROR, InstructionType::s_DSRLV, InstructionType::s_DSRAV,
-        InstructionType::s_MULT, InstructionType::s_MULTU, InstructionType::s_DIV, InstructionType::s_DIVU, InstructionType::s_DMULT, InstructionType::s_DMULTU, InstructionType::s_DDIV, InstructionType::s_DDIVU,
-        InstructionType::s_ADD, InstructionType::s_ADDU, InstructionType::s_SUB, InstructionType::s_SUBU, InstructionType::s_AND, InstructionType::s_OR, InstructionType::s_XOR, InstructionType::s_NOR,
-        InstructionType::ERROR, InstructionType::ERROR, InstructionType::s_SLT, InstructionType::s_SLTU, InstructionType::s_DADD, InstructionType::s_DADDU, InstructionType::s_DSUB, InstructionType::s_DSUBU,
-        InstructionType::s_TGE, InstructionType::s_TGEU, InstructionType::s_TLT, InstructionType::s_TLTU, InstructionType::s_TEQ, InstructionType::ERROR, InstructionType::s_TNE, InstructionType::ERROR,
-        InstructionType::s_DSLL, InstructionType::ERROR, InstructionType::s_DSRL, InstructionType::s_DSRA, InstructionType::s_DSLL32, InstructionType::ERROR, InstructionType::s_DSRL32, InstructionType::s_DSRA32,
-    };
     constexpr static uint32_t CPzOPERATION_BIT = 0b00000010'00000000'00000000'00000000;
     constexpr static uint32_t CPz_TO_GPR = 0b00010;
     using MemDataUnionDW = MemDataUnionDWBase;

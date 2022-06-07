@@ -1,6 +1,6 @@
 #include "n64_tkpwrapper.hxx"
 #include <GL/glew.h>
-//#include <valgrind/callgrind.h>
+#include <valgrind/callgrind.h>
 
 #ifndef CALLGRIND_START_INSTRUMENTATION
 #define NO_PROFILING
@@ -68,10 +68,11 @@ namespace TKPEmu::N64 {
 			Step = false;
 			Reset();
 			bool stopped_break = false;
+			goto paused;
 			begin:
 			CALLGRIND_START_INSTRUMENTATION;
+			frame_start = std::chrono::system_clock::now();
 			while (true) {
-				// std::lock_guard<std::mutex> lg(DebugUpdateMutex);
 				update();
 				++cur_frame_instrs_;
 				#ifdef NO_PROFILING
@@ -97,6 +98,7 @@ namespace TKPEmu::N64 {
 				}
 			}
 			CALLGRIND_STOP_INSTRUMENTATION;
+			paused:
 			if (!stopped_break) {
 				Step.wait(false);
 				std::lock_guard<std::mutex> lg(DebugUpdateMutex);

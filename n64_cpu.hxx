@@ -64,7 +64,8 @@ namespace TKPEmu::N64::Devices {
     };
     struct RFEX_latch {
         Instruction     instruction;
-        InstructionType instruction_type;
+        uint8_t instruction_type;
+        uint8_t instruction_target;
         MemDataUnionDW  fetched_rt;
         MemDataUnionDW  fetched_rs;
         size_t fetched_rt_i = -1;
@@ -256,7 +257,53 @@ namespace TKPEmu::N64::Devices {
         PipelineStageRet DC(PipelineStageArgs);
         PipelineStageRet WB(PipelineStageArgs);
 
+        void NOP();
+
+        void SPECIAL(), REGIMM(), J(), JAL(), BEQ(), BNE(), BLEZ(), BGTZ(),
+        ADDI(), ADDIU(), SLTI(), STLIU(), ANDI(), ORI(), XORI(), LUI(),
+        COP0(), COP1(), COP2(), BEQL(), BNEL(), BLEZL(), BGTZL(),
+        DADDI(), DADDIU(), LDL(), LDR(), ERROR(),
+        LB(), LH(), LWL(), LW(), LBU(), LHU(), LWR(), LWU(),
+        SB(), SH(), SWL(), SW(), SDL(), SDR(), SWR(), CACHE(),
+        LL(), LWC1(), LWC2(), LLD(), LDC1(), LDC2(), LD(),
+        SC(), SWC1(), SWC2(), SCD(), SDC1(), SDC2(), SD();
+
+        void s_SLL(), s_SRL(), s_SRA(), s_SLLV(), s_SRLV(), s_SRAV(),
+        s_JR(), s_JALR(), s_SYSCALL(), s_BREAK(), s_SYNC(),
+        s_MFHI(), s_MTHI(), s_MFLO(), s_MTLO(), s_DSLLV(), s_DSRLV(), s_DSRAV(),
+        s_MULT(), s_MULTU(), s_DIV(), s_DIVU(), s_DMULT(), s_DMULTU(), s_DDIV(), s_DDIVU(),
+        s_ADD(), s_ADDU(), s_SUB(), s_SUBU(), s_AND(), s_OR(), s_XOR(), s_NOR(),
+        s_SLT(), s_SLTU(), s_DADD(), s_DADDU(), s_DSUB(), s_DSUBU(),
+        s_TGE(), s_TGEU(), s_TLT(), s_TLTU(), s_TEQ(), s_TNE(),
+        s_DSLL(), s_DSRL(), s_DSRA(), s_DSLL32(), s_DSRL32(), s_DSRA32();
+        using func_ptr = void (CPU::*)();
+        constexpr static std::array<func_ptr, 64> InstructionTable = {
+            &CPU::SPECIAL, &CPU::REGIMM, &CPU::J, &CPU::JAL, &CPU::BEQ, &CPU::BNE, &CPU::BLEZ, &CPU::BGTZ,
+            &CPU::ADDI, &CPU::ADDIU, &CPU::SLTI, &CPU::STLIU, &CPU::ANDI, &CPU::ORI, &CPU::XORI, &CPU::LUI,
+            &CPU::COP0, &CPU::COP1, &CPU::COP2, &CPU::ERROR, &CPU::BEQL, &CPU::BNEL, &CPU::BLEZL, &CPU::BGTZL,
+            &CPU::DADDI, &CPU::DADDIU, &CPU::LDL, &CPU::LDR, &CPU::ERROR, &CPU::ERROR, &CPU::ERROR, &CPU::ERROR,
+            &CPU::LB, &CPU::LH, &CPU::LWL, &CPU::LW, &CPU::LBU, &CPU::LHU, &CPU::LWR, &CPU::LWU,
+            &CPU::SB, &CPU::SH, &CPU::SWL, &CPU::SW, &CPU::SDL, &CPU::SDR, &CPU::SWR, &CPU::CACHE,
+            &CPU::LL, &CPU::LWC1, &CPU::LWC2, &CPU::ERROR, &CPU::LLD, &CPU::LDC1, &CPU::LDC2, &CPU::LD,
+            &CPU::SC, &CPU::SWC1, &CPU::SWC2, &CPU::ERROR, &CPU::SCD, &CPU::SDC1, &CPU::SDC2, &CPU::SD,
+        };
+        constexpr static std::array<func_ptr, 64> SpecialTable = {
+            &CPU::s_SLL, &CPU::ERROR, &CPU::s_SRL, &CPU::s_SRA, &CPU::s_SLLV, &CPU::ERROR, &CPU::s_SRLV, &CPU::s_SRAV,
+            &CPU::s_JR, &CPU::s_JALR, &CPU::ERROR, &CPU::ERROR, &CPU::s_SYSCALL, &CPU::s_BREAK, &CPU::ERROR, &CPU::s_SYNC,
+            &CPU::s_MFHI, &CPU::s_MTHI, &CPU::s_MFLO, &CPU::s_MTLO, &CPU::s_DSLLV, &CPU::ERROR, &CPU::s_DSRLV, &CPU::s_DSRAV,
+            &CPU::s_MULT, &CPU::s_MULTU, &CPU::s_DIV, &CPU::s_DIVU, &CPU::s_DMULT, &CPU::s_DMULTU, &CPU::s_DDIV, &CPU::s_DDIVU,
+            &CPU::s_ADD, &CPU::s_ADDU, &CPU::s_SUB, &CPU::s_SUBU, &CPU::s_AND, &CPU::s_OR, &CPU::s_XOR, &CPU::s_NOR,
+            &CPU::ERROR, &CPU::ERROR, &CPU::s_SLT, &CPU::s_SLTU, &CPU::s_DADD, &CPU::s_DADDU, &CPU::s_DSUB, &CPU::s_DSUBU,
+            &CPU::s_TGE, &CPU::s_TGEU, &CPU::s_TLT, &CPU::s_TLTU, &CPU::s_TEQ, &CPU::ERROR, &CPU::s_TNE, &CPU::ERROR,
+            &CPU::s_DSLL, &CPU::ERROR, &CPU::s_DSRL, &CPU::s_DSRA, &CPU::s_DSLL32, &CPU::ERROR, &CPU::s_DSRL32, &CPU::s_DSRA32,
+        };
+        constexpr static func_ptr NopTable = &CPU::NOP;
+        constexpr static std::array<const func_ptr*, 3> TableTable = {
+            &NopTable, InstructionTable.data(), SpecialTable.data()
+        };
+
         __always_inline bool execute_stage(PipelineStage stage);
+        __always_inline void bypass_register();
         /**
          * Called during EX stage, handles the logic execution of each instruction
          */
