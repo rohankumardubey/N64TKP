@@ -917,9 +917,6 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        #if SKIPDEBUGSTUFF == 0
-        pipeline_rfex_latch_.instruction_.back() = icrf_latch_.instruction.Full;
-        #endif
         pc_ += 4;
     }
 
@@ -927,6 +924,8 @@ namespace TKPEmu::N64::Devices {
         // Fetch the registers
         auto fetched_rs = gpr_regs_[icrf_latch_.instruction.RType.rs];
         auto fetched_rt = gpr_regs_[icrf_latch_.instruction.RType.rt];
+        // Double negation makes the target 0 or 1 based on if instr is 0 or not
+        // This makes it pick from the NOP table if it's a NOP
         rfex_latch_.instruction_target = !!(icrf_latch_.instruction.Full);
         rfex_latch_.instruction_type = !!(icrf_latch_.instruction.Full) * icrf_latch_.instruction.IType.op;
         rfex_latch_.fetched_rs_i = icrf_latch_.instruction.RType.rs;
@@ -947,28 +946,19 @@ namespace TKPEmu::N64::Devices {
         dcwb_latch_.write_type = exdc_latch_.write_type;
         dcwb_latch_.cached = exdc_latch_.cached;
         dcwb_latch_.paddr = exdc_latch_.paddr;
-        switch (exdc_latch_.write_type) {
-            case WriteType::LATEREGISTER: {
-                auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
-                uint32_t paddr = paddr_s.paddr;
-                dcwb_latch_.cached = paddr_s.cached;
-                load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
-                // Result is cast to uint64_t in order to zero extend
-                dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
-                if (rfex_latch_.fetched_rt_i == exdc_latch_.fetched_rt_i) {
-                    // TODO: LoadInterlock hack This may be wrong
-                    rfex_latch_.fetched_rt.UD = dcwb_latch_.data;
-                }
-                if (rfex_latch_.fetched_rs_i == exdc_latch_.fetched_rt_i) {
-                    // TODO: LoadInterlock hack This may be wrong
-                    rfex_latch_.fetched_rs.UD = dcwb_latch_.data;
-                }
-                break;
+        if (exdc_latch_.write_type == WriteType::LATEREGISTER) {
+            auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
+            uint32_t paddr = paddr_s.paddr;
+            dcwb_latch_.cached = paddr_s.cached;
+            load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
+            // Result is cast to uint64_t in order to zero extend
+            dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
+            if (rfex_latch_.fetched_rt_i == exdc_latch_.fetched_rt_i) {
+                // TODO: LoadInterlock hack This may be wrong
+                rfex_latch_.fetched_rt.UD = dcwb_latch_.data;
             }
-            default: {
-                dcwb_latch_.data = exdc_latch_.data;
-                break;
-            }
+        } else {
+            dcwb_latch_.data = exdc_latch_.data;
         }
     }
 
@@ -985,9 +975,6 @@ namespace TKPEmu::N64::Devices {
                 rfex_latch_.fetched_rs = gpr_regs_[rfex_latch_.fetched_rs_i];
                 rfex_latch_.fetched_rt = gpr_regs_[rfex_latch_.fetched_rt_i];
                 break;
-            }
-            case WriteType::REGISTER: {
-                throw std::logic_error("Bad write type: should've used LATEREGISTER");
             }
             default: {
                 break;

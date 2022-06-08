@@ -129,7 +129,7 @@ namespace TKPEmu::N64::Devices {
         friend class CPU;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };
-    class CPU {
+    class CPU final {
     public:
         CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_format);
         void Reset();
@@ -243,11 +243,11 @@ namespace TKPEmu::N64::Devices {
          */
         inline void invalidate_hwio(uint32_t addr, uint64_t data);
 
-        PipelineStageRet IC(PipelineStageArgs);
-        PipelineStageRet RF(PipelineStageArgs);
-        PipelineStageRet EX(PipelineStageArgs);
-        PipelineStageRet DC(PipelineStageArgs);
-        PipelineStageRet WB(PipelineStageArgs);
+        __always_inline PipelineStageRet IC(PipelineStageArgs);
+        __always_inline PipelineStageRet RF(PipelineStageArgs);
+        __always_inline PipelineStageRet EX(PipelineStageArgs);
+        __always_inline PipelineStageRet DC(PipelineStageArgs);
+        __always_inline PipelineStageRet WB(PipelineStageArgs);
 
         void NOP();
 
