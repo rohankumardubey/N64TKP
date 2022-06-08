@@ -258,7 +258,7 @@ namespace TKPEmu::N64::Devices {
         void NOP();
 
         void SPECIAL(), REGIMM(), J(), JAL(), BEQ(), BNE(), BLEZ(), BGTZ(),
-        ADDI(), ADDIU(), SLTI(), STLIU(), ANDI(), ORI(), XORI(), LUI(),
+        ADDI(), ADDIU(), SLTI(), SLTIU(), ANDI(), ORI(), XORI(), LUI(),
         COP0(), COP1(), COP2(), BEQL(), BNEL(), BLEZL(), BGTZL(),
         DADDI(), DADDIU(), LDL(), LDR(), ERROR(),
         LB(), LH(), LWL(), LW(), LBU(), LHU(), LWR(), LWU(),
@@ -277,7 +277,7 @@ namespace TKPEmu::N64::Devices {
         using func_ptr = void (*)(CPU*);
         constexpr static std::array<func_ptr, 64> InstructionTable = {
             &lut_wrapper<&CPU::SPECIAL>, &lut_wrapper<&CPU::REGIMM>, &lut_wrapper<&CPU::J>, &lut_wrapper<&CPU::JAL>, &lut_wrapper<&CPU::BEQ>, &lut_wrapper<&CPU::BNE>, &lut_wrapper<&CPU::BLEZ>, &lut_wrapper<&CPU::BGTZ>,
-            &lut_wrapper<&CPU::ADDI>, &lut_wrapper<&CPU::ADDIU>, &lut_wrapper<&CPU::SLTI>, &lut_wrapper<&CPU::STLIU>, &lut_wrapper<&CPU::ANDI>, &lut_wrapper<&CPU::ORI>, &lut_wrapper<&CPU::XORI>, &lut_wrapper<&CPU::LUI>,
+            &lut_wrapper<&CPU::ADDI>, &lut_wrapper<&CPU::ADDIU>, &lut_wrapper<&CPU::SLTI>, &lut_wrapper<&CPU::SLTIU>, &lut_wrapper<&CPU::ANDI>, &lut_wrapper<&CPU::ORI>, &lut_wrapper<&CPU::XORI>, &lut_wrapper<&CPU::LUI>,
             &lut_wrapper<&CPU::COP0>, &lut_wrapper<&CPU::COP1>, &lut_wrapper<&CPU::COP2>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::BEQL>, &lut_wrapper<&CPU::BNEL>, &lut_wrapper<&CPU::BLEZL>, &lut_wrapper<&CPU::BGTZL>,
             &lut_wrapper<&CPU::DADDI>, &lut_wrapper<&CPU::DADDIU>, &lut_wrapper<&CPU::LDL>, &lut_wrapper<&CPU::LDR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
             &lut_wrapper<&CPU::LB>, &lut_wrapper<&CPU::LH>, &lut_wrapper<&CPU::LWL>, &lut_wrapper<&CPU::LW>, &lut_wrapper<&CPU::LBU>, &lut_wrapper<&CPU::LHU>, &lut_wrapper<&CPU::LWR>, &lut_wrapper<&CPU::LWU>,

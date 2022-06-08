@@ -36,20 +36,51 @@ namespace TKPEmu::N64::Devices {
         throw ErrorFactory::generate_exception(__func__, __LINE__, "ERROR opcode reached");
     }
 
+    /**
+     * s_SRA
+     * 
+     * doesn't throw
+     */
     TKP_INSTR_FUNC CPU::s_SRA() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_SRA opcode reached");
+        int32_t sedata = rfex_latch_.fetched_rt.D >> rfex_latch_.instruction.RType.sa;
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = sedata;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
 
+    /**
+     * s_SLLV
+     * 
+     * doesn't throw
+     */
     TKP_INSTR_FUNC CPU::s_SLLV() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_SLLV opcode reached");
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        int64_t sedata = static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 << (rfex_latch_.fetched_rs.UD & 0b111111));
+        exdc_latch_.data = sedata;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
 
+    /**
+     * s_SRLV
+     * 
+     * doesn't throw
+     */
     TKP_INSTR_FUNC CPU::s_SRLV() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_SRLV opcode reached");
+        exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        int64_t sedata = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 >> (rfex_latch_.fetched_rs.UD & 0b111111)));
+        exdc_latch_.data = sedata;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::s_SRAV() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_SRAV opcode reached");
+		int32_t sedata = rfex_latch_.fetched_rt.D >> (rfex_latch_.fetched_rs.UD & 0b11111);
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = sedata;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::s_SYSCALL() {
@@ -117,19 +148,49 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_SUB() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_SUB opcode reached");
+		int64_t result = 0;
+		bool overflow = __builtin_sub_overflow(rfex_latch_.fetched_rs.D, rfex_latch_.fetched_rt.D, &result);
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = static_cast<int32_t>(result);
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
+        #if SKIPEXCEPTIONS == 0
+        if (overflow) {
+            // An integer overflow exception occurs if carries out of bits 30 and 31 differ (2’s
+            // complement overflow). The contents of destination register rt is not modified
+            // when an integer overflow exception occurs.
+            exdc_latch_.write_type = WriteType::NONE;
+            throw IntegerOverflowException();
+        }
+        #endif
 	}
     
     TKP_INSTR_FUNC CPU::s_SUBU() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_SUBU opcode reached");
+        int64_t result = 0;
+		bool overflow = __builtin_sub_overflow(rfex_latch_.fetched_rs.D, rfex_latch_.fetched_rt.D, &result);
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = static_cast<int32_t>(result);
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
+    /**
+     * s_OR
+     * 
+     * doesn't throw
+     */
     TKP_INSTR_FUNC CPU::s_OR() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_OR opcode reached");
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rs.UD | rfex_latch_.fetched_rt.UD;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::s_XOR() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_XOR opcode reached");
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rs.UD ^ rfex_latch_.fetched_rt.UD;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::s_DADD() {
@@ -168,8 +229,16 @@ namespace TKPEmu::N64::Devices {
 		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_TNE opcode reached");
 	}
     
+    /**
+     * s_DSLL
+     * 
+     * throws ReservedInstructionException
+     */
     TKP_INSTR_FUNC CPU::s_DSLL() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSLL opcode reached");
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rt.UD << rfex_latch_.instruction.RType.sa;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::s_DSRL() {
@@ -196,12 +265,24 @@ namespace TKPEmu::N64::Devices {
 		throw ErrorFactory::generate_exception(__func__, __LINE__, "BLEZ opcode reached");
 	}
     
+    /**
+     * s_SLTI
+     * 
+     * doesn't throw
+     */
     TKP_INSTR_FUNC CPU::SLTI() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "SLTI opcode reached");
+        int64_t seimm = static_cast<int16_t>(rfex_latch_.instruction.IType.immediate);
+        exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rs.D < seimm;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::XORI() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "XORI opcode reached");
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rs.UD ^ rfex_latch_.instruction.IType.immediate;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::COP1() {
@@ -217,7 +298,13 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::DADDIU() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "DADDIU opcode reached");
+		int64_t seimm = static_cast<int16_t>(rfex_latch_.instruction.IType.immediate);
+        int64_t result = 0;
+        bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.D, seimm, &result);
+        exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
+        exdc_latch_.data = result;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::LDL() {
@@ -296,8 +383,12 @@ namespace TKPEmu::N64::Devices {
 		throw ErrorFactory::generate_exception(__func__, __LINE__, "SDC2 opcode reached");
 	}
 
-    TKP_INSTR_FUNC CPU::STLIU() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "STLIU opcode reached");
+    TKP_INSTR_FUNC CPU::SLTIU() {
+        int64_t seimm = static_cast<int16_t>(rfex_latch_.instruction.IType.immediate);
+        exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rs.UD < seimm;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::SDR() {
@@ -329,8 +420,17 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.data = result;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
+    }
+    TKP_INSTR_FUNC CPU::ADDI() {
+        int32_t seimm = static_cast<int16_t>(rfex_latch_.instruction.IType.immediate);
+        int32_t result = 0;
+        bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.W._0, seimm, &result);
+        exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
+        exdc_latch_.data = result;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
         #if SKIPEXCEPTIONS == 0
-        if (overflow && type == InstructionType::ADDI) {
+        if (overflow) {
             // An integer overflow exception occurs if carries out of bits 30 and 31 differ (2’s
             // complement overflow). The contents of destination register rt is not modified
             // when an integer overflow exception occurs.
@@ -338,9 +438,6 @@ namespace TKPEmu::N64::Devices {
             throw IntegerOverflowException();
         }
         #endif
-    }
-    TKP_INSTR_FUNC CPU::ADDI() {
-        ADDIU();
     }
     /**
      * DADDI
@@ -747,9 +844,6 @@ namespace TKPEmu::N64::Devices {
      * s_ADD throws IntegerOverflowException
      */
     TKP_INSTR_FUNC CPU::s_ADD() {
-        s_ADDU();
-    }
-    TKP_INSTR_FUNC CPU::s_ADDU() {
         int32_t result = 0;
         bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rt.W._0, rfex_latch_.fetched_rs.W._0, &result);
         int64_t seresult = result;
@@ -766,6 +860,15 @@ namespace TKPEmu::N64::Devices {
             throw IntegerOverflowException();
         }
         #endif
+    }
+    TKP_INSTR_FUNC CPU::s_ADDU() {
+        int32_t result = 0;
+        bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rt.W._0, rfex_latch_.fetched_rs.W._0, &result);
+        int64_t seresult = result;
+        exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = seresult;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
     }
     /**
      * s_JR, s_JALR
@@ -828,15 +931,14 @@ namespace TKPEmu::N64::Devices {
 		bypass_register();
     }
     /**
-     * s_SLL, s_DSLL
+     * s_SLL
      * 
      * throws Reserved instruction exception
      */
-    // TKP_INSTR_FUNC CPU::s_DSLL()
     TKP_INSTR_FUNC CPU::s_SLL() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        uint32_t zedata = rfex_latch_.fetched_rt.UW._0 << rfex_latch_.instruction.RType.sa;
-        exdc_latch_.data = zedata;
+        int32_t sedata = rfex_latch_.fetched_rt.UW._0 << rfex_latch_.instruction.RType.sa;
+        exdc_latch_.data = static_cast<int64_t>(sedata);
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
@@ -847,7 +949,8 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::s_SRL() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        exdc_latch_.data = rfex_latch_.fetched_rt.UD >> rfex_latch_.instruction.RType.sa;
+        int64_t sedata = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 >> rfex_latch_.instruction.RType.sa));
+        exdc_latch_.data = sedata;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
@@ -869,12 +972,8 @@ namespace TKPEmu::N64::Devices {
      * doesn't throw
      */
     TKP_INSTR_FUNC CPU::s_SLT() {
-        if (rfex_latch_.fetched_rs.W._0 < rfex_latch_.fetched_rt.W._0) {
-            exdc_latch_.data = static_cast<uint64_t>(1);
-        } else {
-            exdc_latch_.data = static_cast<uint64_t>(0);
-        }
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rs.D < rfex_latch_.fetched_rt.D;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
@@ -884,12 +983,8 @@ namespace TKPEmu::N64::Devices {
      * doesn't throw 
      */
     TKP_INSTR_FUNC CPU::s_SLTU() {
-        if (rfex_latch_.fetched_rs.UW._0 < rfex_latch_.fetched_rt.UW._0) {
-            exdc_latch_.data = static_cast<uint64_t>(1);
-        } else {
-            exdc_latch_.data = static_cast<uint64_t>(0);
-        }
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = rfex_latch_.fetched_rs.UD < rfex_latch_.fetched_rt.UD;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
