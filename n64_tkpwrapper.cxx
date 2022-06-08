@@ -111,8 +111,15 @@ namespace TKPEmu::N64 {
 		UpdateThread.detach();
 	}
 
-	void N64_TKPWrapper::reset_skip() {
-		n64_impl_.Reset();
+	void N64_TKPWrapper::reset_skip() {		
+		try {
+			n64_impl_.Reset();
+		} catch (...) {
+			CurrentException = std::current_exception();
+			HasException = true;
+			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
+			Stopped.store(true);
+		}
 	}
 	
 	void* N64_TKPWrapper::GetScreenData() {
