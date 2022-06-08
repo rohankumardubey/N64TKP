@@ -39,7 +39,7 @@ namespace TKPEmu::N64::Devices {
 
     uint8_t* CPUBus::redirect_paddress(uint32_t paddr) {
         uint8_t* ptr = page_table_[paddr >> 20];
-        if (ptr) {
+        if (ptr) [[likely]] {
             ptr += (paddr & static_cast<uint32_t>(0xFFFFF));
             return ptr;
         } else {

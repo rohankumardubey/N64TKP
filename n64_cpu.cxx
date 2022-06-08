@@ -922,16 +922,14 @@ namespace TKPEmu::N64::Devices {
 
     CPU::PipelineStageRet CPU::RF(PipelineStageArgs) {
         // Fetch the registers
-        auto fetched_rs = gpr_regs_[icrf_latch_.instruction.RType.rs];
-        auto fetched_rt = gpr_regs_[icrf_latch_.instruction.RType.rt];
         // Double negation makes the target 0 or 1 based on if instr is 0 or not
         // This makes it pick from the NOP table if it's a NOP
         rfex_latch_.instruction_target = !!(icrf_latch_.instruction.Full);
         rfex_latch_.instruction_type = !!(icrf_latch_.instruction.Full) * icrf_latch_.instruction.IType.op;
         rfex_latch_.fetched_rs_i = icrf_latch_.instruction.RType.rs;
         rfex_latch_.fetched_rt_i = icrf_latch_.instruction.RType.rt;
-        rfex_latch_.fetched_rs.UD = fetched_rs.UD;
-        rfex_latch_.fetched_rt.UD = fetched_rt.UD;
+        rfex_latch_.fetched_rs.UD = gpr_regs_[icrf_latch_.instruction.RType.rs].UD;
+        rfex_latch_.fetched_rt.UD = gpr_regs_[icrf_latch_.instruction.RType.rt].UD;
         rfex_latch_.instruction = icrf_latch_.instruction;
     }
 
@@ -953,7 +951,7 @@ namespace TKPEmu::N64::Devices {
             load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
             // Result is cast to uint64_t in order to zero extend
             dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
-            if (rfex_latch_.fetched_rt_i == exdc_latch_.fetched_rt_i) {
+            if (rfex_latch_.fetched_rt_i == exdc_latch_.fetched_rt_i) [[unlikely]] {
                 // TODO: LoadInterlock hack This may be wrong
                 rfex_latch_.fetched_rt.UD = dcwb_latch_.data;
             }
@@ -999,41 +997,41 @@ namespace TKPEmu::N64::Devices {
         // TODO: broken if uses kuseg
         return { addr - KSEG0_START - ((addr >> 29) & 1) * 0x2000'0000, false };
         // VR4300 manual page 136 table 5-3
-        unsigned _3msb = addr >> 29;
-        uint32_t paddr = 0;
-        bool cached = false;
-        switch(_3msb) {
-            case 0b100:
-            // kseg0
-            // cached, non tlb
-            paddr = translate_kseg0(addr);
-            //cached = true;
-            break;
-            case 0b101:
-            // kseg1
-            // uncached, non tlb
-            paddr = translate_kseg1(addr);
-            break;
-            case 0b110:
-            // ksseg
-            break;
-            case 0b111:
-            // kseg3
-            break;
-            default:
-            // kuseg
-            // From manual:
-            // In Kernel mode, when KX = 0 in the Status register, and the most-significant bit
-            // of the virtual address is cleared, the kuseg virtual address space is selected; it
-            // covers the current 231 bytes (2 GB) user address space. The virtual address is
-            // extended with the contents of the 8-bit ASID field to form a unique virtual
-            // address.
-            paddr = translate_kuseg(addr);
-            cached = true;
-            break;
-        }
-        TranslatedAddress t_addr = { paddr, cached };
-        return t_addr;
+        // unsigned _3msb = addr >> 29;
+        // uint32_t paddr = 0;
+        // bool cached = false;
+        // switch(_3msb) {
+        //     case 0b100:
+        //     // kseg0
+        //     // cached, non tlb
+        //     paddr = translate_kseg0(addr);
+        //     //cached = true;
+        //     break;
+        //     case 0b101:
+        //     // kseg1
+        //     // uncached, non tlb
+        //     paddr = translate_kseg1(addr);
+        //     break;
+        //     case 0b110:
+        //     // ksseg
+        //     break;
+        //     case 0b111:
+        //     // kseg3
+        //     break;
+        //     default:
+        //     // kuseg
+        //     // From manual:
+        //     // In Kernel mode, when KX = 0 in the Status register, and the most-significant bit
+        //     // of the virtual address is cleared, the kuseg virtual address space is selected; it
+        //     // covers the current 231 bytes (2 GB) user address space. The virtual address is
+        //     // extended with the contents of the 8-bit ASID field to form a unique virtual
+        //     // address.
+        //     paddr = translate_kuseg(addr);
+        //     cached = true;
+        //     break;
+        // }
+        // TranslatedAddress t_addr = { paddr, cached };
+        // return t_addr;
     }
     void CPU::store_register(uint8_t* dest8, uint64_t data, int size) {
         // std::memcpy(dest, &data, size);
@@ -1064,26 +1062,26 @@ namespace TKPEmu::N64::Devices {
     }
     void CPU::store_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
         invalidate_hwio(paddr, data);
-        if (!cached) {
-            uint8_t* loc = cpubus_.redirect_paddress(paddr);
-            uint64_t temp = __builtin_bswap64(data);
-            temp >>= 8 * (AccessType::UDOUBLEWORD - size);
-            std::memcpy(loc, &temp, size);
-        } else {
-            // currently not implemented
-        }
+        // if (!cached) {
+        uint8_t* loc = cpubus_.redirect_paddress(paddr);
+        uint64_t temp = __builtin_bswap64(data);
+        temp >>= 8 * (AccessType::UDOUBLEWORD - size);
+        std::memcpy(loc, &temp, size);
+        // } else {
+        //     // currently not implemented
+        // }
     }
     void CPU::load_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
-        if (!cached) {
-            uint8_t* loc = cpubus_.redirect_paddress(paddr);
-            uint64_t temp = 0;
-            std::memcpy(&temp, loc, size);
-            temp = __builtin_bswap64(temp);
-            temp >>= 8 * (AccessType::UDOUBLEWORD - size);
-            data = temp;
-        } else {
-            // currently not implemented
-        }
+        // if (!cached) {
+        uint8_t* loc = cpubus_.redirect_paddress(paddr);
+        uint64_t temp = 0;
+        std::memcpy(&temp, loc, size);
+        temp = __builtin_bswap64(temp);
+        temp >>= 8 * (AccessType::UDOUBLEWORD - size);
+        data = temp;
+        // } else {
+        //     // currently not implemented
+        // }
     }
     
     void CPU::clear_registers() {
