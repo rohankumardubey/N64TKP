@@ -185,7 +185,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::SPECIAL() {
-        (this->*SpecialTable[rfex_latch_.instruction.RType.func])();
+        (SpecialTable[rfex_latch_.instruction.RType.func])(this);
 	}
 
     TKP_INSTR_FUNC CPU::REGIMM() {
@@ -1133,7 +1133,7 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::execute_instruction() {
-        (this->*TableTable[rfex_latch_.instruction_target][rfex_latch_.instruction_type])();
+        (TableTable[rfex_latch_.instruction_target][rfex_latch_.instruction_type])(this);
     }
 
     void CPU::bypass_register() {
