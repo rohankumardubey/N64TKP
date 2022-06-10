@@ -2,7 +2,8 @@
 
 namespace TKPEmu::N64::Devices {
     void RCP::Reset() {
-        rsp_status_ = 1;
+        // These default values are in little endian
+        rsp_status_ = 0x01000000;
         rsp_dma_busy_ = 0;
     }
 }

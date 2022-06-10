@@ -174,7 +174,7 @@ namespace TKPEmu::N64::Devices {
         uint64_t pc_, hi_, lo_;
         bool llbit_;
         float fcr0_, fcr31_;
-
+        bool ldi_ = false;
         GLuint& text_format_;
         // Kernel mode addressing functions
         /**
@@ -307,6 +307,7 @@ namespace TKPEmu::N64::Devices {
             &NopTable, InstructionTable.data(), SpecialTable.data()
         };
         __always_inline void bypass_register();
+        __always_inline void detect_ldi();
         /**
          * Called during EX stage, handles the logic execution of each instruction
          */

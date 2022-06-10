@@ -1,7 +1,6 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 #include <cassert> // assert
-#include <iostream>
 #include "../include/error_factory.hxx"
 #include "n64_addresses.hxx"
 #define SKIPDEBUGSTUFF 1
@@ -24,6 +23,7 @@ namespace TKPEmu::N64::Devices {
 
     void CPU::Reset() {
         pc_ = 0xBFC0'0000;
+        ldi_ = false;
         clear_registers();
         cpubus_.Reset();
         if (cpubus_.IsEverythingLoaded())
@@ -628,7 +628,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UBYTE;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
-        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
+        detect_ldi();
     }
     /**
      * LD
@@ -646,7 +646,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
-        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
+        detect_ldi();
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b111) != 0) { 
             // From manual:
@@ -709,7 +709,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
-        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
+        detect_ldi();
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b11) != 0) {
             // From manual:
@@ -725,7 +725,6 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::ANDI() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
-        std::cout << std::hex << rfex_latch_.fetched_rs.UD << " & " << rfex_latch_.instruction.IType.immediate << std::endl;;
         exdc_latch_.data = rfex_latch_.fetched_rs.UD & rfex_latch_.instruction.IType.immediate;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
@@ -786,7 +785,6 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BNEL() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        std::cout << "BNEL:" << rfex_latch_.fetched_rs.UD << " != " << rfex_latch_.fetched_rt.UD << std::endl;
         if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
@@ -827,7 +825,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
             exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
-		bypass_register();
+		    bypass_register();
         }
     }
     /**
@@ -1013,7 +1011,6 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        std::cout << std::hex << icrf_latch_.instruction.Full << " pc:" << pc_ << std::endl;
         pc_ += 4;
     }
 
@@ -1044,22 +1041,16 @@ namespace TKPEmu::N64::Devices {
         if (exdc_latch_.write_type == WriteType::LATEREGISTER) {
             auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
             uint32_t paddr = paddr_s.paddr;
-            std::cout << "Latereg: " << std::hex << exdc_latch_.vaddr << " " << paddr << std::endl;
             dcwb_latch_.cached = paddr_s.cached;
             load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
             // Result is cast to uint64_t in order to zero extend
             dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
-            if (rfex_latch_.fetched_rt_i == exdc_latch_.fetched_rt_i) [[unlikely]] {
-                // TODO: LoadInterlock hack This may be wrong
-                rfex_latch_.fetched_rt.UD = dcwb_latch_.data;
-                // exdc_latch_.fetched_rt_i = 33;
-                // dcwb_latch_.write_type = WriteType::NONE;
-            }
-            if (rfex_latch_.fetched_rs_i == exdc_latch_.fetched_rs_i) [[unlikely]] {
-                // TODO: LoadInterlock hack This may be wrong
-                rfex_latch_.fetched_rs.UD = dcwb_latch_.data;
-                // exdc_latch_.fetched_rs_i = 33;
-                // dcwb_latch_.write_type = WriteType::NONE;
+            if (ldi_) {
+                // Write early so RF fetches the correct data
+                // TODO: technically not accurate behavior but the results are as expected
+                store_register(dcwb_latch_.dest, dcwb_latch_.data, dcwb_latch_.access_type);
+                dcwb_latch_.write_type = WriteType::NONE;
+                ldi_ = false;
             }
         } else {
             dcwb_latch_.data = exdc_latch_.data;
@@ -1074,10 +1065,6 @@ namespace TKPEmu::N64::Devices {
             }
             case WriteType::LATEREGISTER: {
                 store_register(dcwb_latch_.dest, dcwb_latch_.data, dcwb_latch_.access_type);
-                // Bypass the rfex latch and update regs
-                // TODO: Wrong? Don't know
-                // rfex_latch_.fetched_rs = gpr_regs_[rfex_latch_.fetched_rs_i];
-                // rfex_latch_.fetched_rt = gpr_regs_[rfex_latch_.fetched_rt_i];
                 break;
             }
             default: {
@@ -1163,6 +1150,7 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
+    // TODO: probably safe to remove
     void CPU::fill_pipeline() {
         icrf_latch_ = {};
         rfex_latch_ = {};
@@ -1190,10 +1178,12 @@ namespace TKPEmu::N64::Devices {
         DC();
         gpr_regs_[0].UD = 0;
         EX();
-        gpr_regs_[0].UD = 0;
-        RF();
-        gpr_regs_[0].UD = 0;
-        IC();
+        if (!ldi_) {
+            gpr_regs_[0].UD = 0;
+            RF();
+            gpr_regs_[0].UD = 0;
+            IC();
+        }
         ++cp0_regs_[CP0_COUNT].UD;
         if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
             // interrupt
@@ -1207,6 +1197,13 @@ namespace TKPEmu::N64::Devices {
     void CPU::bypass_register() {
         store_register(exdc_latch_.dest, exdc_latch_.data, exdc_latch_.access_type);
         exdc_latch_.write_type = WriteType::NONE;
+    }
+
+    void CPU::detect_ldi() {
+        ldi_ = (rfex_latch_.fetched_rt_i == icrf_latch_.instruction.RType.rt || rfex_latch_.fetched_rs_i == icrf_latch_.instruction.RType.rt);
+        // Insert NOP so next EX doesn't re-execute the load in case ldi = true
+        rfex_latch_.instruction_target = 0;
+        rfex_latch_.instruction_type = 0;
     }
 
     void CPU::execute_cp0_instruction(const Instruction& instr) {
