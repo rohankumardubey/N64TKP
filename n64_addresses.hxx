@@ -54,5 +54,16 @@ addr PI_BSD_DOM2_PWD_REG = 0x0460'0028;
 addr PI_BSD_DOM2_PGS_REG = 0x0460'002C;
 addr PI_BSD_DOM2_RLS_REG = 0x0460'0030;
 
+// Serial Interface
+addr SI_DRAM_ADDR        = 0x0480'0000;
+addr SI_PIF_AD_RD64B     = 0x0480'0004;
+addr SI_PIF_AD_WR4B      = 0x0480'0008;
+addr SI_PIF_AD_WR64B     = 0x0480'0010;
+addr SI_PIF_AD_RD4B      = 0x0480'0014;
+addr SI_STATUS           = 0x0480'0018;
+
+// PIF RAM
+addr PIF_COMMAND         = 0x1FC0'07FC;
+
 #undef addr
 #endif

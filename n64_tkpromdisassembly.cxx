@@ -139,7 +139,7 @@ namespace TKPEmu::Applications {
                         // ImGui::EndChild();
                         // ImGui::BeginChild("pipeline rest", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()));
                         // ImGui::Separator();
-                        // ImGui::Text("PC: %08x", static_cast<uint32_t>(n64cpu.pc_));
+                        ImGui::Text("PC: %08x", static_cast<uint32_t>(n64_ptr->n64_impl_.cpu_.pc_));
                         // ImGui::Text("Instructions ran: %u", n64cpu.instructions_ran_);
                         ImGui::Text("Last 60 frames took: %ums", n64_ptr->LastFrameTime);
                         // ImGui::EndChild();

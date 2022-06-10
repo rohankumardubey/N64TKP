@@ -113,13 +113,22 @@ namespace TKPEmu::N64::Devices {
             redir_case(PI_BSD_DOM2_PWD_REG, pi_bsd_dom2_pwd_);
             redir_case(PI_BSD_DOM2_PGS_REG, pi_bsd_dom2_pgs_);
             redir_case(PI_BSD_DOM2_RLS_REG, pi_bsd_dom2_rls_);
+
+            // Serial Interface
+            redir_case(SI_STATUS, si_status_);
         }
+        #undef redir_case
         if (paddr - 0x1FC00000u < 1984u) {
             return &ipl_[paddr - 0x1FC00000u];
         } else if (paddr - 0x1FC0'07C0u < 64u) {
             return &pif_ram_[paddr - 0x1FC0'07C0u];
+        } else if (paddr - 0x04000000u < 4096u) {
+            return &rsp_dmem_[paddr - 0x04000000u];
+        } else if (paddr - 0x04001000u < 4096u) {
+            return &rsp_imem_[paddr - 0x04001000u];
+        } else if (paddr - 0x04100000u < 0x100000u) {
+            return &rdp_cmem_[paddr - 0x04100000u];
         }
-        #undef redir_case
         return nullptr;
     }
 

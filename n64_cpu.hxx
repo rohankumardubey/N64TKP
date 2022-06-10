@@ -115,6 +115,9 @@ namespace TKPEmu::N64::Devices {
         std::array<uint8_t, 0x400000> rdram_ {};
         std::array<uint8_t, 0x400000> rdram_xpk_ {};
         std::array<uint8_t, 64> pif_ram_ {};
+        std::array<uint8_t, 0x1000> rsp_imem_ {};
+        std::array<uint8_t, 0x1000> rsp_dmem_ {};
+        std::array<uint8_t, 0x100000> rdp_cmem_ {};
         std::array<uint8_t*, 0x1000> page_table_ {};
 
         // Peripheral Interface
@@ -132,8 +135,13 @@ namespace TKPEmu::N64::Devices {
         uint32_t pi_bsd_dom2_pgs_ = 0;
         uint32_t pi_bsd_dom2_rls_ = 0;
 
+        // Audio Interface
         uint32_t ai_dram_addr_    = 0;
         uint32_t ai_length_       = 0;
+
+        // Serial Interface
+        uint32_t si_status_       = 0;
+
         Devices::RCP& rcp_;
         friend class CPU;
         friend class N64;
@@ -254,7 +262,7 @@ namespace TKPEmu::N64::Devices {
         /**
          * Executes memory mapped register related stuff
          */
-        inline void invalidate_hwio(uint32_t addr, uint64_t data);
+        inline void invalidate_hwio(uint32_t addr, uint64_t& data);
 
         __always_inline PipelineStageRet IC(PipelineStageArgs);
         __always_inline PipelineStageRet RF(PipelineStageArgs);
@@ -281,6 +289,11 @@ namespace TKPEmu::N64::Devices {
         s_SLT(), s_SLTU(), s_DADD(), s_DADDU(), s_DSUB(), s_DSUBU(),
         s_TGE(), s_TGEU(), s_TLT(), s_TLTU(), s_TEQ(), s_TNE(),
         s_DSLL(), s_DSRL(), s_DSRA(), s_DSLL32(), s_DSRL32(), s_DSRA32();
+
+        void r_BLTZ(), r_BGEZ(), r_BLTZL(), r_BGEZL(),
+            r_TGEI(), r_TGEIU(), r_TLTI(), r_TLTIU(), r_TEQI(), r_TNEI(),
+            r_BLTZAL(), r_BGEZAL(), r_BLTZALL(), r_BGEZALL();
+
         using func_ptr = void (*)(CPU*);
         constexpr static std::array<func_ptr, 64> InstructionTable = {
             &lut_wrapper<&CPU::SPECIAL>, &lut_wrapper<&CPU::REGIMM>, &lut_wrapper<&CPU::J>, &lut_wrapper<&CPU::JAL>, &lut_wrapper<&CPU::BEQ>, &lut_wrapper<&CPU::BNE>, &lut_wrapper<&CPU::BLEZ>, &lut_wrapper<&CPU::BGTZ>,
@@ -302,9 +315,16 @@ namespace TKPEmu::N64::Devices {
             &lut_wrapper<&CPU::s_TGE>, &lut_wrapper<&CPU::s_TGEU>, &lut_wrapper<&CPU::s_TLT>, &lut_wrapper<&CPU::s_TLTU>, &lut_wrapper<&CPU::s_TEQ>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::s_TNE>, &lut_wrapper<&CPU::ERROR>,
             &lut_wrapper<&CPU::s_DSLL>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::s_DSRL>, &lut_wrapper<&CPU::s_DSRA>, &lut_wrapper<&CPU::s_DSLL32>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::s_DSRL32>, &lut_wrapper<&CPU::s_DSRA32>,
         };
+        // TODO: not really needed :facepalm: its just sll $r0
         constexpr static func_ptr NopTable = &lut_wrapper<&CPU::NOP>;
-        constexpr static std::array<const func_ptr*, 3> TableTable = {
-            &NopTable, InstructionTable.data(), SpecialTable.data()
+        constexpr static std::array<func_ptr, 32> RegImmTable = {
+            &lut_wrapper<&CPU::r_BLTZ>, &lut_wrapper<&CPU::r_BGEZ>, &lut_wrapper<&CPU::r_BLTZL>, &lut_wrapper<&CPU::r_BGEZL>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
+            &lut_wrapper<&CPU::r_TGEI>, &lut_wrapper<&CPU::r_TGEIU>, &lut_wrapper<&CPU::r_TLTI>, &lut_wrapper<&CPU::r_TLTIU>, &lut_wrapper<&CPU::r_TEQI>,  &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::r_TNEI>,  &lut_wrapper<&CPU::ERROR>,
+            &lut_wrapper<&CPU::r_BLTZAL>, &lut_wrapper<&CPU::r_BGEZAL>, &lut_wrapper<&CPU::r_BLTZALL>, &lut_wrapper<&CPU::r_BGEZALL>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
+            &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
+        };
+        constexpr static std::array<const func_ptr*, 4> TableTable = {
+            &NopTable, InstructionTable.data(), SpecialTable.data(), RegImmTable.data(),
         };
         __always_inline void bypass_register();
         __always_inline void detect_ldi();

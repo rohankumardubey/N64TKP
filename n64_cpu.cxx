@@ -1,6 +1,8 @@
 #include "n64_cpu.hxx"
 #include <cstring> // memcpy
 #include <cassert> // assert
+#include <iostream>
+#include <bitset>
 #include "../include/error_factory.hxx"
 #include "n64_addresses.hxx"
 #define SKIPDEBUGSTUFF 1
@@ -94,7 +96,10 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_MFHI() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_MFHI opcode reached");
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = hi_;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::s_MTHI() {
@@ -102,7 +107,10 @@ namespace TKPEmu::N64::Devices {
 	}
 
     TKP_INSTR_FUNC CPU::s_MFLO() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_MFLO opcode reached");
+		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
+        exdc_latch_.data = lo_;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		bypass_register();
 	}
     
     TKP_INSTR_FUNC CPU::s_DSRLV() {
@@ -118,7 +126,9 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_MULTU() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_MULTU opcode reached");
+		uint64_t res = rfex_latch_.fetched_rs.UW._0 * rfex_latch_.fetched_rt.UW._0;
+        lo_ = static_cast<uint32_t>(res & 0xFFFF'FFFF);
+        hi_ = static_cast<uint32_t>(res >> 32);
 	}
     
     TKP_INSTR_FUNC CPU::s_DIV() {
@@ -256,7 +266,7 @@ namespace TKPEmu::N64::Devices {
 	}
 
     TKP_INSTR_FUNC CPU::REGIMM() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "REGIMM opcode reached");
+		(RegImmTable[rfex_latch_.instruction.RType.rt])(this);
 	}
     
     TKP_INSTR_FUNC CPU::BLEZ() {
@@ -741,7 +751,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
             exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
-		bypass_register();
+		    bypass_register();
         }
     }
     /**
@@ -750,13 +760,13 @@ namespace TKPEmu::N64::Devices {
      * doesn't throw
      */
     TKP_INSTR_FUNC CPU::BEQL() {
-            int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
+        int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
         if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
             exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
-		bypass_register();
+		    bypass_register();
         } else {
             // Discard delay slot instruction
             icrf_latch_.instruction.Full = 0;
@@ -807,7 +817,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
             exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
-		bypass_register();
+		    bypass_register();
         } else {
             // Discard delay slot instruction
             icrf_latch_.instruction.Full = 0;
@@ -998,6 +1008,71 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
+
+    TKP_INSTR_FUNC CPU::r_BLTZ() {
+		throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZ opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_BGEZ() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BGEZ opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_BLTZL() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZL opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_BGEZL() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BGEZL opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_TGEI() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TGEI opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_TGEIU() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TGEIU opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_TLTI() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TLTI opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_TLTIU() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TLTIU opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_TEQI() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TEQI opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_TNEI() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TNEI opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_BLTZAL() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZAL opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_BGEZAL() {
+        int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
+        int32_t seoffset = offset;
+        gpr_regs_[31].UD = pc_;
+        if (rfex_latch_.fetched_rs.D >= 0) {
+            exdc_latch_.data = pc_ - 4 + seoffset;
+            exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
+            exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+		    bypass_register();
+        }
+    }
+    
+    TKP_INSTR_FUNC CPU::r_BLTZALL() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZALL opcode reached");
+    }
+    
+    TKP_INSTR_FUNC CPU::r_BGEZALL() {
+        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BGEZALL opcode reached");
+    }
+    
     /**
      * NOP
      * 
@@ -1018,6 +1093,7 @@ namespace TKPEmu::N64::Devices {
         // Fetch the registers
         // Double negation makes the target 0 or 1 based on if instr is 0 or not
         // This makes it pick from the NOP table if it's a NOP
+        // TODO: drop the nop table
         rfex_latch_.instruction_target = !!(icrf_latch_.instruction.Full);
         rfex_latch_.instruction_type = !!(icrf_latch_.instruction.Full) * icrf_latch_.instruction.IType.op;
         rfex_latch_.fetched_rs_i = icrf_latch_.instruction.RType.rs;
@@ -1096,7 +1172,7 @@ namespace TKPEmu::N64::Devices {
         uint64_t mask = LUT[size];
         *dest = (*dest & ~mask) | (data & mask);
     }
-    void CPU::invalidate_hwio(uint32_t addr, uint64_t data) {
+    void CPU::invalidate_hwio(uint32_t addr, uint64_t& data) {
         if (data != 0)
         switch (addr) {
             case PI_WR_LEN_REG: {
@@ -1113,6 +1189,16 @@ namespace TKPEmu::N64::Devices {
             }
             case VI_ORIGIN_REG: {
                 rcp_.framebuffer_ptr_ = cpubus_.redirect_paddress(data & 0xFFFFFF);
+                break;
+            }
+            case PIF_COMMAND: {
+                if (data & 0x20) {
+                    data |= 0x80;
+                }
+                if (data & 0x40) {
+                    cpubus_.pif_ram_.fill(0);
+                    data = 0;
+                }
                 break;
             }
         }
