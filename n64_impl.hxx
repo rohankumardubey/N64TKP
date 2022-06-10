@@ -20,6 +20,7 @@ namespace TKPEmu::N64 {
     public:
         N64(GLuint& text_format);
         bool LoadCartridge(std::string path);
+        bool LoadIPL(std::string path);
         void Update();
         void Reset();
         void* GetColorData() {

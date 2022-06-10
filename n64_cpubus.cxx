@@ -1,5 +1,6 @@
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include "n64_cpu.hxx"
 #include "n64_addresses.hxx"
 #include "../include/error_factory.hxx"
@@ -9,7 +10,7 @@ namespace TKPEmu::N64::Devices {
         map_direct_addresses();
     }
 
-    bool CPUBus::LoadFromFile(std::string path) {
+    bool CPUBus::LoadCartridge(std::string path) {
         std::ifstream ifs(path, std::ios::in | std::ios::binary);
         if (ifs.is_open()) {
             ifs.unsetf(std::ios::skipws);
@@ -17,6 +18,23 @@ namespace TKPEmu::N64::Devices {
             std::streampos size = ifs.tellg();
             ifs.seekg(0, std::ios::beg);
             ifs.read(reinterpret_cast<char*>(cart_rom_.data()), size);
+            Reset();
+        } else {
+            return false;
+        }
+        return true;
+    }
+
+    bool CPUBus::LoadIPL(std::string path) {
+        std::ifstream ifs(path, std::ios::in | std::ios::binary);
+        if (ifs.is_open()) {
+            ifs.unsetf(std::ios::skipws);
+            ifs.seekg(0, std::ios::end);
+            std::streampos size = ifs.tellg();
+            ifs.seekg(0, std::ios::beg);
+            ipl_.resize(size);
+            ifs.read(reinterpret_cast<char*>(ipl_.data()), size);
+            Reset();
         } else {
             return false;
         }
@@ -32,7 +50,7 @@ namespace TKPEmu::N64::Devices {
     uint32_t CPUBus::fetch_instruction_uncached(uint32_t paddr) {
         // Loads in big endian
         // should only work for .z64 files
-        uint8_t* ptr = cart_rom_.data() + paddr;
+        uint8_t* ptr = redirect_paddress(paddr);
         uint32_t ret = __builtin_bswap32(*reinterpret_cast<uint32_t*>(ptr));
         return ret;
     }
@@ -55,6 +73,10 @@ namespace TKPEmu::N64::Devices {
     uint8_t* CPUBus::redirect_paddress_slow(uint32_t paddr) {
         #define redir_case(A,B) case A: return reinterpret_cast<uint8_t*>(&B)
         switch (paddr) {
+            // RSP internal registers
+            redir_case(RSP_STATUS, rcp_.rsp_status_);
+            redir_case(RSP_DMA_BUSY, rcp_.rsp_dma_busy_);
+
             // Video Interface
             redir_case(VI_CTRL_REG, rcp_.vi_ctrl_);
             redir_case(VI_ORIGIN_REG, rcp_.vi_origin_);
@@ -73,6 +95,10 @@ namespace TKPEmu::N64::Devices {
             redir_case(VI_TEST_ADDR_REG, rcp_.vi_test_addr_);
             redir_case(VI_STAGED_DATA_REG, rcp_.vi_staged_data_);
 
+            // Audio Interface
+            redir_case(AI_DRAM_ADDR, ai_dram_addr_);
+            redir_case(AI_LEN, ai_length_);
+
             // Peripheral Interface
             redir_case(PI_DRAM_ADDR_REG, pi_dram_addr_);
             redir_case(PI_CART_ADDR_REG, pi_cart_addr_);
@@ -88,7 +114,9 @@ namespace TKPEmu::N64::Devices {
             redir_case(PI_BSD_DOM2_PGS_REG, pi_bsd_dom2_pgs_);
             redir_case(PI_BSD_DOM2_RLS_REG, pi_bsd_dom2_rls_);
         }
-        if (paddr - 0x1FC0'07C0u < 64u) {
+        if (paddr - 0x1FC00000u < 1984u) {
+            return &ipl_[paddr - 0x1FC00000u];
+        } else if (paddr - 0x1FC0'07C0u < 64u) {
             return &pif_ram_[paddr - 0x1FC0'07C0u];
         }
         #undef redir_case
@@ -107,7 +135,7 @@ namespace TKPEmu::N64::Devices {
             page_table_[i] = &rdram_xpk_[PAGE_SIZE * i];
         }
         // Map cartridge rom
-        for (int i = 0x00; i < 0xFB; i++) {
+        for (int i = 0x100; i <= 0x1FB; i++) {
             page_table_[i] = &cart_rom_[PAGE_SIZE * i];
         }
     }

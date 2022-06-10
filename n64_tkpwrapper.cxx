@@ -1,5 +1,7 @@
 #include "n64_tkpwrapper.hxx"
+#include "n64_tkpargs.hxx"
 #include <GL/glew.h>
+#include <iostream>
 // #include <valgrind/callgrind.h>
 
 #ifndef CALLGRIND_START_INSTRUMENTATION
@@ -11,6 +13,7 @@
 #endif
 
 namespace TKPEmu::N64 {
+	bool N64_TKPWrapper::ipl_loaded_ = false;
 	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_(EmulatorImage.format) {
 		// TODO: rarely some games have different resolutions
 		EmulatorImage.width = 320;
@@ -40,7 +43,8 @@ namespace TKPEmu::N64 {
 	}
 
 	N64_TKPWrapper::N64_TKPWrapper(std::any args) : N64_TKPWrapper() {
-
+		auto args_s = std::any_cast<N64Args>(args);
+		IPLPath = args_s.IPLPath;
 	}
 
 	N64_TKPWrapper::~N64_TKPWrapper() {
@@ -53,9 +57,15 @@ namespace TKPEmu::N64 {
 	}
 	
 	bool N64_TKPWrapper::load_file(std::string path) {
+		std::cout << "Loading file" << std::endl;
+		bool ipl_loaded = ipl_loaded_;
+		if (!ipl_loaded) {
+			bool ipl_status = n64_impl_.LoadIPL(IPLPath);
+			ipl_loaded = ipl_status;
+		}
 		bool opened = n64_impl_.LoadCartridge(path);
-		Loaded = opened;
-		return opened;
+		Loaded = opened && ipl_loaded;
+		return Loaded;
 	}
 	
 	void N64_TKPWrapper::start_debug() {

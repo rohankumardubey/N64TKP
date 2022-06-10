@@ -95,7 +95,11 @@ namespace TKPEmu::N64::Devices {
     class CPUBus {
     public:
         CPUBus(Devices::RCP& rcp);
-        bool LoadFromFile(std::string path);
+        bool LoadCartridge(std::string path);
+        bool LoadIPL(std::string path);
+        bool IsEverythingLoaded() {
+            return rom_loaded_ && ipl_loaded_;
+        }
         void Reset();
     private:
         uint32_t  fetch_instruction_uncached(uint32_t paddr);
@@ -105,6 +109,9 @@ namespace TKPEmu::N64::Devices {
         void      map_direct_addresses();
 
         std::array<uint8_t, 0xFC00000> cart_rom_;
+        bool rom_loaded_ = false;
+        bool ipl_loaded_ = false;
+        std::vector<uint8_t> ipl_;
         std::array<uint8_t, 0x400000> rdram_ {};
         std::array<uint8_t, 0x400000> rdram_xpk_ {};
         std::array<uint8_t, 64> pif_ram_ {};
@@ -125,8 +132,11 @@ namespace TKPEmu::N64::Devices {
         uint32_t pi_bsd_dom2_pgs_ = 0;
         uint32_t pi_bsd_dom2_rls_ = 0;
 
+        uint32_t ai_dram_addr_    = 0;
+        uint32_t ai_length_       = 0;
         Devices::RCP& rcp_;
         friend class CPU;
+        friend class N64;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };
     template<auto MemberFunc>
@@ -144,8 +154,6 @@ namespace TKPEmu::N64::Devices {
         using PipelineStageArgs = void;
         CPUBus& cpubus_;
         RCP& rcp_;
-        uint8_t pipeline_ = 0b00001; // the 5 stages
-        std::deque<uint32_t> pipeline_cur_instr_ {};
         ICRF_latch icrf_latch_ {};
         RFEX_latch rfex_latch_ {};
         EXDC_latch exdc_latch_ {};
@@ -166,7 +174,6 @@ namespace TKPEmu::N64::Devices {
         uint64_t pc_, hi_, lo_;
         bool llbit_;
         float fcr0_, fcr31_;
-        uint64_t instructions_ran_ = 0;
 
         GLuint& text_format_;
         // Kernel mode addressing functions

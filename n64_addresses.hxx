@@ -3,23 +3,41 @@
 #include <cstdint>
 #define addr constexpr uint32_t
 
+// RSP internal registers
+addr RSP_DMA_SPADDR      = 0x0404'0000;
+addr RSP_DMA_RAMADDR     = 0x0404'0004;
+addr RSP_DMA_RDLEN       = 0x0404'0008;
+addr RSP_DMA_WRLEN       = 0x0404'000C;
+addr RSP_STATUS          = 0x0404'0010;
+addr RSP_DMA_FULL        = 0x0404'0014;
+addr RSP_DMA_BUSY        = 0x0404'0018;
+addr RSP_SEMAPHORE       = 0x0404'001C;
+
 // Video Interface
-addr VI_CTRL_REG        = 0x0440'0000;
-addr VI_ORIGIN_REG      = 0x0440'0004;
-addr VI_WIDTH_REG       = 0x0440'0008;
-addr VI_V_INTR_REG      = 0x0440'000C;
-addr VI_V_CURRENT_REG   = 0x0440'0010;
-addr VI_BURST_REG       = 0x0440'0014;
-addr VI_V_SYNC_REG      = 0x0440'0018;
-addr VI_H_SYNC_REG      = 0x0440'001C;
-addr VI_H_SYNC_LEAP_REG = 0x0440'0020;
-addr VI_H_VIDEO_REG     = 0x0440'0024;
-addr VI_V_VIDEO_REG     = 0x0440'0028;
-addr VI_V_BURST_REG     = 0x0440'002C;
-addr VI_X_SCALE_REG     = 0x0440'0030;
-addr VI_Y_SCALE_REG     = 0x0440'0034;
-addr VI_TEST_ADDR_REG   = 0x0440'0038;
-addr VI_STAGED_DATA_REG = 0x0440'003C;
+addr VI_CTRL_REG         = 0x0440'0000;
+addr VI_ORIGIN_REG       = 0x0440'0004;
+addr VI_WIDTH_REG        = 0x0440'0008;
+addr VI_V_INTR_REG       = 0x0440'000C;
+addr VI_V_CURRENT_REG    = 0x0440'0010;
+addr VI_BURST_REG        = 0x0440'0014;
+addr VI_V_SYNC_REG       = 0x0440'0018;
+addr VI_H_SYNC_REG       = 0x0440'001C;
+addr VI_H_SYNC_LEAP_REG  = 0x0440'0020;
+addr VI_H_VIDEO_REG      = 0x0440'0024;
+addr VI_V_VIDEO_REG      = 0x0440'0028;
+addr VI_V_BURST_REG      = 0x0440'002C;
+addr VI_X_SCALE_REG      = 0x0440'0030;
+addr VI_Y_SCALE_REG      = 0x0440'0034;
+addr VI_TEST_ADDR_REG    = 0x0440'0038;
+addr VI_STAGED_DATA_REG  = 0x0440'003C;
+
+// Audio Interface
+addr AI_DRAM_ADDR        = 0x0450'0000;
+addr AI_LEN              = 0x0450'0004;
+addr AI_CONTROL          = 0x0450'0008;
+addr AI_STATUS           = 0x0450'000C;
+addr AI_DACRATE          = 0x0450'0010;
+addr AI_BITRATE          = 0x0450'0014;
 
 // Peripheral Interface
 addr PI_DRAM_ADDR_REG    = 0x0460'0000;

@@ -15,8 +15,12 @@ namespace TKPEmu::N64 {
 namespace TKPEmu::N64::Devices {
     class RCP {
     public:
+        void Reset();
     private:
 		uint8_t* framebuffer_ptr_ = nullptr;
+        // RSP internal registers
+        uint32_t rsp_status_ = 0;
+        uint32_t rsp_dma_busy_ = 0;
         // Video Interface
         uint32_t vi_ctrl_ = 0;
         uint32_t vi_origin_ = 0;

@@ -25,9 +25,11 @@ namespace TKPEmu::N64 {
 			return n64_impl_.cpu_;
 		}
 		uint64_t LastFrameTime = 0;
+		std::string IPLPath;
     private:
         N64 n64_impl_;
 		bool should_draw_ = false;
+		static bool ipl_loaded_;
         // void v_log_state() override;
 		// void save_state(std::ofstream& ofstream) override;
 		// void load_state(std::ifstream& ifstream) override;

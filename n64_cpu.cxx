@@ -20,16 +20,14 @@ namespace TKPEmu::N64::Devices {
         rcp_(rcp),
         text_format_(text_format)
     {
-        Reset();
     }
 
     void CPU::Reset() {
-        pc_ = 0x80001000;
+        pc_ = 0xBFC0'0000;
         clear_registers();
-        pipeline_ = 0b00001;
-        instructions_ran_ = 1;
         cpubus_.Reset();
-        fill_pipeline();
+        if (cpubus_.IsEverythingLoaded())
+            fill_pipeline();
     }
 
     TKP_INSTR_FUNC CPU::ERROR() {
@@ -498,11 +496,7 @@ namespace TKPEmu::N64::Devices {
      * COP0
      */
     TKP_INSTR_FUNC CPU::COP0() {
-        if (rfex_latch_.instruction.Full & CPzOPERATION_BIT) {
-            execute_cp0_instruction(rfex_latch_.instruction);
-        } else {
-            throw ErrorFactory::generate_exception(__func__, __LINE__, "CP0 CFC/CTC operations are illegal");
-        }
+        execute_cp0_instruction(rfex_latch_.instruction);
     }
     /**
      * ORI
@@ -633,6 +627,8 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UBYTE;
+        exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
+        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
     }
     /**
      * LD
@@ -650,6 +646,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
+        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b111) != 0) { 
             // From manual:
@@ -684,6 +681,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UHALFWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
+        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b1) != 0) {
             // From manual:
@@ -711,6 +709,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
+        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b11) != 0) {
             // From manual:
@@ -726,6 +725,7 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::ANDI() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
+        std::cout << std::hex << rfex_latch_.fetched_rs.UD << " & " << rfex_latch_.instruction.IType.immediate << std::endl;;
         exdc_latch_.data = rfex_latch_.fetched_rs.UD & rfex_latch_.instruction.IType.immediate;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
@@ -775,7 +775,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
             exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
-		bypass_register();
+		    bypass_register();
         }
     }
     /**
@@ -786,11 +786,12 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BNEL() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
+        std::cout << "BNEL:" << rfex_latch_.fetched_rs.UD << " != " << rfex_latch_.fetched_rt.UD << std::endl;
         if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
             exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
-		bypass_register();
+		    bypass_register();
         } else {
             // Discard delay slot instruction
             icrf_latch_.instruction.Full = 0;
@@ -1012,6 +1013,7 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
+        std::cout << std::hex << icrf_latch_.instruction.Full << " pc:" << pc_ << std::endl;
         pc_ += 4;
     }
 
@@ -1042,6 +1044,7 @@ namespace TKPEmu::N64::Devices {
         if (exdc_latch_.write_type == WriteType::LATEREGISTER) {
             auto paddr_s = translate_vaddr(exdc_latch_.vaddr);
             uint32_t paddr = paddr_s.paddr;
+            std::cout << "Latereg: " << std::hex << exdc_latch_.vaddr << " " << paddr << std::endl;
             dcwb_latch_.cached = paddr_s.cached;
             load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
             // Result is cast to uint64_t in order to zero extend
@@ -1049,6 +1052,14 @@ namespace TKPEmu::N64::Devices {
             if (rfex_latch_.fetched_rt_i == exdc_latch_.fetched_rt_i) [[unlikely]] {
                 // TODO: LoadInterlock hack This may be wrong
                 rfex_latch_.fetched_rt.UD = dcwb_latch_.data;
+                // exdc_latch_.fetched_rt_i = 33;
+                // dcwb_latch_.write_type = WriteType::NONE;
+            }
+            if (rfex_latch_.fetched_rs_i == exdc_latch_.fetched_rs_i) [[unlikely]] {
+                // TODO: LoadInterlock hack This may be wrong
+                rfex_latch_.fetched_rs.UD = dcwb_latch_.data;
+                // exdc_latch_.fetched_rs_i = 33;
+                // dcwb_latch_.write_type = WriteType::NONE;
             }
         } else {
             dcwb_latch_.data = exdc_latch_.data;
@@ -1065,8 +1076,8 @@ namespace TKPEmu::N64::Devices {
                 store_register(dcwb_latch_.dest, dcwb_latch_.data, dcwb_latch_.access_type);
                 // Bypass the rfex latch and update regs
                 // TODO: Wrong? Don't know
-                rfex_latch_.fetched_rs = gpr_regs_[rfex_latch_.fetched_rs_i];
-                rfex_latch_.fetched_rt = gpr_regs_[rfex_latch_.fetched_rt_i];
+                // rfex_latch_.fetched_rs = gpr_regs_[rfex_latch_.fetched_rs_i];
+                // rfex_latch_.fetched_rt = gpr_regs_[rfex_latch_.fetched_rt_i];
                 break;
             }
             default: {
@@ -1091,42 +1102,6 @@ namespace TKPEmu::N64::Devices {
         // Fast vaddr translation
         // TODO: broken if uses kuseg
         return { addr - KSEG0_START - ((addr >> 29) & 1) * 0x2000'0000, false };
-        // VR4300 manual page 136 table 5-3
-        // unsigned _3msb = addr >> 29;
-        // uint32_t paddr = 0;
-        // bool cached = false;
-        // switch(_3msb) {
-        //     case 0b100:
-        //     // kseg0
-        //     // cached, non tlb
-        //     paddr = translate_kseg0(addr);
-        //     //cached = true;
-        //     break;
-        //     case 0b101:
-        //     // kseg1
-        //     // uncached, non tlb
-        //     paddr = translate_kseg1(addr);
-        //     break;
-        //     case 0b110:
-        //     // ksseg
-        //     break;
-        //     case 0b111:
-        //     // kseg3
-        //     break;
-        //     default:
-        //     // kuseg
-        //     // From manual:
-        //     // In Kernel mode, when KX = 0 in the Status register, and the most-significant bit
-        //     // of the virtual address is cleared, the kuseg virtual address space is selected; it
-        //     // covers the current 231 bytes (2 GB) user address space. The virtual address is
-        //     // extended with the contents of the 8-bit ASID field to form a unique virtual
-        //     // address.
-        //     paddr = translate_kuseg(addr);
-        //     cached = true;
-        //     break;
-        // }
-        // TranslatedAddress t_addr = { paddr, cached };
-        // return t_addr;
     }
     void CPU::store_register(uint8_t* dest8, uint64_t data, int size) {
         // std::memcpy(dest, &data, size);
@@ -1189,6 +1164,10 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::fill_pipeline() {
+        icrf_latch_ = {};
+        rfex_latch_ = {};
+        exdc_latch_ = {};
+        dcwb_latch_ = {};
         IC();
         
         RF();
@@ -1219,10 +1198,6 @@ namespace TKPEmu::N64::Devices {
         if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
             // interrupt
         }
-        #if SKIPDEBUGSTUFF == 0
-        ++instructions_ran_;
-        pipeline_rfex_latch_.instruction_.push_back(EMPTY_INSTRUCTION);
-        #endif
     }
 
     void CPU::execute_instruction() {
@@ -1246,8 +1221,8 @@ namespace TKPEmu::N64::Devices {
                 int64_t sedata = gpr_regs_[instr.RType.rd].W._0;
                 exdc_latch_.dest = &cp0_regs_[instr.RType.rt].UB._0;
                 exdc_latch_.data = sedata;
-                exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                bypass_register();
                 break;
             }
             /**
@@ -1259,8 +1234,8 @@ namespace TKPEmu::N64::Devices {
                 int64_t sedata = cp0_regs_[instr.RType.rd].W._0;
                 exdc_latch_.dest = &gpr_regs_[instr.RType.rt].UB._0;
                 exdc_latch_.data = sedata;
-                exdc_latch_.write_type = WriteType::LATEREGISTER;
                 exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                bypass_register();
                 break;
             }
         }

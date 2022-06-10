@@ -1,3 +1,4 @@
+#include <iostream>
 #include "n64_impl.hxx"
 
 namespace TKPEmu::N64 {
@@ -6,7 +7,15 @@ namespace TKPEmu::N64 {
     }
 
     bool N64::LoadCartridge(std::string path) {
-        return cpu_.cpubus_.LoadFromFile(path);
+        return cpu_.cpubus_.LoadCartridge(path);
+    }
+
+    bool N64::LoadIPL(std::string path) {
+        std::cout << "try load " << path << std::endl;
+        if (!path.empty()) {
+            return cpu_.cpubus_.LoadIPL(path);
+        }
+        return false;
     }
     
     void N64::Update() {
@@ -15,5 +24,6 @@ namespace TKPEmu::N64 {
     
     void N64::Reset() {
         cpu_.Reset();
+        rcp_.Reset();
     }
 }
