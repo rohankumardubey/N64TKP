@@ -477,7 +477,7 @@ namespace TKPEmu::N64::Devices {
      * doesn't throw
      */
     TKP_INSTR_FUNC CPU::JAL() {
-        gpr_regs_[31].UD = pc_ + 4; // By the time this instruction is executed, pc is already incremented by 8
+        gpr_regs_[31].UD = pc_; // By the time this instruction is executed, pc is already incremented by 8
                                     // so there's no need to increment by 8
         J();
     }
@@ -747,6 +747,7 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BEQ() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
+        // std::cout << "compare " << std::hex << rfex_latch_.fetched_rs.UD << " == " << rfex_latch_.fetched_rt.UD << std::endl;
         if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
@@ -1056,7 +1057,7 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::r_BGEZAL() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        gpr_regs_[31].UD = pc_ + 4;
+        gpr_regs_[31].UD = pc_;
         if (rfex_latch_.fetched_rs.D >= 0) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
@@ -1086,6 +1087,7 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
+        // std::cout << std::hex << (0x1fc00000 | (pc_ & 0xFFF) + 0xd0) << " ins: " << icrf_latch_.instruction.Full << std::endl;
         pc_ += 4;
     }
 

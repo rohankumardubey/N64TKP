@@ -18,6 +18,8 @@ namespace TKPEmu::N64::Devices {
             std::streampos size = ifs.tellg();
             ifs.seekg(0, std::ios::beg);
             ifs.read(reinterpret_cast<char*>(cart_rom_.data()), size);
+            std::cout << "first byte: " << std::hex << (uint16_t)cart_rom_[0] << std::endl;
+            std::cout << "2first byte: " << std::hex << (uint16_t)*redirect_paddress(0x1000'0000) << std::endl;
             Reset();
         } else {
             return false;
@@ -145,7 +147,7 @@ namespace TKPEmu::N64::Devices {
         }
         // Map cartridge rom
         for (int i = 0x100; i <= 0x1FB; i++) {
-            page_table_[i] = &cart_rom_[PAGE_SIZE * i];
+            page_table_[i] = &cart_rom_[PAGE_SIZE * (i - 0x100)];
         }
     }
 }

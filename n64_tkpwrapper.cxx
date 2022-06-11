@@ -65,6 +65,7 @@ namespace TKPEmu::N64 {
 		}
 		bool opened = n64_impl_.LoadCartridge(path);
 		Loaded = opened && ipl_loaded;
+		std::cout << "LOADED:" << Loaded << std::endl;
 		return Loaded;
 	}
 	

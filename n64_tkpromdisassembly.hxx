@@ -32,6 +32,9 @@ namespace TKPEmu::Applications {
             {"PIPELINE", MemoryType::PIPELINE, 0},
             {"GPR regs", MemoryType::GPR_REGS, 32}, {"FPR regs", MemoryType::FPR_REGS, 32},
             {"PIF RAM", MemoryType::MEMORY, 64, 0x1FC0'07C0},
+            {"RSP DMEM", MemoryType::MEMORY, 0x1000, 0x0400'0000},
+            {"RSP IMEM", MemoryType::MEMORY, 0x1000, 0x0400'1000},
+            {"IPL3", MemoryType::MEMORY, 0x1000, 0x1000'0000},
         };
     };
 }
