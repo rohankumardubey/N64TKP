@@ -1288,7 +1288,7 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::detect_ldi() {
-        ldi_ = (rfex_latch_.fetched_rt_i == icrf_latch_.instruction.RType.rt || rfex_latch_.fetched_rs_i == icrf_latch_.instruction.RType.rt);
+        ldi_ = (rfex_latch_.fetched_rt_i == icrf_latch_.instruction.RType.rt || rfex_latch_.fetched_rt_i == icrf_latch_.instruction.RType.rs);
         // Insert NOP so next EX doesn't re-execute the load in case ldi = true
         rfex_latch_.instruction_target = 0;
         rfex_latch_.instruction_type = 0;

@@ -13,6 +13,9 @@ addr RSP_DMA_FULL        = 0x0404'0014;
 addr RSP_DMA_BUSY        = 0x0404'0018;
 addr RSP_SEMAPHORE       = 0x0404'001C;
 
+// MIPS Interface
+addr MI_MODE             = 0x0430'0000;
+
 // Video Interface
 addr VI_CTRL_REG         = 0x0440'0000;
 addr VI_ORIGIN_REG       = 0x0440'0004;
@@ -53,6 +56,12 @@ addr PI_BSD_DOM2_LAT_REG = 0x0460'0024;
 addr PI_BSD_DOM2_PWD_REG = 0x0460'0028;
 addr PI_BSD_DOM2_PGS_REG = 0x0460'002C;
 addr PI_BSD_DOM2_RLS_REG = 0x0460'0030;
+
+// RDRAM Interface
+addr RI_MODE             = 0x0470'0000;
+addr RI_CONFIG           = 0x0470'0004;
+addr RI_CURRENT_LOAD     = 0x0470'0008;
+addr RI_SELECT           = 0x0470'000C;
 
 // Serial Interface
 addr SI_DRAM_ADDR        = 0x0480'0000;

@@ -119,13 +119,17 @@ namespace TKPEmu::N64::Devices {
         std::array<uint8_t, 0x1000> rsp_dmem_ {};
         std::array<uint8_t, 0x100000> rdp_cmem_ {};
         std::array<uint8_t*, 0x1000> page_table_ {};
+        uint8_t the_void_ = 0; // redirect unimplemented and useless addresses here
+
+        // MIPS Interface
+        uint32_t mi_mode_         = 0;
 
         // Peripheral Interface
-        uint32_t pi_dram_addr_ = 0;
-        uint32_t pi_cart_addr_ = 0;
-        uint32_t pi_rd_len_ = 0;
-        uint32_t pi_wr_len_ = 0;
-        uint32_t pi_status_ = 0;
+        uint32_t pi_dram_addr_    = 0;
+        uint32_t pi_cart_addr_    = 0;
+        uint32_t pi_rd_len_       = 0;
+        uint32_t pi_wr_len_       = 0;
+        uint32_t pi_status_       = 0;
         uint32_t pi_bsd_dom1_lat_ = 0;
         uint32_t pi_bsd_dom1_pwd_ = 0;
         uint32_t pi_bsd_dom1_pgs_ = 0;
@@ -138,6 +142,12 @@ namespace TKPEmu::N64::Devices {
         // Audio Interface
         uint32_t ai_dram_addr_    = 0;
         uint32_t ai_length_       = 0;
+
+        // RDRAM Interface
+        uint32_t ri_mode_         = 0;
+        uint32_t ri_config_       = 0;
+        uint32_t ri_current_load_ = 0;
+        uint32_t ri_select_       = 0;
 
         // Serial Interface
         uint32_t si_status_       = 0;

@@ -18,8 +18,6 @@ namespace TKPEmu::N64::Devices {
             std::streampos size = ifs.tellg();
             ifs.seekg(0, std::ios::beg);
             ifs.read(reinterpret_cast<char*>(cart_rom_.data()), size);
-            std::cout << "first byte: " << std::hex << (uint16_t)cart_rom_[0] << std::endl;
-            std::cout << "2first byte: " << std::hex << (uint16_t)*redirect_paddress(0x1000'0000) << std::endl;
             Reset();
         } else {
             return false;
@@ -36,7 +34,6 @@ namespace TKPEmu::N64::Devices {
             ifs.seekg(0, std::ios::beg);
             ipl_.resize(size);
             ifs.read(reinterpret_cast<char*>(ipl_.data()), size);
-            Reset();
         } else {
             return false;
         }
@@ -47,6 +44,9 @@ namespace TKPEmu::N64::Devices {
         rdram_.fill(0);
         rdram_xpk_.fill(0);
         pif_ram_.fill(0);
+        ri_mode_ = 0x0E000000;
+        ri_config_ = 0x40000000;
+        ri_select_ = 0x14000000;
     }
     
     uint32_t CPUBus::fetch_instruction_uncached(uint32_t paddr) {
@@ -78,6 +78,9 @@ namespace TKPEmu::N64::Devices {
             // RSP internal registers
             redir_case(RSP_STATUS, rcp_.rsp_status_);
             redir_case(RSP_DMA_BUSY, rcp_.rsp_dma_busy_);
+
+            // MIPS Interface
+            redir_case(MI_MODE, mi_mode_);
 
             // Video Interface
             redir_case(VI_CTRL_REG, rcp_.vi_ctrl_);
@@ -115,6 +118,12 @@ namespace TKPEmu::N64::Devices {
             redir_case(PI_BSD_DOM2_PWD_REG, pi_bsd_dom2_pwd_);
             redir_case(PI_BSD_DOM2_PGS_REG, pi_bsd_dom2_pgs_);
             redir_case(PI_BSD_DOM2_RLS_REG, pi_bsd_dom2_rls_);
+
+            // RDRAM Interface
+            redir_case(RI_MODE, ri_mode_);
+            redir_case(RI_CONFIG, ri_config_);
+            redir_case(RI_CURRENT_LOAD, ri_current_load_);
+            redir_case(RI_SELECT, ri_select_);
 
             // Serial Interface
             redir_case(SI_STATUS, si_status_);
