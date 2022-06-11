@@ -1090,7 +1090,7 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        std::cout << std::hex << pc_ << " ins: " << icrf_latch_.instruction.Full << std::endl;
+        // std::cout << std::hex << pc_ << " ins: " << icrf_latch_.instruction.Full << std::endl;
         pc_ += 4;
     }
 
@@ -1180,14 +1180,20 @@ namespace TKPEmu::N64::Devices {
     void CPU::invalidate_hwio(uint32_t addr, uint64_t& data) {
         if (data != 0)
         switch (addr) {
-            case PI_CART_ADDR_REG: {
-                std::memcpy(cpubus_.redirect_paddress(__builtin_bswap32(data)), &cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.pi_rd_len_);
+            case PI_STATUS_REG: {
+                std::cout << "WRITE!" << std::endl;
                 cpubus_.pi_status_ = 0;
+                data = 0;
                 break;
             }
-            case PI_DRAM_ADDR_REG: {
-                std::memcpy(&cpubus_.rdram_[__builtin_bswap32(data)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), cpubus_.pi_wr_len_);
-                cpubus_.pi_status_ = 0;
+            case PI_RD_LEN_REG: {
+                std::cout << std::hex << "Write " << data + 1 << " bytes from " << cpubus_.pi_dram_addr_ << " to " << cpubus_.pi_cart_addr_ << std::endl;
+                std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_cart_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_dram_addr_)), data + 1);
+                break;
+            }
+            case PI_WR_LEN_REG: {
+                std::cout << std::hex << "Write " << data << " bytes from " << cpubus_.pi_cart_addr_ << " to " << cpubus_.pi_dram_addr_ << std::endl;
+                std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data + 1);
                 break;
             }
             case VI_CTRL_REG: {

@@ -35,7 +35,8 @@ namespace TKPEmu::Applications {
             {"RSP DMEM", MemoryType::MEMORY, 0x1000, 0x0400'0000},
             {"RSP IMEM", MemoryType::MEMORY, 0x1000, 0x0400'1000},
             {"IPL3", MemoryType::MEMORY, 0x1000, 0x1000'0000},
-            {"RDRAM", MemoryType::MEMORY, 0x1000, 0x0000'0000},
+            {"First 1000", MemoryType::MEMORY, 0x1000, 0x1000'1000},
+            {"RDRAM", MemoryType::MEMORY, 0x1000, 0x0000'1000},
         };
     };
 }
