@@ -477,8 +477,8 @@ namespace TKPEmu::N64::Devices {
      * doesn't throw
      */
     TKP_INSTR_FUNC CPU::JAL() {
-        gpr_regs_[31].UD = pc_; // By the time this instruction is executed, pc is already incremented by 8
-                                    // so there's no need to increment here
+        gpr_regs_[31].UD = pc_ + 4; // By the time this instruction is executed, pc is already incremented by 8
+                                    // so there's no need to increment by 8
         J();
     }
     TKP_INSTR_FUNC CPU::J() {
@@ -1056,7 +1056,7 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::r_BGEZAL() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        gpr_regs_[31].UD = pc_;
+        gpr_regs_[31].UD = pc_ + 4;
         if (rfex_latch_.fetched_rs.D >= 0) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
