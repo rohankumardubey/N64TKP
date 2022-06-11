@@ -12,9 +12,11 @@ addr RSP_STATUS          = 0x0404'0010;
 addr RSP_DMA_FULL        = 0x0404'0014;
 addr RSP_DMA_BUSY        = 0x0404'0018;
 addr RSP_SEMAPHORE       = 0x0404'001C;
+addr RSP_PC              = 0x0408'0000;
 
 // MIPS Interface
 addr MI_MODE             = 0x0430'0000;
+addr MI_MASK             = 0x0430'000C;
 
 // Video Interface
 addr VI_CTRL_REG         = 0x0440'0000;

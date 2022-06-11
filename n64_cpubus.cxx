@@ -78,9 +78,11 @@ namespace TKPEmu::N64::Devices {
             // RSP internal registers
             redir_case(RSP_STATUS, rcp_.rsp_status_);
             redir_case(RSP_DMA_BUSY, rcp_.rsp_dma_busy_);
+            redir_case(RSP_PC, rcp_.rsp_pc_);
 
             // MIPS Interface
             redir_case(MI_MODE, mi_mode_);
+            redir_case(MI_MASK, mi_mask_);
 
             // Video Interface
             redir_case(VI_CTRL_REG, rcp_.vi_ctrl_);
@@ -103,6 +105,7 @@ namespace TKPEmu::N64::Devices {
             // Audio Interface
             redir_case(AI_DRAM_ADDR, ai_dram_addr_);
             redir_case(AI_LEN, ai_length_);
+            redir_case(AI_STATUS, ai_status_);
 
             // Peripheral Interface
             redir_case(PI_DRAM_ADDR_REG, pi_dram_addr_);

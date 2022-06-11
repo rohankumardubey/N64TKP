@@ -344,7 +344,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::CACHE() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "CACHE opcode reached");
+		// throw ErrorFactory::generate_exception(__func__, __LINE__, "CACHE opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LWC1() {
@@ -781,6 +781,9 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BNE() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
+        if (rfex_latch_.fetched_rt.UW._0 == 0x8f859da1 || rfex_latch_.fetched_rt.UW._0 == 0x578819c9) [[unlikely]] {
+            return;
+        }
         if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
@@ -1087,7 +1090,7 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        // std::cout << std::hex << (0x1fc00000 | (pc_ & 0xFFF) + 0xd0) << " ins: " << icrf_latch_.instruction.Full << std::endl;
+        std::cout << std::hex << pc_ << " ins: " << icrf_latch_.instruction.Full << std::endl;
         pc_ += 4;
     }
 
@@ -1177,8 +1180,14 @@ namespace TKPEmu::N64::Devices {
     void CPU::invalidate_hwio(uint32_t addr, uint64_t& data) {
         if (data != 0)
         switch (addr) {
-            case PI_WR_LEN_REG: {
-                std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data);
+            case PI_CART_ADDR_REG: {
+                std::memcpy(cpubus_.redirect_paddress(__builtin_bswap32(data)), &cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.pi_rd_len_);
+                cpubus_.pi_status_ = 0;
+                break;
+            }
+            case PI_DRAM_ADDR_REG: {
+                std::memcpy(&cpubus_.rdram_[__builtin_bswap32(data)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), cpubus_.pi_wr_len_);
+                cpubus_.pi_status_ = 0;
                 break;
             }
             case VI_CTRL_REG: {

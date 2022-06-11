@@ -123,6 +123,7 @@ namespace TKPEmu::N64::Devices {
 
         // MIPS Interface
         uint32_t mi_mode_         = 0;
+        uint32_t mi_mask_         = 0;
 
         // Peripheral Interface
         uint32_t pi_dram_addr_    = 0;
@@ -142,6 +143,7 @@ namespace TKPEmu::N64::Devices {
         // Audio Interface
         uint32_t ai_dram_addr_    = 0;
         uint32_t ai_length_       = 0;
+        uint32_t ai_status_       = 0;
 
         // RDRAM Interface
         uint32_t ri_mode_         = 0;

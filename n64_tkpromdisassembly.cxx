@@ -2,6 +2,7 @@
 #include "../include/emulator_disassembler.hxx"
 #include <sstream>
 #include <iostream>
+#include <fstream>
 
 namespace TKPEmu::Applications {
     N64_RomDisassembly::N64_RomDisassembly(std::string menu_title, std::string window_title) 
@@ -187,6 +188,12 @@ namespace TKPEmu::Applications {
                             if (i % 16 != 15) {
                                 ImGui::SameLine();
                             }
+                        }
+                        if (ImGui::Button("Dump")) {
+                            std::ofstream fout;
+                            fout.open("file.bin", std::ios::binary | std::ios::out);
+                            fout.write((char*)mem.DataPtr, mem.Size);
+                            fout.close();
                         }
                     }
                 }
