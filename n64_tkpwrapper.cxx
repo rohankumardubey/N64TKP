@@ -87,7 +87,7 @@ namespace TKPEmu::N64 {
 				update();
 				++cur_frame_instrs_;
 				#ifdef NO_PROFILING
-				if (cur_frame_instrs_ == INSTRS_PER_FRAME) [[unlikely]] {
+				if (cur_frame_instrs_ >= INSTRS_PER_FRAME) [[unlikely]] {
 				#else
 				if (cur_frame_instrs_ == 5000) [[unlikely]] {
 					stopped_break = true;

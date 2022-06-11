@@ -49,6 +49,9 @@ namespace TKPEmu::N64 {
 				Stopped.store(true);
 			}
 		}
+		inline void v_extra_close() override {
+			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
+		}
 		std::chrono::system_clock::time_point frame_start = std::chrono::system_clock::now();
 		uint64_t cur_frame_instrs_ = 0;
 		// std::string print() const override;
