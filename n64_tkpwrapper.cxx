@@ -132,6 +132,29 @@ namespace TKPEmu::N64 {
 			Stopped.store(true);
 		}
 	}
+
+	void N64_TKPWrapper::update() {
+		try {
+			n64_impl_.Update();
+		} catch (...) {
+			CurrentException = std::current_exception();
+			HasException = true;
+			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
+			Stopped.store(true);
+		}
+	}
+
+	void N64_TKPWrapper::HandleKeyDown(SDL_Keycode key) {
+
+	}
+
+	void N64_TKPWrapper::HandleKeyUp(SDL_Keycode key) {
+
+	}
+
+	void N64_TKPWrapper::v_extra_close()  {
+		cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
+	}
 	
 	void* N64_TKPWrapper::GetScreenData() {
 		return n64_impl_.GetColorData();

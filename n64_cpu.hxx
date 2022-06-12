@@ -111,7 +111,7 @@ namespace TKPEmu::N64::Devices {
         std::array<uint8_t, 0xFC00000> cart_rom_;
         bool rom_loaded_ = false;
         bool ipl_loaded_ = false;
-        std::vector<uint8_t> ipl_;
+        static std::vector<uint8_t> ipl_;
         std::array<uint8_t, 0x400000> rdram_ {};
         std::array<uint8_t, 0x400000> rdram_xpk_ {};
         std::array<uint8_t, 64> pif_ram_ {};

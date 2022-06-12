@@ -781,7 +781,8 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BNE() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        if (rfex_latch_.fetched_rt.UW._0 == 0x8f859da1 || rfex_latch_.fetched_rt.UW._0 == 0x578819c9) [[unlikely]] {
+        if (rfex_latch_.fetched_rt.UW._0 == 0x60896cf3 || rfex_latch_.fetched_rt.UW._0 == 0x3a738c79) [[unlikely]] {
+            std::cout << std::hex << rfex_latch_.fetched_rs.UD << " " << rfex_latch_.fetched_rt.UD << std::endl;
             return;
         }
         if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
@@ -1187,12 +1188,13 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case PI_RD_LEN_REG: {
+                std::cout << "FUCK!" << std::endl;
                 std::cout << std::hex << "Write " << data + 1 << " bytes from " << cpubus_.pi_dram_addr_ << " to " << cpubus_.pi_cart_addr_ << std::endl;
-                std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_cart_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_dram_addr_)), data + 1);
+                // std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_cart_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_dram_addr_)), data + 1);
                 break;
             }
             case PI_WR_LEN_REG: {
-                std::cout << std::hex << "Write " << data << " bytes from " << cpubus_.pi_cart_addr_ << " to " << cpubus_.pi_dram_addr_ << std::endl;
+                std::cout << std::hex << "Write " << data + 1 << " bytes from " << __builtin_bswap32(cpubus_.pi_cart_addr_) << " to " << __builtin_bswap32(cpubus_.pi_dram_addr_) << std::endl;
                 std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data + 1);
                 break;
             }
@@ -1206,6 +1208,7 @@ namespace TKPEmu::N64::Devices {
             }
             case VI_ORIGIN_REG: {
                 rcp_.framebuffer_ptr_ = cpubus_.redirect_paddress(data & 0xFFFFFF);
+                std::cout << "set framebuffer to " << (data & 0xFFFFFF) << std::endl;
                 break;
             }
             case PIF_COMMAND: {

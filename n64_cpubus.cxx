@@ -6,6 +6,8 @@
 #include "../include/error_factory.hxx"
 
 namespace TKPEmu::N64::Devices {
+    std::vector<uint8_t> CPUBus::ipl_ {};
+
     CPUBus::CPUBus(Devices::RCP& rcp) : rcp_(rcp) {
         map_direct_addresses();
     }
@@ -27,13 +29,13 @@ namespace TKPEmu::N64::Devices {
 
     bool CPUBus::LoadIPL(std::string path) {
         std::ifstream ifs(path, std::ios::in | std::ios::binary);
-        if (ifs.is_open()) {
+        if (ifs.is_open() && CPUBus::ipl_.empty()) {
             ifs.unsetf(std::ios::skipws);
             ifs.seekg(0, std::ios::end);
             std::streampos size = ifs.tellg();
             ifs.seekg(0, std::ios::beg);
-            ipl_.resize(size);
-            ifs.read(reinterpret_cast<char*>(ipl_.data()), size);
+            CPUBus::ipl_.resize(size);
+            ifs.read(reinterpret_cast<char*>(CPUBus::ipl_.data()), size);
         } else {
             return false;
         }
