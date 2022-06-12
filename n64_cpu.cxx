@@ -951,8 +951,8 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::s_SLL() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        int32_t sedata = rfex_latch_.fetched_rt.UW._0 << rfex_latch_.instruction.RType.sa;
-        exdc_latch_.data = static_cast<int64_t>(sedata);
+        int64_t sedata = static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 << rfex_latch_.instruction.RType.sa);
+        exdc_latch_.data = sedata;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
@@ -963,7 +963,7 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::s_SRL() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        int64_t sedata = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 >> rfex_latch_.instruction.RType.sa));
+        int64_t sedata = static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 >> rfex_latch_.instruction.RType.sa);
         exdc_latch_.data = sedata;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();

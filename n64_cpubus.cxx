@@ -29,13 +29,15 @@ namespace TKPEmu::N64::Devices {
 
     bool CPUBus::LoadIPL(std::string path) {
         std::ifstream ifs(path, std::ios::in | std::ios::binary);
-        if (ifs.is_open() && CPUBus::ipl_.empty()) {
-            ifs.unsetf(std::ios::skipws);
-            ifs.seekg(0, std::ios::end);
-            std::streampos size = ifs.tellg();
-            ifs.seekg(0, std::ios::beg);
-            CPUBus::ipl_.resize(size);
-            ifs.read(reinterpret_cast<char*>(CPUBus::ipl_.data()), size);
+        if (ifs.is_open()) {
+            if (CPUBus::ipl_.empty()) {
+                ifs.unsetf(std::ios::skipws);
+                ifs.seekg(0, std::ios::end);
+                std::streampos size = ifs.tellg();
+                ifs.seekg(0, std::ios::beg);
+                CPUBus::ipl_.resize(size);
+                ifs.read(reinterpret_cast<char*>(CPUBus::ipl_.data()), size);
+            }
         } else {
             return false;
         }
