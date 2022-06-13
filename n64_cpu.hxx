@@ -58,27 +58,24 @@ namespace TKPEmu::N64::Devices {
         Instruction     instruction;
         MemDataUnionDW  fetched_rt;
         MemDataUnionDW  fetched_rs;
-        size_t fetched_rt_i = -1;
+        size_t          fetched_rt_i;
     };
     struct EXDC_latch {
-        WriteType       write_type = WriteType::NONE;
-        AccessType      access_type = AccessType::NONE;
+        WriteType       write_type;
+        AccessType      access_type;
         uint64_t        data;
-        uint8_t*        dest = nullptr;
+        uint8_t*        dest;
         uint32_t        vaddr;
         uint32_t        paddr;
-        bool            cached = false;
-        bool            sign_extend = false;
-        size_t fetched_rt_i = -1;
-        size_t fetched_rs_i = -1;
+        bool            cached;
+        bool            sign_extend;
     };
     struct DCWB_latch {
-        WriteType       write_type = WriteType::NONE;
-        AccessType      access_type = AccessType::NONE;
+        WriteType       write_type;
+        AccessType      access_type;
         uint64_t        data;
-        uint8_t*        dest = nullptr;
+        uint8_t*        dest;
         uint32_t        paddr;
-        uint8_t         dest_reg = 0;
         bool            cached;
     };
     struct TranslatedAddress {

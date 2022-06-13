@@ -655,7 +655,6 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UBYTE;
-        exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
         detect_ldi();
     }
     /**
@@ -673,7 +672,6 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
-        exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
         detect_ldi();
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b111) != 0) { 
@@ -705,7 +703,6 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UHALFWORD;
-        exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
         detect_ldi();
     }
     TKP_INSTR_FUNC CPU::LH() {
@@ -734,7 +731,6 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UWORD;
-        exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
         detect_ldi();
     }
     TKP_INSTR_FUNC CPU::LW() {
