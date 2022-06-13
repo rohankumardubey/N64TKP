@@ -28,8 +28,10 @@ namespace TKPEmu::N64::Devices {
         ldi_ = false;
         clear_registers();
         cpubus_.Reset();
-        if (cpubus_.IsEverythingLoaded())
+        if (cpubus_.IsEverythingLoaded()) {
+            // memcpy(cpubus_.redirect_paddress(0x1000), cpubus_.redirect_paddress(0x10001000), 0x100000);
             fill_pipeline();
+        }
     }
 
     TKP_INSTR_FUNC CPU::ERROR() {
@@ -691,7 +693,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.write_type = WriteType::LATEREGISTER;
         exdc_latch_.access_type = AccessType::UHALFWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
-        exdc_latch_.fetched_rs_i = rfex_latch_.instruction.IType.rs;
+        detect_ldi();
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b1) != 0) {
             // From manual:
@@ -951,8 +953,8 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::s_SLL() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        int64_t sedata = static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 << rfex_latch_.instruction.RType.sa);
-        exdc_latch_.data = sedata;
+        int32_t sedata = rfex_latch_.fetched_rt.UW._0 << rfex_latch_.instruction.RType.sa;
+        exdc_latch_.data = static_cast<int64_t>(sedata);
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
@@ -963,7 +965,7 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::s_SRL() {
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        int64_t sedata = static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 >> rfex_latch_.instruction.RType.sa);
+        int64_t sedata = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rt.UW._0 >> rfex_latch_.instruction.RType.sa));
         exdc_latch_.data = sedata;
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
@@ -1102,7 +1104,6 @@ namespace TKPEmu::N64::Devices {
         // TODO: drop the nop table
         rfex_latch_.instruction_target = !!(icrf_latch_.instruction.Full);
         rfex_latch_.instruction_type = !!(icrf_latch_.instruction.Full) * icrf_latch_.instruction.IType.op;
-        rfex_latch_.fetched_rs_i = icrf_latch_.instruction.RType.rs;
         rfex_latch_.fetched_rt_i = icrf_latch_.instruction.RType.rt;
         rfex_latch_.fetched_rs.UD = gpr_regs_[icrf_latch_.instruction.RType.rs].UD;
         rfex_latch_.fetched_rt.UD = gpr_regs_[icrf_latch_.instruction.RType.rt].UD;
@@ -1127,13 +1128,14 @@ namespace TKPEmu::N64::Devices {
             load_memory(dcwb_latch_.cached, paddr, dcwb_latch_.data, dcwb_latch_.access_type);
             // Result is cast to uint64_t in order to zero extend
             dcwb_latch_.access_type = AccessType::UDOUBLEWORD;
-            if (ldi_) {
+            // if (ldi_) { // This IF can work uncommented if register bypassing would work
+                // TODO: implement register bypassing from WB to EX and remove the comment above
                 // Write early so RF fetches the correct data
                 // TODO: technically not accurate behavior but the results are as expected
                 store_register(dcwb_latch_.dest, dcwb_latch_.data, dcwb_latch_.access_type);
                 dcwb_latch_.write_type = WriteType::NONE;
                 ldi_ = false;
-            }
+            // }
         } else {
             dcwb_latch_.data = exdc_latch_.data;
         }

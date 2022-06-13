@@ -20,6 +20,7 @@ namespace TKPEmu::N64::Devices {
             std::streampos size = ifs.tellg();
             ifs.seekg(0, std::ios::beg);
             ifs.read(reinterpret_cast<char*>(cart_rom_.data()), size);
+            rom_loaded_ = true;
             Reset();
         } else {
             return false;
@@ -41,6 +42,7 @@ namespace TKPEmu::N64::Devices {
         } else {
             return false;
         }
+        ipl_loaded_ = !ipl_.empty();
         return true;
     }
 

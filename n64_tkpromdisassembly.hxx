@@ -37,6 +37,8 @@ namespace TKPEmu::Applications {
             {"IPL3", MemoryType::MEMORY, 0x1000, 0x1000'0000},
             {"First 1000", MemoryType::MEMORY, 0x1000, 0x1000'1000},
             {"RDRAM", MemoryType::MEMORY, 0x1000, 0x0000'1000},
+            {"RDRAM-spec", MemoryType::MEMORY, 0x1000, 0x0000'98f0},
+            {"sspec", MemoryType::MEMORY, 0x1000, 0x1000'98f0},
         };
     };
 }
