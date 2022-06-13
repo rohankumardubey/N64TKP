@@ -14,10 +14,9 @@
 
 namespace TKPEmu::N64 {
 	bool N64_TKPWrapper::ipl_loaded_ = false;
-	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_(EmulatorImage.format) {
-		// TODO: rarely some games have different resolutions
-		EmulatorImage.width = 320;
-		EmulatorImage.height = 240;
+	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_(EmulatorImage.width, EmulatorImage.height, EmulatorImage.format, EmulatorImage.texture) {
+		EmulatorImage.width = 640;
+		EmulatorImage.height = 480;
 		EmulatorImage.type = GL_UNSIGNED_BYTE;
 		GLuint image_texture;
 		glGenTextures(1, &image_texture);

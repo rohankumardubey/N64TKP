@@ -71,6 +71,7 @@ namespace TKPEmu::N64::Devices {
         uint32_t        vaddr;
         uint32_t        paddr;
         bool            cached = false;
+        bool            sign_extend = false;
         size_t fetched_rt_i = -1;
         size_t fetched_rs_i = -1;
     };
@@ -167,7 +168,7 @@ namespace TKPEmu::N64::Devices {
     }
     class CPU final {
     public:
-        CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_format);
+        CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_width, GLuint& text_height, GLuint& text_format, GLuint& text_id);
         void Reset();
     private:
         using PipelineStageRet  = void;
@@ -195,7 +196,10 @@ namespace TKPEmu::N64::Devices {
         bool llbit_;
         float fcr0_, fcr31_;
         bool ldi_ = false;
+        GLuint& text_width_;
+        GLuint& text_height_;
         GLuint& text_format_;
+        GLuint& text_id_;
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 
@@ -206,7 +210,7 @@ namespace TKPEmu::N64::Devices {
             @param addr virtual address, range 0x80000000-0x9fffffff
             @return physical address 
         */
-        inline uint32_t translate_kseg0(uint32_t vaddr) noexcept;
+        // inline uint32_t translate_kseg0(uint32_t vaddr) noexcept;
         /**
             VR4300 manual, page 122: 
 
@@ -216,13 +220,13 @@ namespace TKPEmu::N64::Devices {
             @param addr virtual address, range 0xa0000000-0xbfffffff
             @return physical address 
         */
-        inline uint32_t translate_kseg1(uint32_t vaddr) noexcept;
+        // inline uint32_t translate_kseg1(uint32_t vaddr) noexcept;
         /**
             
             @param addr virtual address, range 0x00000000-0x7fffffff
             @return physical address
         */
-        inline uint32_t translate_kuseg(uint32_t vaddr) noexcept;
+        // inline uint32_t translate_kuseg(uint32_t vaddr) noexcept;
         inline TranslatedAddress translate_vaddr(uint32_t vaddr);
         /**
          * Load and store instruction common functions

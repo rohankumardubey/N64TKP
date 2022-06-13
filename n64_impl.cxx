@@ -2,7 +2,13 @@
 #include "n64_impl.hxx"
 
 namespace TKPEmu::N64 {
-    N64::N64(GLuint& text_format) : text_format_(text_format), cpubus_(rcp_), cpu_(cpubus_, rcp_, text_format) {
+    N64::N64(GLuint& text_width, GLuint& text_height, GLuint& text_format, GLuint& text_id) :
+        text_width_(text_width),
+        text_height_(text_height),
+        text_format_(text_format),
+        text_id_(text_id),
+        cpubus_(rcp_), 
+        cpu_(cpubus_, rcp_, text_width, text_height, text_format, text_id) {
 
     }
 

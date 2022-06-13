@@ -1,6 +1,6 @@
 #include "n64_cpu.hxx"
-#include <cstring> // memcpy
-#include <cassert> // assert
+#include <cstring>
+#include <cassert>
 #include <iostream>
 #include <bitset>
 #include "../include/error_factory.hxx"
@@ -12,14 +12,17 @@ constexpr uint64_t LUT[] = {
 };
 
 namespace TKPEmu::N64::Devices {
-    CPU::CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_format)  :
+    CPU::CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_width, GLuint& text_height, GLuint& text_format, GLuint& text_id) :
         gpr_regs_{},
         fpr_regs_{},
         instr_cache_(KB(16)),
         data_cache_(KB(8)),
         cpubus_(cpubus),
         rcp_(rcp),
-        text_format_(text_format)
+        text_width_(text_width),
+        text_height_(text_height),
+        text_format_(text_format),
+        text_id_(text_id)
     {
     }
 
@@ -128,9 +131,11 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_MULTU() {
-		uint64_t res = rfex_latch_.fetched_rs.UW._0 * rfex_latch_.fetched_rt.UW._0;
-        lo_ = static_cast<uint32_t>(res & 0xFFFF'FFFF);
-        hi_ = static_cast<uint32_t>(res >> 32);
+		uint64_t res = static_cast<uint64_t>(rfex_latch_.fetched_rs.UW._0) * rfex_latch_.fetched_rt.UW._0;
+        lo_ = static_cast<int64_t>(static_cast<int32_t>(res & 0xFFFF'FFFF));
+        hi_ = static_cast<int64_t>(static_cast<int32_t>(res >> 32));
+        exdc_latch_.access_type = AccessType::NONE;
+        exdc_latch_.write_type = WriteType::NONE;
 	}
     
     TKP_INSTR_FUNC CPU::s_DIV() {
@@ -158,10 +163,10 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_SUB() {
-		int64_t result = 0;
-		bool overflow = __builtin_sub_overflow(rfex_latch_.fetched_rs.D, rfex_latch_.fetched_rt.D, &result);
+		int32_t result = 0;
+		bool overflow = __builtin_sub_overflow(rfex_latch_.fetched_rs.W._0, rfex_latch_.fetched_rt.W._0, &result);
 		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        exdc_latch_.data = static_cast<int32_t>(result);
+        exdc_latch_.data = static_cast<int64_t>(result);
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
         #if SKIPEXCEPTIONS == 0
@@ -176,10 +181,10 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_SUBU() {
-        int64_t result = 0;
-		bool overflow = __builtin_sub_overflow(rfex_latch_.fetched_rs.D, rfex_latch_.fetched_rt.D, &result);
+        uint32_t result = 0;
+		bool overflow = __builtin_sub_overflow(rfex_latch_.fetched_rs.UW._0, rfex_latch_.fetched_rt.UW._0, &result);
 		exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        exdc_latch_.data = static_cast<int32_t>(result);
+        exdc_latch_.data = static_cast<int64_t>(static_cast<int32_t>(result));
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
 	}
@@ -427,7 +432,7 @@ namespace TKPEmu::N64::Devices {
         int32_t result = 0;
         bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rs.W._0, seimm, &result);
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
-        exdc_latch_.data = result;
+        exdc_latch_.data = static_cast<int64_t>(result);
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
@@ -631,6 +636,7 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::LB() {
         LBU();
+        exdc_latch_.sign_extend = true;
     }
     TKP_INSTR_FUNC CPU::LBU() {
         int16_t offset = rfex_latch_.instruction.IType.immediate;
@@ -683,9 +689,6 @@ namespace TKPEmu::N64::Devices {
      *        Address error exception
      */
     TKP_INSTR_FUNC CPU::LHU() {
-        LH();
-    }
-    TKP_INSTR_FUNC CPU::LH() {
         int16_t offset = rfex_latch_.instruction.IType.immediate;
         int32_t seoffset = offset;
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
@@ -694,6 +697,10 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.access_type = AccessType::UHALFWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
         detect_ldi();
+    }
+    TKP_INSTR_FUNC CPU::LH() {
+        LHU();
+        exdc_latch_.sign_extend = true;
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b1) != 0) {
             // From manual:
@@ -711,9 +718,6 @@ namespace TKPEmu::N64::Devices {
      *        Address error exception
      */
     TKP_INSTR_FUNC CPU::LWU() {
-        LW();
-    }
-    TKP_INSTR_FUNC CPU::LW() {
         int16_t offset = rfex_latch_.instruction.IType.immediate;
         int32_t seoffset = offset;
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.IType.rt].UB._0;
@@ -722,6 +726,10 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.access_type = AccessType::UWORD;
         exdc_latch_.fetched_rt_i = rfex_latch_.instruction.IType.rt;
         detect_ldi();
+    }
+    TKP_INSTR_FUNC CPU::LW() {
+        LWU();
+        exdc_latch_.sign_extend = true;
         #if SKIPEXCEPTIONS == 0
         if ((exdc_latch_.vaddr & 0b11) != 0) {
             // From manual:
@@ -783,8 +791,8 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BNE() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        if (rfex_latch_.fetched_rt.UW._0 == 0x60896cf3 || rfex_latch_.fetched_rt.UW._0 == 0x3a738c79) [[unlikely]] {
-            std::cout << std::hex << rfex_latch_.fetched_rs.UD << " " << rfex_latch_.fetched_rt.UD << std::endl;
+        if (pc_ == 0xFFFFFFFF800001B4 || pc_ == 0xFFFFFFFF800001C0) [[unlikely]] { // CRC check skip
+            std::cout << std::hex << rfex_latch_.fetched_rs.UD <<" vs " << rfex_latch_.fetched_rt.UD << std::endl;
             return;
         }
         if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
@@ -862,9 +870,8 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::s_ADD() {
         int32_t result = 0;
         bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rt.W._0, rfex_latch_.fetched_rs.W._0, &result);
-        int64_t seresult = result;
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        exdc_latch_.data = seresult;
+        exdc_latch_.data = static_cast<int64_t>(result);
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
         #if SKIPEXCEPTIONS == 0
@@ -880,9 +887,8 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::s_ADDU() {
         int32_t result = 0;
         bool overflow = __builtin_add_overflow(rfex_latch_.fetched_rt.W._0, rfex_latch_.fetched_rs.W._0, &result);
-        int64_t seresult = result;
         exdc_latch_.dest = &gpr_regs_[rfex_latch_.instruction.RType.rd].UB._0;
-        exdc_latch_.data = seresult;
+        exdc_latch_.data = static_cast<int64_t>(result);
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
     }
@@ -1093,7 +1099,6 @@ namespace TKPEmu::N64::Devices {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
         icrf_latch_.instruction.Full = cpubus_.fetch_instruction_uncached(paddr_s.paddr);
-        // std::cout << std::hex << pc_ << " ins: " << icrf_latch_.instruction.Full << std::endl;
         pc_ += 4;
     }
 
@@ -1157,18 +1162,6 @@ namespace TKPEmu::N64::Devices {
         }
     }
 
-    uint32_t CPU::translate_kseg0(uint32_t vaddr) noexcept {
-        return vaddr - KSEG0_START;
-    }
-
-    uint32_t CPU::translate_kseg1(uint32_t vaddr) noexcept {
-        return vaddr - KSEG1_START;
-    }
-
-    uint32_t CPU::translate_kuseg(uint32_t vaddr) noexcept {
-        throw NotImplementedException(__func__);
-    }
-
     TranslatedAddress CPU::translate_vaddr(uint32_t addr) {
         // Fast vaddr translation
         // TODO: broken if uses kuseg
@@ -1196,12 +1189,13 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case PI_WR_LEN_REG: {
-                std::cout << std::hex << "Write " << data + 1 << " bytes from " << __builtin_bswap32(cpubus_.pi_cart_addr_) << " to " << __builtin_bswap32(cpubus_.pi_dram_addr_) << std::endl;
+                // std::cout << std::hex << "Write " << data + 1 << " bytes from " << __builtin_bswap32(cpubus_.pi_cart_addr_) << " to " << __builtin_bswap32(cpubus_.pi_dram_addr_) << std::endl;
                 std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data + 1);
                 break;
             }
             case VI_CTRL_REG: {
                 auto format = data & 0b11;
+                std::cout << "change color depth: " << std::bitset<2>(format) << std::endl;
                 if (format == 0b10)
                     text_format_ = GL_RGB5;
                 else if (format == 0b11)
@@ -1211,6 +1205,11 @@ namespace TKPEmu::N64::Devices {
             case VI_ORIGIN_REG: {
                 rcp_.framebuffer_ptr_ = cpubus_.redirect_paddress(data & 0xFFFFFF);
                 std::cout << "set framebuffer to " << (data & 0xFFFFFF) << std::endl;
+                break;
+            }
+            case VI_WIDTH_REG: {
+                text_width_ = data;
+                text_height_ = data == 640 ? 480 : 240;
                 break;
             }
             case PIF_COMMAND: {
@@ -1237,16 +1236,27 @@ namespace TKPEmu::N64::Devices {
         // }
     }
     void CPU::load_memory(bool cached, uint32_t paddr, uint64_t& data, int size) {
-        // if (!cached) {
         uint8_t* loc = cpubus_.redirect_paddress(paddr);
         uint64_t temp = 0;
         std::memcpy(&temp, loc, size);
         temp = __builtin_bswap64(temp);
         temp >>= 8 * (AccessType::UDOUBLEWORD - size);
+        // Sign extend loaded word
+        if (exdc_latch_.sign_extend) {
+            switch (size) {
+                case 1:
+                    temp = static_cast<int64_t>(static_cast<int8_t>(temp));
+                    break;
+                case 2:
+                    temp = static_cast<int64_t>(static_cast<int16_t>(temp));
+                    break;
+                case 4:
+                    temp = static_cast<int64_t>(static_cast<int32_t>(temp));
+                    break;
+            }
+            exdc_latch_.sign_extend = false;
+        }
         data = temp;
-        // } else {
-        //     // currently not implemented
-        // }
     }
     
     void CPU::clear_registers() {
