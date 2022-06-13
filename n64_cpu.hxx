@@ -56,12 +56,9 @@ namespace TKPEmu::N64::Devices {
     };
     struct RFEX_latch {
         Instruction     instruction;
-        uint8_t instruction_type;
-        uint8_t instruction_target;
         MemDataUnionDW  fetched_rt;
         MemDataUnionDW  fetched_rs;
         size_t fetched_rt_i = -1;
-        size_t fetched_rs_i = -1;
     };
     struct EXDC_latch {
         WriteType       write_type = WriteType::NONE;
@@ -194,7 +191,7 @@ namespace TKPEmu::N64::Devices {
         // Special registers
         uint64_t pc_, hi_, lo_;
         bool llbit_;
-        float fcr0_, fcr31_;
+        uint64_t fcr0_, fcr31_;
         bool ldi_ = false;
         GLuint& text_width_;
         GLuint& text_height_;
@@ -286,8 +283,6 @@ namespace TKPEmu::N64::Devices {
         __always_inline PipelineStageRet DC(PipelineStageArgs);
         __always_inline PipelineStageRet WB(PipelineStageArgs);
 
-        void NOP();
-
         void SPECIAL(), REGIMM(), J(), JAL(), BEQ(), BNE(), BLEZ(), BGTZ(),
         ADDI(), ADDIU(), SLTI(), SLTIU(), ANDI(), ORI(), XORI(), LUI(),
         COP0(), COP1(), COP2(), BEQL(), BNEL(), BLEZL(), BGTZL(),
@@ -310,6 +305,12 @@ namespace TKPEmu::N64::Devices {
             r_TGEI(), r_TGEIU(), r_TLTI(), r_TLTIU(), r_TEQI(), r_TNEI(),
             r_BLTZAL(), r_BGEZAL(), r_BLTZALL(), r_BGEZALL();
 
+        void f_ADD(), f_SUB(), f_MUL(), f_DIV(), f_SQRT(), f_ABS(), f_MOV(), f_NEG(),
+            f_ROUNDL(), f_TRUNCL(), f_CEILL(), f_FLOORL(), f_ROUNDW(), f_TRUNCW(), f_CEILW(), f_FLOORW(),
+            f_CVTS(), f_CVTD(), f_CVTW(), f_CVTL(), f_CF(), f_CUN(),
+            f_CEQ(), f_CUEQ(), f_COLT(), f_CULT(), f_COLE(), f_CULE(),
+            f_CSF(), f_CNGLE(), f_CSEQ(), f_CNGL(), f_CLT(), f_CNGE(), f_CLE(), f_CNGT();
+
         using func_ptr = void (*)(CPU*);
         constexpr static std::array<func_ptr, 64> InstructionTable = {
             &lut_wrapper<&CPU::SPECIAL>, &lut_wrapper<&CPU::REGIMM>, &lut_wrapper<&CPU::J>, &lut_wrapper<&CPU::JAL>, &lut_wrapper<&CPU::BEQ>, &lut_wrapper<&CPU::BNE>, &lut_wrapper<&CPU::BLEZ>, &lut_wrapper<&CPU::BGTZ>,
@@ -331,16 +332,21 @@ namespace TKPEmu::N64::Devices {
             &lut_wrapper<&CPU::s_TGE>, &lut_wrapper<&CPU::s_TGEU>, &lut_wrapper<&CPU::s_TLT>, &lut_wrapper<&CPU::s_TLTU>, &lut_wrapper<&CPU::s_TEQ>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::s_TNE>, &lut_wrapper<&CPU::ERROR>,
             &lut_wrapper<&CPU::s_DSLL>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::s_DSRL>, &lut_wrapper<&CPU::s_DSRA>, &lut_wrapper<&CPU::s_DSLL32>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::s_DSRL32>, &lut_wrapper<&CPU::s_DSRA32>,
         };
-        // TODO: not really needed :facepalm: its just sll $r0
-        constexpr static func_ptr NopTable = &lut_wrapper<&CPU::NOP>;
+        constexpr static std::array<func_ptr, 64> FloatTable = {
+            &lut_wrapper<&CPU::f_ADD>, &lut_wrapper<&CPU::f_SUB>, &lut_wrapper<&CPU::f_MUL>, &lut_wrapper<&CPU::f_DIV>, &lut_wrapper<&CPU::f_SQRT>, &lut_wrapper<&CPU::f_ABS>, &lut_wrapper<&CPU::f_MOV>, &lut_wrapper<&CPU::f_NEG>,
+            &lut_wrapper<&CPU::f_ROUNDL>, &lut_wrapper<&CPU::f_TRUNCL>, &lut_wrapper<&CPU::f_CEILL>, &lut_wrapper<&CPU::f_FLOORL>, &lut_wrapper<&CPU::f_ROUNDW>, &lut_wrapper<&CPU::f_TRUNCW>, &lut_wrapper<&CPU::f_CEILW>, &lut_wrapper<&CPU::f_FLOORW>,
+            &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
+            &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
+            &lut_wrapper<&CPU::f_CVTS>, &lut_wrapper<&CPU::f_CVTD>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::f_CVTW>, &lut_wrapper<&CPU::f_CVTL>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
+            &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
+            &lut_wrapper<&CPU::f_CF>, &lut_wrapper<&CPU::f_CUN>, &lut_wrapper<&CPU::f_CEQ>, &lut_wrapper<&CPU::f_CUEQ>, &lut_wrapper<&CPU::f_COLT>, &lut_wrapper<&CPU::f_CULT>, &lut_wrapper<&CPU::f_COLE>, &lut_wrapper<&CPU::f_CULE>,
+            &lut_wrapper<&CPU::f_CSF>, &lut_wrapper<&CPU::f_CNGLE>, &lut_wrapper<&CPU::f_CSEQ>, &lut_wrapper<&CPU::f_CNGL>, &lut_wrapper<&CPU::f_CLT>, &lut_wrapper<&CPU::f_CNGE>, &lut_wrapper<&CPU::f_CLE>, &lut_wrapper<&CPU::f_CNGT>,
+        };
         constexpr static std::array<func_ptr, 32> RegImmTable = {
             &lut_wrapper<&CPU::r_BLTZ>, &lut_wrapper<&CPU::r_BGEZ>, &lut_wrapper<&CPU::r_BLTZL>, &lut_wrapper<&CPU::r_BGEZL>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
             &lut_wrapper<&CPU::r_TGEI>, &lut_wrapper<&CPU::r_TGEIU>, &lut_wrapper<&CPU::r_TLTI>, &lut_wrapper<&CPU::r_TLTIU>, &lut_wrapper<&CPU::r_TEQI>,  &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::r_TNEI>,  &lut_wrapper<&CPU::ERROR>,
             &lut_wrapper<&CPU::r_BLTZAL>, &lut_wrapper<&CPU::r_BGEZAL>, &lut_wrapper<&CPU::r_BLTZALL>, &lut_wrapper<&CPU::r_BGEZALL>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
             &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>, &lut_wrapper<&CPU::ERROR>,
-        };
-        constexpr static std::array<const func_ptr*, 4> TableTable = {
-            &NopTable, InstructionTable.data(), SpecialTable.data(), RegImmTable.data(),
         };
         __always_inline void bypass_register();
         __always_inline void detect_ldi();
