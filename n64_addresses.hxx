@@ -19,45 +19,45 @@ addr MI_MODE             = 0x0430'0000;
 addr MI_MASK             = 0x0430'000C;
 
 // Video Interface
-addr VI_CTRL_REG         = 0x0440'0000;
-addr VI_ORIGIN_REG       = 0x0440'0004;
-addr VI_WIDTH_REG        = 0x0440'0008;
-addr VI_V_INTR_REG       = 0x0440'000C;
-addr VI_V_CURRENT_REG    = 0x0440'0010;
-addr VI_BURST_REG        = 0x0440'0014;
-addr VI_V_SYNC_REG       = 0x0440'0018;
-addr VI_H_SYNC_REG       = 0x0440'001C;
-addr VI_H_SYNC_LEAP_REG  = 0x0440'0020;
-addr VI_H_VIDEO_REG      = 0x0440'0024;
-addr VI_V_VIDEO_REG      = 0x0440'0028;
-addr VI_V_BURST_REG      = 0x0440'002C;
-addr VI_X_SCALE_REG      = 0x0440'0030;
-addr VI_Y_SCALE_REG      = 0x0440'0034;
-addr VI_TEST_ADDR_REG    = 0x0440'0038;
-addr VI_STAGED_DATA_REG  = 0x0440'003C;
+addr VI_CTRL         = 0x0440'0000;
+addr VI_ORIGIN       = 0x0440'0004;
+addr VI_WIDTH        = 0x0440'0008;
+addr VI_V_INTR       = 0x0440'000C;
+addr VI_V_CURRENT    = 0x0440'0010;
+addr VI_BURST        = 0x0440'0014;
+addr VI_V_SYNC       = 0x0440'0018;
+addr VI_H_SYNC       = 0x0440'001C;
+addr VI_H_SYNC_LEAP  = 0x0440'0020;
+addr VI_H_VIDEO      = 0x0440'0024;
+addr VI_V_VIDEO      = 0x0440'0028;
+addr VI_V_BURST      = 0x0440'002C;
+addr VI_X_SCALE      = 0x0440'0030;
+addr VI_Y_SCALE      = 0x0440'0034;
+addr VI_TEST_ADDR    = 0x0440'0038;
+addr VI_STAGED_DATA  = 0x0440'003C;
 
 // Audio Interface
-addr AI_DRAM_ADDR        = 0x0450'0000;
-addr AI_LEN              = 0x0450'0004;
-addr AI_CONTROL          = 0x0450'0008;
-addr AI_STATUS           = 0x0450'000C;
-addr AI_DACRATE          = 0x0450'0010;
-addr AI_BITRATE          = 0x0450'0014;
+addr AI_DRAM_ADDR    = 0x0450'0000;
+addr AI_LEN          = 0x0450'0004;
+addr AI_CONTROL      = 0x0450'0008;
+addr AI_STATUS       = 0x0450'000C;
+addr AI_DACRATE      = 0x0450'0010;
+addr AI_BITRATE      = 0x0450'0014;
 
 // Peripheral Interface
-addr PI_DRAM_ADDR_REG    = 0x0460'0000;
-addr PI_CART_ADDR_REG    = 0x0460'0004;
-addr PI_RD_LEN_REG       = 0x0460'0008;
-addr PI_WR_LEN_REG       = 0x0460'000C;
-addr PI_STATUS_REG       = 0x0460'0010;
-addr PI_BSD_DOM1_LAT_REG = 0x0460'0014;
-addr PI_BSD_DOM1_PWD_REG = 0x0460'0018;
-addr PI_BSD_DOM1_PGS_REG = 0x0460'001C;
-addr PI_BSD_DOM1_RLS_REG = 0x0460'0020;
-addr PI_BSD_DOM2_LAT_REG = 0x0460'0024;
-addr PI_BSD_DOM2_PWD_REG = 0x0460'0028;
-addr PI_BSD_DOM2_PGS_REG = 0x0460'002C;
-addr PI_BSD_DOM2_RLS_REG = 0x0460'0030;
+addr PI_DRAM_ADDR    = 0x0460'0000;
+addr PI_CART_ADDR    = 0x0460'0004;
+addr PI_RD_LEN       = 0x0460'0008;
+addr PI_WR_LEN       = 0x0460'000C;
+addr PI_STATUS       = 0x0460'0010;
+addr PI_BSD_DOM1_LAT = 0x0460'0014;
+addr PI_BSD_DOM1_PWD = 0x0460'0018;
+addr PI_BSD_DOM1_PGS = 0x0460'001C;
+addr PI_BSD_DOM1_RLS = 0x0460'0020;
+addr PI_BSD_DOM2_LAT = 0x0460'0024;
+addr PI_BSD_DOM2_PWD = 0x0460'0028;
+addr PI_BSD_DOM2_PGS = 0x0460'002C;
+addr PI_BSD_DOM2_RLS = 0x0460'0030;
 
 // RDRAM Interface
 addr RI_MODE             = 0x0470'0000;

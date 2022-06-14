@@ -91,22 +91,22 @@ namespace TKPEmu::N64::Devices {
             redir_case(MI_MASK, mi_mask_);
 
             // Video Interface
-            redir_case(VI_CTRL_REG, rcp_.vi_ctrl_);
-            redir_case(VI_ORIGIN_REG, rcp_.vi_origin_);
-            redir_case(VI_WIDTH_REG, rcp_.vi_width_);
-            redir_case(VI_V_INTR_REG, rcp_.vi_v_intr_);
-            redir_case(VI_V_CURRENT_REG, rcp_.vi_v_current_);
-            redir_case(VI_BURST_REG, rcp_.vi_burst_);
-            redir_case(VI_V_SYNC_REG, rcp_.vi_v_sync_);
-            redir_case(VI_H_SYNC_REG, rcp_.vi_h_sync_);
-            redir_case(VI_H_SYNC_LEAP_REG, rcp_.vi_h_sync_leap_);
-            redir_case(VI_H_VIDEO_REG, rcp_.vi_h_video_);
-            redir_case(VI_V_VIDEO_REG, rcp_.vi_v_video_);
-            redir_case(VI_V_BURST_REG, rcp_.vi_v_burst_);
-            redir_case(VI_X_SCALE_REG, rcp_.vi_x_scale_);
-            redir_case(VI_Y_SCALE_REG, rcp_.vi_y_scale_);
-            redir_case(VI_TEST_ADDR_REG, rcp_.vi_test_addr_);
-            redir_case(VI_STAGED_DATA_REG, rcp_.vi_staged_data_);
+            redir_case(VI_CTRL, rcp_.vi_ctrl_);
+            redir_case(VI_ORIGIN, rcp_.vi_origin_);
+            redir_case(VI_WIDTH, rcp_.vi_width_);
+            redir_case(VI_V_INTR, rcp_.vi_v_intr_);
+            redir_case(VI_V_CURRENT, rcp_.vi_v_current_);
+            redir_case(VI_BURST, rcp_.vi_burst_);
+            redir_case(VI_V_SYNC, rcp_.vi_v_sync_);
+            redir_case(VI_H_SYNC, rcp_.vi_h_sync_);
+            redir_case(VI_H_SYNC_LEAP, rcp_.vi_h_sync_leap_);
+            redir_case(VI_H_VIDEO, rcp_.vi_h_video_);
+            redir_case(VI_V_VIDEO, rcp_.vi_v_video_);
+            redir_case(VI_V_BURST, rcp_.vi_v_burst_);
+            redir_case(VI_X_SCALE, rcp_.vi_x_scale_);
+            redir_case(VI_Y_SCALE, rcp_.vi_y_scale_);
+            redir_case(VI_TEST_ADDR, rcp_.vi_test_addr_);
+            redir_case(VI_STAGED_DATA, rcp_.vi_staged_data_);
 
             // Audio Interface
             redir_case(AI_DRAM_ADDR, ai_dram_addr_);
@@ -114,19 +114,19 @@ namespace TKPEmu::N64::Devices {
             redir_case(AI_STATUS, ai_status_);
 
             // Peripheral Interface
-            redir_case(PI_DRAM_ADDR_REG, pi_dram_addr_);
-            redir_case(PI_CART_ADDR_REG, pi_cart_addr_);
-            redir_case(PI_RD_LEN_REG, pi_rd_len_);
-            redir_case(PI_WR_LEN_REG, pi_wr_len_);
-            redir_case(PI_STATUS_REG, pi_status_);
-            redir_case(PI_BSD_DOM1_LAT_REG, pi_bsd_dom1_lat_);
-            redir_case(PI_BSD_DOM1_PWD_REG, pi_bsd_dom1_pwd_);
-            redir_case(PI_BSD_DOM1_PGS_REG, pi_bsd_dom1_pgs_);
-            redir_case(PI_BSD_DOM1_RLS_REG, pi_bsd_dom1_rls_);
-            redir_case(PI_BSD_DOM2_LAT_REG, pi_bsd_dom2_lat_);
-            redir_case(PI_BSD_DOM2_PWD_REG, pi_bsd_dom2_pwd_);
-            redir_case(PI_BSD_DOM2_PGS_REG, pi_bsd_dom2_pgs_);
-            redir_case(PI_BSD_DOM2_RLS_REG, pi_bsd_dom2_rls_);
+            redir_case(PI_DRAM_ADDR, pi_dram_addr_);
+            redir_case(PI_CART_ADDR, pi_cart_addr_);
+            redir_case(PI_RD_LEN, pi_rd_len_);
+            redir_case(PI_WR_LEN, pi_wr_len_);
+            redir_case(PI_STATUS, pi_status_);
+            redir_case(PI_BSD_DOM1_LAT, pi_bsd_dom1_lat_);
+            redir_case(PI_BSD_DOM1_PWD, pi_bsd_dom1_pwd_);
+            redir_case(PI_BSD_DOM1_PGS, pi_bsd_dom1_pgs_);
+            redir_case(PI_BSD_DOM1_RLS, pi_bsd_dom1_rls_);
+            redir_case(PI_BSD_DOM2_LAT, pi_bsd_dom2_lat_);
+            redir_case(PI_BSD_DOM2_PWD, pi_bsd_dom2_pwd_);
+            redir_case(PI_BSD_DOM2_PGS, pi_bsd_dom2_pgs_);
+            redir_case(PI_BSD_DOM2_RLS, pi_bsd_dom2_rls_);
 
             // RDRAM Interface
             redir_case(RI_MODE, ri_mode_);

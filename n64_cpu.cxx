@@ -1314,21 +1314,21 @@ namespace TKPEmu::N64::Devices {
     void CPU::invalidate_hwio(uint32_t addr, uint64_t& data) {
         if (data != 0)
         switch (addr) {
-            case PI_STATUS_REG: {
+            case PI_STATUS: {
                 cpubus_.pi_status_ = 0;
                 data = 0;
                 break;
             }
-            case PI_RD_LEN_REG: {
+            case PI_RD_LEN: {
                 std::cout << "FUCK!" << std::endl;
                 // std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_cart_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_dram_addr_)), data + 1);
                 break;
             }
-            case PI_WR_LEN_REG: {
+            case PI_WR_LEN: {
                 std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data + 1);
                 break;
             }
-            case VI_CTRL_REG: {
+            case VI_CTRL: {
                 auto format = data & 0b11;
                 if (format == 0b10)
                     text_format_ = GL_RGB5;
@@ -1336,11 +1336,11 @@ namespace TKPEmu::N64::Devices {
                     text_format_ = GL_RGBA;
                 break;
             }
-            case VI_ORIGIN_REG: {
+            case VI_ORIGIN: {
                 rcp_.framebuffer_ptr_ = cpubus_.redirect_paddress(data & 0xFFFFFF);
                 break;
             }
-            case VI_WIDTH_REG: {
+            case VI_WIDTH: {
                 text_width_ = data;
                 text_height_ = (480.0f / 640.0f) * data;
                 should_resize_ = true;
