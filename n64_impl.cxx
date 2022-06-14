@@ -17,7 +17,6 @@ namespace TKPEmu::N64 {
     }
 
     bool N64::LoadIPL(std::string path) {
-        std::cout << "try load " << path << std::endl;
         if (!path.empty()) {
             return cpu_.cpubus_.LoadIPL(path);
         }

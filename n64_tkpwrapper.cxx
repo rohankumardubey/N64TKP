@@ -25,7 +25,6 @@ namespace TKPEmu::N64 {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glBindTexture(GL_TEXTURE_2D, image_texture);
 		glTexImage2D(
 			GL_TEXTURE_2D,
 			0,
@@ -56,7 +55,6 @@ namespace TKPEmu::N64 {
 	}
 	
 	bool N64_TKPWrapper::load_file(std::string path) {
-		std::cout << "Loading file" << std::endl;
 		bool ipl_loaded = ipl_loaded_;
 		if (!ipl_loaded) {
 			bool ipl_status = n64_impl_.LoadIPL(IPLPath);
@@ -64,7 +62,6 @@ namespace TKPEmu::N64 {
 		}
 		bool opened = n64_impl_.LoadCartridge(path);
 		Loaded = opened && ipl_loaded;
-		std::cout << "LOADED:" << Loaded << std::endl;
 		return Loaded;
 	}
 	

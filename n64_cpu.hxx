@@ -29,6 +29,7 @@ constexpr auto CP0_COMPARE = 11;
 
 namespace TKPEmu {
     namespace N64 {
+        class N64_TKPWrapper;
         class N64;
         class QA;
     }
@@ -194,6 +195,7 @@ namespace TKPEmu::N64::Devices {
         GLuint& text_height_;
         GLuint& text_format_;
         GLuint& text_id_;
+        bool should_resize_ = false;
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 
@@ -358,6 +360,7 @@ namespace TKPEmu::N64::Devices {
 
         void clear_registers();
 
+        friend class TKPEmu::N64::N64_TKPWrapper;
         friend class TKPEmu::N64::N64;
         friend class TKPEmu::Applications::N64_RomDisassembly;
         friend class TKPEmu::N64::QA;

@@ -1315,25 +1315,21 @@ namespace TKPEmu::N64::Devices {
         if (data != 0)
         switch (addr) {
             case PI_STATUS_REG: {
-                std::cout << "WRITE!" << std::endl;
                 cpubus_.pi_status_ = 0;
                 data = 0;
                 break;
             }
             case PI_RD_LEN_REG: {
                 std::cout << "FUCK!" << std::endl;
-                std::cout << std::hex << "Write " << data + 1 << " bytes from " << cpubus_.pi_dram_addr_ << " to " << cpubus_.pi_cart_addr_ << std::endl;
                 // std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_cart_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_dram_addr_)), data + 1);
                 break;
             }
             case PI_WR_LEN_REG: {
-                // std::cout << std::hex << "Write " << data + 1 << " bytes from " << __builtin_bswap32(cpubus_.pi_cart_addr_) << " to " << __builtin_bswap32(cpubus_.pi_dram_addr_) << std::endl;
                 std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data + 1);
                 break;
             }
             case VI_CTRL_REG: {
                 auto format = data & 0b11;
-                std::cout << "change color depth: " << std::bitset<2>(format) << std::endl;
                 if (format == 0b10)
                     text_format_ = GL_RGB5;
                 else if (format == 0b11)
@@ -1342,12 +1338,12 @@ namespace TKPEmu::N64::Devices {
             }
             case VI_ORIGIN_REG: {
                 rcp_.framebuffer_ptr_ = cpubus_.redirect_paddress(data & 0xFFFFFF);
-                std::cout << "set framebuffer to " << (data & 0xFFFFFF) << std::endl;
                 break;
             }
             case VI_WIDTH_REG: {
                 text_width_ = data;
-                text_height_ = data == 640 ? 480 : 240;
+                text_height_ = (480.0f / 640.0f) * data;
+                should_resize_ = true;
                 break;
             }
             case PIF_COMMAND: {
