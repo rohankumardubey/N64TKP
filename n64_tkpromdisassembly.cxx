@@ -146,6 +146,7 @@ namespace TKPEmu::Applications {
                         // ImGui::EndChild();
                         break;
                     }
+                    case MemoryType::CP0_REGS:
                     case MemoryType::GPR_REGS: {
                         for (uint32_t i = 0; i < mem.Size; ++i) {
                             auto data = (static_cast<N64::MemDataUnionDW*>(mem.DataPtr) + i);
@@ -231,6 +232,10 @@ namespace TKPEmu::Applications {
                 switch(mem.Type) {
                     case MemoryType::GPR_REGS: {
                         mem.DataPtr = n64_ptr->n64_impl_.cpu_.gpr_regs_.data();
+                        break;
+                    }
+                    case MemoryType::CP0_REGS: {
+                        mem.DataPtr = n64_ptr->n64_impl_.cpu_.cp0_regs_.data();
                         break;
                     }
                     case MemoryType::FPR_REGS: {

@@ -8,6 +8,7 @@
 namespace TKPEmu::Applications {
     enum class MemoryType {
         GPR_REGS,
+        CP0_REGS,
         FPR_REGS,
         MEMORY,
         PIPELINE,
@@ -30,7 +31,7 @@ namespace TKPEmu::Applications {
         void v_reset() override;
         std::vector<MemoryView> memory_views_ = {
             {"PIPELINE", MemoryType::PIPELINE, 0},
-            {"GPR regs", MemoryType::GPR_REGS, 32}, {"FPR regs", MemoryType::FPR_REGS, 32},
+            {"GPR regs", MemoryType::GPR_REGS, 32}, {"CP0 regs", MemoryType::CP0_REGS, 32}, {"FPR regs", MemoryType::FPR_REGS, 32},
             {"PIF RAM", MemoryType::MEMORY, 64, 0x1FC0'07C0},
             {"RDRAM", MemoryType::MEMORY, 0x100'000, 0x0000'1000},
             {"sspec", MemoryType::MEMORY, 0x100'000, 0x1000'1000},

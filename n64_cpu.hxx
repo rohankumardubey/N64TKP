@@ -139,7 +139,10 @@ namespace TKPEmu::N64::Devices {
         // Audio Interface
         uint32_t ai_dram_addr_    = 0;
         uint32_t ai_length_       = 0;
+        uint32_t ai_control_      = 0;
         uint32_t ai_status_       = 0;
+        uint32_t ai_dacrate_       = 0;
+        uint32_t ai_bitrate_       = 0;
 
         // RDRAM Interface
         uint32_t ri_mode_         = 0;

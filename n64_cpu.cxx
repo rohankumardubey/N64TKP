@@ -108,7 +108,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_MTHI() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_MTHI opcode reached");
+        hi_ = rfex_latch_.fetched_rs.UD;
 	}
 
     TKP_INSTR_FUNC CPU::s_MFLO() {
@@ -127,7 +127,9 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_MULT() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_MULT opcode reached");
+		uint64_t res = static_cast<int64_t>(rfex_latch_.fetched_rs.W._0) * rfex_latch_.fetched_rt.W._0;
+        lo_ = static_cast<int64_t>(static_cast<int32_t>(res & 0xFFFF'FFFF));
+        hi_ = static_cast<int64_t>(static_cast<int32_t>(res >> 32));
 	}
     
     TKP_INSTR_FUNC CPU::s_MULTU() {
@@ -141,7 +143,14 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_DIVU() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DIVU opcode reached");
+		if (rfex_latch_.fetched_rt.UW._0 == 0) [[unlikely]]
+        {
+            lo_ = -1;
+            hi_ = rfex_latch_.fetched_rs.UD;
+            return;
+        }
+        lo_ = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rs.UW._0 / rfex_latch_.fetched_rt.UW._0));
+        hi_ = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rs.UW._0 % rfex_latch_.fetched_rt.UW._0));
 	}
     
     TKP_INSTR_FUNC CPU::s_DMULT() {
@@ -431,7 +440,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_MTLO() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_MTLO opcode reached");
+		lo_ = rfex_latch_.fetched_rs.UD;
 	}
     
     /**
@@ -1032,7 +1041,14 @@ namespace TKPEmu::N64::Devices {
     }
     
     TKP_INSTR_FUNC CPU::r_BGEZ() {
-        throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BGEZ opcode reached");
+        int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
+        int32_t seoffset = offset;
+        if (rfex_latch_.fetched_rs.W._0 >= 0) {
+            exdc_latch_.data = pc_ - 4 + seoffset;
+            exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
+            exdc_latch_.access_type = AccessType::UDOUBLEWORD_DIRECT;
+		    bypass_register();
+        }
     }
     
     TKP_INSTR_FUNC CPU::r_BLTZL() {
@@ -1424,16 +1440,12 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::update_pipeline() {
-        gpr_regs_[0].UD = 0;
         WB();
-        gpr_regs_[0].UD = 0;
         DC();
-        gpr_regs_[0].UD = 0;
         EX();
-        if (!ldi_) {
+        if (!ldi_) [[unlikely]] {
             gpr_regs_[0].UD = 0;
             RF();
-            gpr_regs_[0].UD = 0;
             IC();
         }
         ++cp0_regs_[CP0_COUNT].UD;
@@ -1459,35 +1471,42 @@ namespace TKPEmu::N64::Devices {
 
     void CPU::execute_cp0_instruction(const Instruction& instr) {
         uint32_t func = instr.RType.rs;
-        switch (func) {
-            /**
-             * MTC0
-             * 
-             * throws Coprocessor unusable exception
-             */
-            case 0b00100: {
-                int64_t sedata = gpr_regs_[instr.RType.rd].W._0;
-                exdc_latch_.dest = &cp0_regs_[instr.RType.rt].UB._0;
-                exdc_latch_.data = sedata;
-                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
-                bypass_register();
-                break;
-            }
-            /**
-             * MFC0
-             * 
-             * throws Coprocessor unusable exception
-             */
-            case 0b00000: {
-                int64_t sedata = cp0_regs_[instr.RType.rd].W._0;
-                exdc_latch_.dest = &gpr_regs_[instr.RType.rt].UB._0;
-                exdc_latch_.data = sedata;
-                exdc_latch_.access_type = AccessType::UDOUBLEWORD;
-                bypass_register();
-                break;
-            }
-            default: {
-                throw ErrorFactory::generate_exception(__func__, __LINE__, "Unimplemented CP0 microcode");
+        if (func & 0b10000) {
+            // Coprocessor function
+            std::cout << "WHOOPS: " << instr.Full << std::endl;
+        } else {
+            switch (func & 0b1111) {
+                /**
+                 * MTC0
+                 * 
+                 * throws Coprocessor unusable exception
+                 */
+                case 0b0100: {
+                    int64_t sedata = gpr_regs_[instr.RType.rd].W._0;
+                    exdc_latch_.dest = &cp0_regs_[instr.RType.rt].UB._0;
+                    exdc_latch_.data = sedata;
+                    exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                    bypass_register();
+                    break;
+                }
+                /**
+                 * MFC0
+                 * 
+                 * throws Coprocessor unusable exception
+                 */
+                case 0b0000: {
+                    int64_t sedata = cp0_regs_[instr.RType.rd].W._0;
+                    exdc_latch_.dest = &gpr_regs_[instr.RType.rt].UB._0;
+                    exdc_latch_.data = sedata;
+                    exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+                    bypass_register();
+                    break;
+                }
+                default: {
+                    std::stringstream ss;
+                    ss << "Unimplemented CP0 microcode:" << std::bitset<5>(func) << " - full:" << std::bitset<32>(instr.Full);
+                    throw ErrorFactory::generate_exception(__func__, __LINE__, ss.str());
+                }
             }
         }
     }

@@ -73,6 +73,7 @@ namespace TKPEmu::N64::Devices {
             if (ptr_slow)
                 return ptr_slow;
         }
+        volatile int k = 0;
         std::stringstream ss;
         ss << "Tried to access bad address: 0x" << std::hex << paddr << std::endl;
         throw ErrorFactory::generate_exception(__func__, __LINE__, ss.str());
@@ -111,7 +112,10 @@ namespace TKPEmu::N64::Devices {
             // Audio Interface
             redir_case(AI_DRAM_ADDR, ai_dram_addr_);
             redir_case(AI_LEN, ai_length_);
+            redir_case(AI_CONTROL, ai_control_);
             redir_case(AI_STATUS, ai_status_);
+            redir_case(AI_DACRATE, ai_dacrate_);
+            redir_case(AI_BITRATE, ai_bitrate_);
 
             // Peripheral Interface
             redir_case(PI_DRAM_ADDR, pi_dram_addr_);
@@ -156,13 +160,13 @@ namespace TKPEmu::N64::Devices {
         // https://wheremyfoodat.github.io/software-fastmem/
         const uint32_t PAGE_SIZE = 0x100000;
         // Map rdram
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 0xE; i++) {
             page_table_[i] = &rdram_[PAGE_SIZE * i];
         }
         // Map rdram from expansion pak
-        for (int i = 4; i < 8; i++) {
-            page_table_[i] = &rdram_xpk_[PAGE_SIZE * i];
-        }
+        // for (int i = 4; i < 8; i++) {
+        //     page_table_[i] = &rdram_xpk_[PAGE_SIZE * i];
+        // }
         // Map cartridge rom
         for (int i = 0x100; i <= 0x1FB; i++) {
             page_table_[i] = &cart_rom_[PAGE_SIZE * (i - 0x100)];
