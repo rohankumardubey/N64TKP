@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <bitset>
+#include <limits>
 #include "../include/error_factory.hxx"
 #include "n64_addresses.hxx"
 #define SKIPDEBUGSTUFF 1
@@ -139,7 +140,20 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_DIV() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DIV opcode reached");
+		if (rfex_latch_.fetched_rt.W._0 == 0) [[unlikely]]
+        {
+            lo_ = -1 + 2 * (rfex_latch_.fetched_rs.UW._0 >> 31);
+            hi_ = rfex_latch_.fetched_rs.UD;
+            return;
+        }
+        if (rfex_latch_.fetched_rs.W._0 == std::numeric_limits<decltype(rfex_latch_.fetched_rs.W._0)>::min() && rfex_latch_.fetched_rt.W._0 == -1) {
+            // -2147483648 / 1 edge case
+            lo_ = static_cast<int64_t>(rfex_latch_.fetched_rs.W._0);
+            hi_ = 0;
+            return;
+        }
+        lo_ = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rs.W._0 / rfex_latch_.fetched_rt.W._0));
+        hi_ = static_cast<int64_t>(static_cast<int32_t>(rfex_latch_.fetched_rs.W._0 % rfex_latch_.fetched_rt.W._0));
 	}
     
     TKP_INSTR_FUNC CPU::s_DIVU() {
@@ -364,11 +378,39 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::SWL() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "SWL opcode reached");
+        constexpr static uint32_t mask[4] = { 0x00000000, 0xFF000000, 0xFFFF0000, 0xFFFFFF00 };
+        constexpr static uint32_t shift[4] = { 0, 8, 16, 24 };
+		int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        auto write_vaddr = (static_cast<uint32_t>(seoffset) & ~0b11) + rfex_latch_.fetched_rs.UW._0;
+        auto addr_off = rfex_latch_.instruction.IType.immediate & 0b11;
+        auto paddr_s = translate_vaddr(write_vaddr);
+        exdc_latch_.paddr = paddr_s.paddr;
+        exdc_latch_.cached = paddr_s.cached;
+        // TODO: Fix this hack, dont load_memory
+        load_memory(exdc_latch_.cached, exdc_latch_.paddr, exdc_latch_.data, 4);
+        exdc_latch_.data &= mask[addr_off];
+        exdc_latch_.data |= rfex_latch_.fetched_rt.UW._0 >> shift[addr_off];
+        exdc_latch_.write_type = WriteType::MMU;
+        exdc_latch_.access_type = AccessType::UWORD;
 	}
     
     TKP_INSTR_FUNC CPU::SDL() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "SDL opcode reached");
+		constexpr static uint64_t mask[8] = { 0, 0xFF00000000000000, 0xFFFF000000000000, 0xFFFFFF0000000000, 0xFFFFFFFF00000000, 0xFFFFFFFFFF000000, 0xFFFFFFFFFFFF0000, 0xFFFFFFFFFFFFFF00 };
+        constexpr static uint32_t shift[8] = { 0, 8, 16, 24, 32, 40, 48, 56 };
+		int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        auto write_vaddr = (static_cast<uint32_t>(seoffset) & ~0b111) + rfex_latch_.fetched_rs.UW._0;
+        auto addr_off = rfex_latch_.instruction.IType.immediate & 0b111;
+        auto paddr_s = translate_vaddr(write_vaddr);
+        exdc_latch_.paddr = paddr_s.paddr;
+        exdc_latch_.cached = paddr_s.cached;
+        // TODO: Fix this hack, dont load_memory
+        load_memory(exdc_latch_.cached, exdc_latch_.paddr, exdc_latch_.data, 8);
+        exdc_latch_.data &= mask[addr_off];
+        exdc_latch_.data |= rfex_latch_.fetched_rt.UD >> shift[addr_off];
+        exdc_latch_.write_type = WriteType::MMU;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 	}
     
     TKP_INSTR_FUNC CPU::CACHE() {
@@ -428,11 +470,39 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::SDR() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "SDR opcode reached");
+		constexpr static uint64_t mask[8] = { 0x00FFFFFFFFFFFFFF, 0x0000FFFFFFFFFFFF, 0x000000FFFFFFFFFF, 0x00000000FFFFFFFF, 0x0000000000FFFFFF, 0x000000000000FFFF, 0x00000000000000FF, 0x0000000000000000 };
+        constexpr static uint32_t shift[8] = { 56, 48, 40, 32, 24, 16, 8, 0 };
+		int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        auto write_vaddr = (static_cast<uint32_t>(seoffset) & ~0b111) + rfex_latch_.fetched_rs.UW._0;
+        auto addr_off = rfex_latch_.instruction.IType.immediate & 0b111;
+        auto paddr_s = translate_vaddr(write_vaddr);
+        exdc_latch_.paddr = paddr_s.paddr;
+        exdc_latch_.cached = paddr_s.cached;
+        // TODO: Fix this hack, dont load_memory
+        load_memory(exdc_latch_.cached, exdc_latch_.paddr, exdc_latch_.data, 8);
+        exdc_latch_.data &= mask[addr_off];
+        exdc_latch_.data |= rfex_latch_.fetched_rt.UD << shift[addr_off];
+        exdc_latch_.write_type = WriteType::MMU;
+        exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 	}
     
     TKP_INSTR_FUNC CPU::SWR() {
-		throw ErrorFactory::generate_exception(__func__, __LINE__, "SWR opcode reached");
+		constexpr static uint32_t mask[4] = { 0x00FFFFFF, 0x0000FFFF, 0x000000FF, 0x00000000 };
+        constexpr static uint32_t shift[4] = { 24, 16, 8, 0 };
+		int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        auto write_vaddr = (static_cast<uint32_t>(seoffset) & ~0b11) + rfex_latch_.fetched_rs.UW._0;
+        auto addr_off = rfex_latch_.instruction.IType.immediate & 0b11;
+        auto paddr_s = translate_vaddr(write_vaddr);
+        exdc_latch_.paddr = paddr_s.paddr;
+        exdc_latch_.cached = paddr_s.cached;
+        // TODO: Fix this hack, dont load_memory
+        load_memory(exdc_latch_.cached, exdc_latch_.paddr, exdc_latch_.data, 4);
+        exdc_latch_.data &= mask[addr_off];
+        exdc_latch_.data |= rfex_latch_.fetched_rt.UW._0 << shift[addr_off];
+        exdc_latch_.write_type = WriteType::MMU;
+        exdc_latch_.access_type = AccessType::UWORD;
 	}
     
     TKP_INSTR_FUNC CPU::LL() {
@@ -1450,7 +1520,7 @@ namespace TKPEmu::N64::Devices {
         }
         ++cp0_regs_[CP0_COUNT].UD;
         if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
-            // interrupt
+            std::cout << "AH! interrupt" << std::endl;
         }
     }
 
@@ -1487,6 +1557,7 @@ namespace TKPEmu::N64::Devices {
                     exdc_latch_.data = sedata;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                     bypass_register();
+                    std::cout << "Write " << std::hex << sedata << " to cp0[" << std::hex << instr.RType.rt << "]" << std::endl; 
                     break;
                 }
                 /**
