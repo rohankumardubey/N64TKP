@@ -166,7 +166,7 @@ namespace TKPEmu::N64::Devices {
     }
     class CPU final {
     public:
-        CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_width, GLuint& text_height, GLuint& text_format, GLuint& text_id);
+        CPU(CPUBus& cpubus, RCP& rcp);
         void Reset();
     private:
         using PipelineStageRet  = void;
@@ -194,11 +194,10 @@ namespace TKPEmu::N64::Devices {
         bool llbit_;
         uint64_t fcr0_, fcr31_;
         bool ldi_ = false;
-        GLuint& text_width_;
-        GLuint& text_height_;
-        GLuint& text_format_;
-        GLuint& text_id_;
         bool should_resize_ = false;
+        GLuint text_format_ = 0;
+        GLuint text_width_ = 0;
+        GLuint text_height_ = 0;
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 

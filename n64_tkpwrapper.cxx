@@ -14,41 +14,14 @@
 
 namespace TKPEmu::N64 {
 	bool N64_TKPWrapper::ipl_loaded_ = false;
-	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_(EmulatorImage.width, EmulatorImage.height, EmulatorImage.format, EmulatorImage.texture) {
-		EmulatorImage.width = 640;
-		EmulatorImage.height = 480;
-		EmulatorImage.type = GL_UNSIGNED_BYTE;
-		GLuint image_texture;
-		glGenTextures(1, &image_texture);
-		glBindTexture(GL_TEXTURE_2D, image_texture);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexImage2D(
-			GL_TEXTURE_2D,
-			0,
-			GL_RGB,
-			EmulatorImage.width,
-			EmulatorImage.height,
-			0,
-			GL_RGB,
-			GL_UNSIGNED_BYTE,
-			NULL
-		);
-		glBindTexture(GL_TEXTURE_2D, 0);
-		EmulatorImage.texture = image_texture;
-	}
+	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_() {}
 
 	N64_TKPWrapper::N64_TKPWrapper(std::any args) : N64_TKPWrapper() {
 		auto args_s = std::any_cast<N64Args>(args);
 		IPLPath = args_s.IPLPath;
 	}
 
-	N64_TKPWrapper::~N64_TKPWrapper() {
-		if (start_options != EmuStartOptions::Console)
-			glDeleteTextures(1, &EmulatorImage.texture);
-	}
+	N64_TKPWrapper::~N64_TKPWrapper() {}
 
 	bool& N64_TKPWrapper::IsReadyToDraw() {
 		return should_draw_;
