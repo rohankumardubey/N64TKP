@@ -38,65 +38,58 @@ namespace TKPEmu::N64 {
 		return Loaded;
 	}
 	
-	void N64_TKPWrapper::start_debug() {
-		auto func = [this]() {
-			std::lock_guard<std::mutex> lguard(ThreadStartedMutex);
-			Loaded = true;
-			Loaded.notify_all();
-			Paused = true;
-			Stopped = false;
-			Step = false;
-			Reset();
-			bool stopped_break = false;
-			goto paused;
-			begin:
-			CALLGRIND_START_INSTRUMENTATION;
-			frame_start = std::chrono::system_clock::now();
-			while (true) {
-				update();
-				++cur_frame_instrs_;
-				#ifdef NO_PROFILING
-				if (cur_frame_instrs_ >= INSTRS_PER_FRAME) [[unlikely]] {
-				#else
-				if (cur_frame_instrs_ == 5000) [[unlikely]] {
+	void N64_TKPWrapper::start() {
+		std::lock_guard<std::mutex> lguard(ThreadStartedMutex);
+		Loaded = true;
+		Loaded.notify_all();
+		Paused = true;
+		Stopped = false;
+		Step = false;
+		Reset();
+		bool stopped_break = false;
+		goto paused;
+		begin:
+		CALLGRIND_START_INSTRUMENTATION;
+		frame_start = std::chrono::system_clock::now();
+		while (true) {
+			update();
+			++cur_frame_instrs_;
+			#ifdef NO_PROFILING
+			if (cur_frame_instrs_ >= INSTRS_PER_FRAME) [[unlikely]] {
+			#else
+			if (cur_frame_instrs_ == 5000) [[unlikely]] {
+				stopped_break = true;
+				break;
+			#endif
+				auto end = std::chrono::system_clock::now();
+				auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - frame_start).count();
+				LastFrameTime = dur;
+				cur_frame_instrs_ = 0;
+				if (Stopped.load()) {
 					stopped_break = true;
 					break;
-				#endif
-					auto end = std::chrono::system_clock::now();
-					auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - frame_start).count();
-					LastFrameTime = dur;
-					cur_frame_instrs_ = 0;
-					if (Stopped.load()) {
-						stopped_break = true;
-						break;
-					}
-					if (Paused.load()) {
-						break;
-					}
-					should_draw_ = true;
-					frame_start = std::chrono::system_clock::now();
 				}
+				if (Paused.load()) {
+					break;
+				}
+				should_draw_ = true;
+				frame_start = std::chrono::system_clock::now();
 			}
-			CALLGRIND_STOP_INSTRUMENTATION;
-			paused:
-			if (!stopped_break) {
-				Step.wait(false);
-				std::lock_guard<std::mutex> lg(DebugUpdateMutex);
-				Step.store(false);
-				update();
-				goto begin;
-			}
-		};
-		UpdateThread = std::thread(func);
-		UpdateThread.detach();
+		}
+		CALLGRIND_STOP_INSTRUMENTATION;
+		paused:
+		if (!stopped_break) {
+			Step.wait(false);
+			Step.store(false);
+			update();
+			goto begin;
+		}
 	}
 
-	void N64_TKPWrapper::reset_skip() {		
+	void N64_TKPWrapper::reset() {		
 		try {
 			n64_impl_.Reset();
 		} catch (...) {
-			CurrentException = std::current_exception();
-			HasException = true;
 			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
 			Stopped.store(true);
 		}
@@ -106,8 +99,6 @@ namespace TKPEmu::N64 {
 		try {
 			n64_impl_.Update();
 		} catch (...) {
-			CurrentException = std::current_exception();
-			HasException = true;
 			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
 			Stopped.store(true);
 		}
