@@ -16,9 +16,9 @@ namespace TKPEmu::N64 {
 	bool N64_TKPWrapper::ipl_loaded_ = false;
 	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_() {}
 
-	N64_TKPWrapper::N64_TKPWrapper(std::any args) : N64_TKPWrapper() {
-		auto args_s = std::any_cast<N64Args>(args);
-		IPLPath = args_s.IPLPath;
+	N64_TKPWrapper::N64_TKPWrapper(std::unique_ptr<OptionsBase> args) : N64_TKPWrapper() {
+		// auto args_s = std::any_cast<N64Args>(args);
+		// IPLPath = args_s.IPLPath;
 	}
 
 	N64_TKPWrapper::~N64_TKPWrapper() {}
@@ -104,11 +104,11 @@ namespace TKPEmu::N64 {
 		}
 	}
 
-	void N64_TKPWrapper::HandleKeyDown(SDL_Keycode key) {
+	void N64_TKPWrapper::HandleKeyDown(uint32_t key) {
 
 	}
 
-	void N64_TKPWrapper::HandleKeyUp(SDL_Keycode key) {
+	void N64_TKPWrapper::HandleKeyUp(uint32_t key) {
 
 	}
 
@@ -118,5 +118,8 @@ namespace TKPEmu::N64 {
 	
 	void* N64_TKPWrapper::GetScreenData() {
 		return n64_impl_.GetColorData();
+	}
+	bool N64_TKPWrapper::poll_uncommon_request(const Request& request) {
+		return false;
 	}
 }
