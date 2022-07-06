@@ -13,17 +13,13 @@ constexpr uint64_t LUT[] = {
 };
 
 namespace TKPEmu::N64::Devices {
-    CPU::CPU(CPUBus& cpubus, RCP& rcp, GLuint& text_width, GLuint& text_height, GLuint& text_format, GLuint& text_id) :
+    CPU::CPU(CPUBus& cpubus, RCP& rcp) :
         gpr_regs_{},
         fpr_regs_{},
         instr_cache_(KB(16)),
         data_cache_(KB(8)),
         cpubus_(cpubus),
-        rcp_(rcp),
-        text_width_(text_width),
-        text_height_(text_height),
-        text_format_(text_format),
-        text_id_(text_id)
+        rcp_(rcp)
     {
     }
 

@@ -18,7 +18,7 @@ namespace TKPEmu {
 namespace TKPEmu::N64 {
     class N64 {
     public:
-        N64(GLuint& text_width, GLuint& text_height, GLuint& text_format, GLuint& text_id);
+        N64();
         bool LoadCartridge(std::string path);
         bool LoadIPL(std::string path);
         void Update();
@@ -27,10 +27,6 @@ namespace TKPEmu::N64 {
             return rcp_.framebuffer_ptr_;
         }
     private:
-        GLuint& text_width_;
-        GLuint& text_height_;
-        GLuint& text_format_;
-        GLuint& text_id_;
         Devices::RCP rcp_;
         Devices::CPUBus cpubus_;
         Devices::CPU cpu_;
