@@ -16,10 +16,10 @@ namespace TKPEmu::N64 {
 	bool N64_TKPWrapper::ipl_loaded_ = false;
 	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_() {}
 
-	N64_TKPWrapper::N64_TKPWrapper(std::unique_ptr<OptionsBase> args) : N64_TKPWrapper() {
-		// auto args_s = std::any_cast<N64Args>(args);
-		// IPLPath = args_s.IPLPath;
-	}
+	// N64_TKPWrapper::N64_TKPWrapper(std::unique_ptr<OptionsBase> args) : N64_TKPWrapper() {
+	// 	// auto args_s = std::any_cast<N64Args>(args);
+	// 	// IPLPath = args_s.IPLPath;
+	// }
 
 	N64_TKPWrapper::~N64_TKPWrapper() {}
 
