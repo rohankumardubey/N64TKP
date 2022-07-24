@@ -1,6 +1,5 @@
 #include "n64_tkpwrapper.hxx"
 #include "n64_tkpargs.hxx"
-#include <GL/glew.h>
 #include <iostream>
 // #include <valgrind/callgrind.h>
 

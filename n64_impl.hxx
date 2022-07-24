@@ -2,7 +2,6 @@
 #ifndef TKP_N64_H
 #define TKP_N64_H
 #include <string>
-#include <GL/glew.h>
 #include "n64_cpu.hxx"
 #include "n64_rcp.hxx"
 

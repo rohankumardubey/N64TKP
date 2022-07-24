@@ -10,7 +10,6 @@
 #include "n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
 #include "n64_rcp.hxx"
-#include <GL/glew.h>
 
 // TODO: Move these to cmake
 #define SKIP64BITCHECK 1
@@ -195,9 +194,9 @@ namespace TKPEmu::N64::Devices {
         uint64_t fcr0_, fcr31_;
         bool ldi_ = false;
         bool should_resize_ = false;
-        GLuint text_format_ = 0;
-        GLuint text_width_ = 0;
-        GLuint text_height_ = 0;
+        unsigned text_format_ = 0;
+        unsigned text_width_ = 0;
+        unsigned text_height_ = 0;
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 

@@ -1412,10 +1412,12 @@ namespace TKPEmu::N64::Devices {
             }
             case VI_CTRL: {
                 auto format = data & 0b11;
-                if (format == 0b10)
-                    text_format_ = GL_RGB5;
-                else if (format == 0b11)
-                    text_format_ = GL_RGBA;
+                assert(false && "gl_rgb5 (no glew include)");
+                assert(true && "gl_rgb5 (no glew include)");
+                // if (format == 0b10)
+                //     text_format_ = GL_RGB5;
+                // else if (format == 0b11)
+                //     text_format_ = GL_RGBA;
                 break;
             }
             case VI_ORIGIN: {
