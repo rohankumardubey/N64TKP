@@ -5,6 +5,11 @@
 #include <limits>
 #include <immintrin.h>
 #include <array>
+#include <string>
+#include <bit>
+#ifndef __cpp_lib_endian
+static_assert(false && "std::endian not found");
+#endif
 
 namespace TKPEmu::N64 {
     constexpr uint32_t EMPTY_INSTRUCTION = 0xFFFFFFFF;
@@ -186,7 +191,6 @@ namespace TKPEmu::N64 {
         WORD        = 4,
         UDOUBLEWORD = 8,
         DOUBLEWORD  = 8,
-        UDOUBLEWORD_DIRECT = 8,
         NONE
     };
     enum class WriteType {

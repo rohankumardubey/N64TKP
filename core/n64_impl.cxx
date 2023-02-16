@@ -6,7 +6,7 @@ namespace TKPEmu::N64 {
         cpubus_(rcp_), 
         cpu_(cpubus_, rcp_)
     {
-
+        Reset();
     }
 
     bool N64::LoadCartridge(std::string path) {
@@ -19,11 +19,11 @@ namespace TKPEmu::N64 {
         }
         return false;
     }
-    
+
     void N64::Update() {
         cpu_.update_pipeline();
     }
-    
+
     void N64::Reset() {
         cpu_.Reset();
         rcp_.Reset();

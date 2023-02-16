@@ -18,6 +18,7 @@
 #define KB(x) (static_cast<size_t>(x << 10))
 #define check_bit(x, y) ((x) & (1u << y))
 
+constexpr auto INSTRS_PER_FRAME = 93'750'000;
 constexpr uint32_t KSEG0_START = 0x8000'0000;
 constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
 constexpr uint32_t KSEG1_START = 0xA000'0000;
@@ -103,12 +104,12 @@ namespace TKPEmu::N64::Devices {
         uint8_t*  redirect_paddress_slow    (uint32_t paddr);
         void      map_direct_addresses();
 
-        std::array<uint8_t, 0xFC00000> cart_rom_;
+        std::vector<uint8_t> cart_rom_;
         bool rom_loaded_ = false;
         bool ipl_loaded_ = false;
         static std::vector<uint8_t> ipl_;
-        std::array<uint8_t, 0x400000> rdram_ {};
-        std::array<uint8_t, 0x400000> rdram_xpk_ {};
+        std::vector<uint8_t> rdram_ {};
+        std::vector<uint8_t> rdram_xpk_ {};
         std::array<uint8_t, 64> pif_ram_ {};
         std::array<uint8_t, 0x1000> rsp_imem_ {};
         std::array<uint8_t, 0x1000> rsp_dmem_ {};
@@ -193,10 +194,8 @@ namespace TKPEmu::N64::Devices {
         bool llbit_;
         uint64_t fcr0_, fcr31_;
         bool ldi_ = false;
+        bool was_ldi_ = false;
         bool should_resize_ = false;
-        unsigned text_format_ = 0;
-        unsigned text_width_ = 0;
-        unsigned text_height_ = 0;
         // Kernel mode addressing functions
         /**
             VR4300 manual, page 122: 
@@ -280,7 +279,7 @@ namespace TKPEmu::N64::Devices {
         __always_inline PipelineStageRet IC(PipelineStageArgs);
         __always_inline PipelineStageRet RF(PipelineStageArgs);
         __always_inline PipelineStageRet EX(PipelineStageArgs);
-        __always_inline PipelineStageRet DC(PipelineStageArgs);
+        PipelineStageRet DC(PipelineStageArgs);
         __always_inline PipelineStageRet WB(PipelineStageArgs);
 
         void SPECIAL(), REGIMM(), J(), JAL(), BEQ(), BNE(), BLEZ(), BGTZ(),

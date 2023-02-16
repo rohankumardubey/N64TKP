@@ -3,6 +3,7 @@
 #define TKP_N64_RCP_H
 #include <array>
 #include <cstdint>
+#include <GL/glew.h>
 
 namespace TKPEmu::N64 {
     class N64;
@@ -17,6 +18,8 @@ namespace TKPEmu::N64::Devices {
     public:
         void Reset();
     private:
+        int width_ = 320, height_ = 240;
+        GLenum bitdepth_ = GL_RGBA;
 		uint8_t* framebuffer_ptr_ = nullptr;
         // RSP internal registers
         uint32_t rsp_status_ = 0;

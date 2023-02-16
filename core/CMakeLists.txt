@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.19)
+project(N64TKP)
+set(CMAKE_CXX_STANDARD 20)
+set(FILES n64_impl.cxx n64_cpu.cxx n64_rcp.cxx n64_cpubus.cxx)
+add_library(N64TKP ${FILES})

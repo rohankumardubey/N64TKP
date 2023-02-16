@@ -3,12 +3,15 @@
 #include <iostream>
 #include "n64_cpu.hxx"
 #include "n64_addresses.hxx"
-#include "../include/error_factory.hxx"
+#include "error_factory.hxx"
 
 namespace TKPEmu::N64::Devices {
     std::vector<uint8_t> CPUBus::ipl_ {};
 
     CPUBus::CPUBus(Devices::RCP& rcp) : rcp_(rcp) {
+        cart_rom_.resize(0xFC00000);
+        rdram_.resize(0x400000);
+        rdram_xpk_.resize(0x400000);
         map_direct_addresses();
     }
 
@@ -47,8 +50,6 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPUBus::Reset() {
-        rdram_.fill(0);
-        rdram_xpk_.fill(0);
         pif_ram_.fill(0);
         ri_mode_ = 0x0E000000;
         ri_config_ = 0x40000000;
@@ -73,10 +74,9 @@ namespace TKPEmu::N64::Devices {
             if (ptr_slow)
                 return ptr_slow;
         }
-        volatile int k = 0;
         std::stringstream ss;
         ss << "Tried to access bad address: 0x" << std::hex << paddr << std::endl;
-        throw ErrorFactory::generate_exception(__func__, __LINE__, ss.str());
+        throw ErrorFactory::generate_exception(ss.str());
     }
 
     uint8_t* CPUBus::redirect_paddress_slow(uint32_t paddr) {

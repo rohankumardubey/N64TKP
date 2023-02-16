@@ -5,15 +5,6 @@
 #include "n64_cpu.hxx"
 #include "n64_rcp.hxx"
 
-namespace TKPEmu {
-    namespace Applications {
-        class N64_RomDisassembly;
-    }
-    namespace N64 {
-        class N64_TKPWrapper;
-    }
-}
-
 namespace TKPEmu::N64 {
     class N64 {
     public:
@@ -25,12 +16,19 @@ namespace TKPEmu::N64 {
         void* GetColorData() {
             return rcp_.framebuffer_ptr_;
         }
+        int GetWidth() {
+            return rcp_.width_;
+        }
+        int GetHeight() {
+            return rcp_.height_;
+        }
+        GLenum GetBitdepth() {
+            return rcp_.bitdepth_;
+        }
     private:
         Devices::RCP rcp_;
         Devices::CPUBus cpubus_;
         Devices::CPU cpu_;
-		friend class TKPEmu::N64::N64_TKPWrapper;
-        friend class TKPEmu::Applications::N64_RomDisassembly;
     };
 }
 #endif
