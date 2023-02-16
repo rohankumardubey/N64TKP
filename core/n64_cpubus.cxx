@@ -145,6 +145,8 @@ namespace TKPEmu::N64::Devices {
         if (paddr - 0x1FC00000u < 1984u) {
             return &ipl_[paddr - 0x1FC00000u];
         } else if (paddr - 0x1FC0'07C0u < 64u) {
+            pif_ram_[0x26] = 0x3F;
+            pif_ram_[0x27] = 0x3F;
             return &pif_ram_[paddr - 0x1FC0'07C0u];
         } else if (paddr - 0x04000000u < 4096u) {
             return &rsp_dmem_[paddr - 0x04000000u];
