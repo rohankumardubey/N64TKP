@@ -1,5 +1,6 @@
 #include "n64_tkpwrapper.hxx"
-#include "n64_tkpargs.hxx"
+#include "core/n64_tkpargs.hxx"
+#include <include/emulator_factory.h>
 #include <iostream>
 // #include <valgrind/callgrind.h>
 
@@ -15,11 +16,6 @@ namespace TKPEmu::N64 {
 	bool N64_TKPWrapper::ipl_loaded_ = false;
 	N64_TKPWrapper::N64_TKPWrapper() : n64_impl_() {}
 
-	// N64_TKPWrapper::N64_TKPWrapper(std::unique_ptr<OptionsBase> args) : N64_TKPWrapper() {
-	// 	// auto args_s = std::any_cast<N64Args>(args);
-	// 	// IPLPath = args_s.IPLPath;
-	// }
-
 	N64_TKPWrapper::~N64_TKPWrapper() {}
 
 	bool& N64_TKPWrapper::IsReadyToDraw() {
@@ -29,7 +25,12 @@ namespace TKPEmu::N64 {
 	bool N64_TKPWrapper::load_file(std::string path) {
 		bool ipl_loaded = ipl_loaded_;
 		if (!ipl_loaded) {
-			bool ipl_status = n64_impl_.LoadIPL(IPLPath);
+			const EmulatorUserData& user_data = EmulatorFactory::GetEmulatorUserData()[static_cast<int>(EmuType::N64)];
+			auto ipl_path = user_data.Get("IPLPath");
+			if (!std::filesystem::exists(ipl_path)) {
+				throw std::runtime_error("Missing IPL path!");
+			}
+			bool ipl_status = n64_impl_.LoadIPL(ipl_path);
 			ipl_loaded = ipl_status;
 		}
 		bool opened = n64_impl_.LoadCartridge(path);

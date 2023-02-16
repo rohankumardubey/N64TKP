@@ -6,6 +6,7 @@
 #include "n64_rcp.hxx"
 
 namespace TKPEmu::N64 {
+    class N64_TKPWrapper;
     class N64 {
     public:
         N64();
@@ -22,13 +23,14 @@ namespace TKPEmu::N64 {
         int GetHeight() {
             return rcp_.height_;
         }
-        GLenum GetBitdepth() {
+        int GetBitdepth() {
             return rcp_.bitdepth_;
         }
     private:
         Devices::RCP rcp_;
         Devices::CPUBus cpubus_;
         Devices::CPU cpu_;
+        friend class N64_TKPWrapper;
     };
 }
 #endif

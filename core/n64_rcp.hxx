@@ -3,7 +3,6 @@
 #define TKP_N64_RCP_H
 #include <array>
 #include <cstdint>
-#include <GL/glew.h>
 
 namespace TKPEmu::N64 {
     class N64;
@@ -13,13 +12,16 @@ namespace TKPEmu::N64 {
     }
 }
 
+constexpr auto GL_UNSIGNED_BYTE = 0x1401;
+constexpr auto GL_UNSIGNED_SHORT_5_5_5_1 = 0x8034;
+
 namespace TKPEmu::N64::Devices {
     class RCP {
     public:
         void Reset();
     private:
         int width_ = 320, height_ = 240;
-        GLenum bitdepth_ = GL_UNSIGNED_BYTE;
+        int bitdepth_ = GL_UNSIGNED_BYTE;
 		uint8_t* framebuffer_ptr_ = nullptr;
         // RSP internal registers
         uint32_t rsp_status_ = 0;

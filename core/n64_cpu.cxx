@@ -1423,8 +1423,7 @@ namespace TKPEmu::N64::Devices {
                 // assert(false && "gl_rgb5 (no glew include)");
                 // assert(true && "gl_rgb5 (no glew include)");
                 if (format == 0b10) {
-                    rcp_.bitdepth_ = GL_UNSIGNED_SHORT_5_5_5_1_EXT;
-                    std::cout << "rgb5!" << std::endl;
+                    rcp_.bitdepth_ = GL_UNSIGNED_SHORT_5_5_5_1;
                 } else if (format == 0b11)
                     rcp_.bitdepth_ = GL_UNSIGNED_BYTE;
                 break;
