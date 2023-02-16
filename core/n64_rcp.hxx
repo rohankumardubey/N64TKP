@@ -19,7 +19,7 @@ namespace TKPEmu::N64::Devices {
         void Reset();
     private:
         int width_ = 320, height_ = 240;
-        GLenum bitdepth_ = GL_RGBA;
+        GLenum bitdepth_ = GL_UNSIGNED_BYTE;
 		uint8_t* framebuffer_ptr_ = nullptr;
         // RSP internal registers
         uint32_t rsp_status_ = 0;

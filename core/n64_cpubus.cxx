@@ -4,6 +4,7 @@
 #include "n64_cpu.hxx"
 #include "n64_addresses.hxx"
 #include "error_factory.hxx"
+#include "utils.hxx"
 
 namespace TKPEmu::N64::Devices {
     std::vector<uint8_t> CPUBus::ipl_ {};
@@ -89,6 +90,7 @@ namespace TKPEmu::N64::Devices {
 
             // MIPS Interface
             redir_case(MI_MODE, mi_mode_);
+            redir_case(MI_INTERRUPT, mi_interrupt_);
             redir_case(MI_MASK, mi_mask_);
 
             // Video Interface
@@ -173,5 +175,9 @@ namespace TKPEmu::N64::Devices {
         for (int i = 0x100; i <= 0x1FB; i++) {
             page_table_[i] = &cart_rom_[PAGE_SIZE * (i - 0x100)];
         }
+    }
+
+    void CPUBus::set_interrupt(Interrupt intr, bool value) {
+        SetBit(mi_interrupt_, static_cast<int>(intr), value);
     }
 }

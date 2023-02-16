@@ -7,6 +7,7 @@
 #include <sstream>
 #include "n64_addresses.hxx"
 #include "error_factory.hxx"
+#include "utils.hxx"
 
 #define SKIPDEBUGSTUFF 1
 #define TKP_INSTR_FUNC void
@@ -37,7 +38,7 @@ namespace TKPEmu::N64::Devices {
     }
 
     TKP_INSTR_FUNC CPU::ERROR() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "ERROR opcode reached");
+        throw ErrorFactory::generate_exception("ERROR opcode reached");
     }
 
     /**
@@ -88,11 +89,11 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_SYSCALL() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_SYSCALL opcode reached");
+		throw ErrorFactory::generate_exception("s_SYSCALL opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_BREAK() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_BREAK opcode reached");
+		throw ErrorFactory::generate_exception("s_BREAK opcode reached");
 	}
 
     TKP_INSTR_FUNC CPU::s_SYNC() {
@@ -118,11 +119,11 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_DSRLV() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSRLV opcode reached");
+		throw ErrorFactory::generate_exception("s_DSRLV opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DSRAV() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSRAV opcode reached");
+		throw ErrorFactory::generate_exception("s_DSRAV opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_MULT() {
@@ -166,19 +167,19 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_DMULT() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DMULT opcode reached");
+		throw ErrorFactory::generate_exception("s_DMULT opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DMULTU() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DMULTU opcode reached");
+		throw ErrorFactory::generate_exception("s_DMULTU opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DDIV() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DDIV opcode reached");
+		throw ErrorFactory::generate_exception("s_DDIV opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DDIVU() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DDIVU opcode reached");
+		throw ErrorFactory::generate_exception("s_DDIVU opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_SUB() {
@@ -227,39 +228,39 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_DADD() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DADD opcode reached");
+		throw ErrorFactory::generate_exception("s_DADD opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DADDU() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DADDU opcode reached");
+		throw ErrorFactory::generate_exception("s_DADDU opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DSUB() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSUB opcode reached");
+		throw ErrorFactory::generate_exception("s_DSUB opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DSUBU() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSUBU opcode reached");
+		throw ErrorFactory::generate_exception("s_DSUBU opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_TGEU() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_TGEU opcode reached");
+		throw ErrorFactory::generate_exception("s_TGEU opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_TLT() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_TLT opcode reached");
+		throw ErrorFactory::generate_exception("s_TLT opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_TLTU() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_TLTU opcode reached");
+		throw ErrorFactory::generate_exception("s_TLTU opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_TEQ() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_TEQ opcode reached");
+		throw ErrorFactory::generate_exception("s_TEQ opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_TNE() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_TNE opcode reached");
+		throw ErrorFactory::generate_exception("s_TNE opcode reached");
 	}
     
     /**
@@ -275,15 +276,15 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::s_DSRL() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSRL opcode reached");
+		throw ErrorFactory::generate_exception("s_DSRL opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DSRA() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSRA opcode reached");
+		throw ErrorFactory::generate_exception("s_DSRA opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_DSRL32() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "s_DSRL32 opcode reached");
+		throw ErrorFactory::generate_exception("s_DSRL32 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SPECIAL() {
@@ -330,11 +331,11 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::COP2() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "COP2 opcode reached");
+		throw ErrorFactory::generate_exception("COP2 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::BGTZL() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "BGTZL opcode reached");
+		throw ErrorFactory::generate_exception("BGTZL opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::DADDIU() {
@@ -348,19 +349,19 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::LDL() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LDL opcode reached");
+		throw ErrorFactory::generate_exception("LDL opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LDR() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LDR opcode reached");
+		throw ErrorFactory::generate_exception("LDR opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LWL() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LWL opcode reached");
+		throw ErrorFactory::generate_exception("LWL opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LWR() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LWR opcode reached");
+		throw ErrorFactory::generate_exception("LWR opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SB() {
@@ -412,51 +413,51 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::CACHE() {
-		// // throw ErrorFactory::generate_exception(__func__, __LINE__, "CACHE opcode reached");
+		// throw ErrorFactory::generate_exception("CACHE opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LWC1() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LWC1 opcode reached");
+		throw ErrorFactory::generate_exception("LWC1 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LWC2() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LWC2 opcode reached");
+		throw ErrorFactory::generate_exception("LWC2 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LLD() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LLD opcode reached");
+		throw ErrorFactory::generate_exception("LLD opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LDC1() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LDC1 opcode reached");
+		throw ErrorFactory::generate_exception("LDC1 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::LDC2() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LDC2 opcode reached");
+		throw ErrorFactory::generate_exception("LDC2 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SC() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "SC opcode reached");
+		throw ErrorFactory::generate_exception("SC opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SWC1() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "SWC1 opcode reached");
+		throw ErrorFactory::generate_exception("SWC1 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SWC2() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "SWC2 opcode reached");
+		throw ErrorFactory::generate_exception("SWC2 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SCD() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "SCD opcode reached");
+		throw ErrorFactory::generate_exception("SCD opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SDC1() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "SDC1 opcode reached");
+		throw ErrorFactory::generate_exception("SDC1 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SDC2() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "SDC2 opcode reached");
+		throw ErrorFactory::generate_exception("SDC2 opcode reached");
 	}
 
     TKP_INSTR_FUNC CPU::SLTIU() {
@@ -504,7 +505,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::LL() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "LL opcode reached");
+		throw ErrorFactory::generate_exception("LL opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::s_MTLO() {
@@ -864,6 +865,7 @@ namespace TKPEmu::N64::Devices {
         } else {
             // Discard delay slot instruction
             icrf_latch_.instruction.Full = 0;
+            was_ldi_ = true; // don't log next instruction
         }
     }
     /**
@@ -874,10 +876,6 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BNE() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        if (pc_ == 0xFFFFFFFF800001B4 || pc_ == 0xFFFFFFFF800001C0) [[unlikely]] { // CRC check skip
-            std::cout << std::hex << rfex_latch_.fetched_rs.UD <<" vs " << rfex_latch_.fetched_rt.UD << std::endl;
-            return;
-        }
         if (rfex_latch_.fetched_rs.UD != rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
@@ -901,6 +899,7 @@ namespace TKPEmu::N64::Devices {
         } else {
             // Discard delay slot instruction
             icrf_latch_.instruction.Full = 0;
+            was_ldi_ = true; // don't log next instruction
         }
     }
     /**
@@ -919,6 +918,7 @@ namespace TKPEmu::N64::Devices {
         } else {
             // Discard delay slot instruction
             icrf_latch_.instruction.Full = 0;
+            was_ldi_ = true; // don't log next instruction
         }
     }
     /**
@@ -943,7 +943,7 @@ namespace TKPEmu::N64::Devices {
      */
     TKP_INSTR_FUNC CPU::s_TGE() {
         if (rfex_latch_.fetched_rs.UD >= rfex_latch_.fetched_rt.UD)
-            throw 0; //ErrorFactory::generate_exception(__func__, __LINE__, "TrapException was thrown");static_assert(false);
+            throw 0; //ErrorFactory::generate_exception("TrapException was thrown");static_assert(false);
     }
     /**
      * s_ADD, s_ADDU
@@ -1105,7 +1105,7 @@ namespace TKPEmu::N64::Devices {
     }
 
     TKP_INSTR_FUNC CPU::r_BLTZ() {
-		// throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZ opcode reached");
+		throw ErrorFactory::generate_exception("r_BLTZ opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_BGEZ() {
@@ -1120,39 +1120,39 @@ namespace TKPEmu::N64::Devices {
     }
     
     TKP_INSTR_FUNC CPU::r_BLTZL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZL opcode reached");
+        throw ErrorFactory::generate_exception("r_BLTZL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_BGEZL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BGEZL opcode reached");
+        throw ErrorFactory::generate_exception("r_BGEZL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_TGEI() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TGEI opcode reached");
+        throw ErrorFactory::generate_exception("r_TGEI opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_TGEIU() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TGEIU opcode reached");
+        throw ErrorFactory::generate_exception("r_TGEIU opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_TLTI() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TLTI opcode reached");
+        throw ErrorFactory::generate_exception("r_TLTI opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_TLTIU() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TLTIU opcode reached");
+        throw ErrorFactory::generate_exception("r_TLTIU opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_TEQI() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TEQI opcode reached");
+        throw ErrorFactory::generate_exception("r_TEQI opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_TNEI() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_TNEI opcode reached");
+        throw ErrorFactory::generate_exception("r_TNEI opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_BLTZAL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZAL opcode reached");
+        throw ErrorFactory::generate_exception("r_BLTZAL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_BGEZAL() {
@@ -1168,156 +1168,156 @@ namespace TKPEmu::N64::Devices {
     }
     
     TKP_INSTR_FUNC CPU::r_BLTZALL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BLTZALL opcode reached");
+        throw ErrorFactory::generate_exception("r_BLTZALL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::r_BGEZALL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "r_BGEZALL opcode reached");
+        throw ErrorFactory::generate_exception("r_BGEZALL opcode reached");
     }
 
     TKP_INSTR_FUNC CPU::f_ADD() {
-        // // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_ADD opcode reached");
+        // throw ErrorFactory::generate_exception("f_ADD opcode reached");
         std::cout << "Warning: f_ADD unimplemented" << std::endl;
     }
     
     TKP_INSTR_FUNC CPU::f_SUB() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_SUB opcode reached");
+        throw ErrorFactory::generate_exception("f_SUB opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_MUL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_MUL opcode reached");
+        throw ErrorFactory::generate_exception("f_MUL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_DIV() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_DIV opcode reached");
+        throw ErrorFactory::generate_exception("f_DIV opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_SQRT() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_SQRT opcode reached");
+        throw ErrorFactory::generate_exception("f_SQRT opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_ABS() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_ABS opcode reached");
+        throw ErrorFactory::generate_exception("f_ABS opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_MOV() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_MOV opcode reached");
+        throw ErrorFactory::generate_exception("f_MOV opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_NEG() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_NEG opcode reached");
+        throw ErrorFactory::generate_exception("f_NEG opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_ROUNDL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_ROUNDL opcode reached");
+        throw ErrorFactory::generate_exception("f_ROUNDL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_TRUNCL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_TRUNCL opcode reached");
+        throw ErrorFactory::generate_exception("f_TRUNCL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CEILL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CEILL opcode reached");
+        throw ErrorFactory::generate_exception("f_CEILL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_FLOORL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_FLOORL opcode reached");
+        throw ErrorFactory::generate_exception("f_FLOORL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_ROUNDW() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_ROUNDW opcode reached");
+        throw ErrorFactory::generate_exception("f_ROUNDW opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_TRUNCW() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_TRUNCW opcode reached");
+        throw ErrorFactory::generate_exception("f_TRUNCW opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CEILW() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CEILW opcode reached");
+        throw ErrorFactory::generate_exception("f_CEILW opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_FLOORW() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_FLOORW opcode reached");
+        throw ErrorFactory::generate_exception("f_FLOORW opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CVTS() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CVTS opcode reached");
+        throw ErrorFactory::generate_exception("f_CVTS opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CVTD() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CVTD opcode reached");
+        throw ErrorFactory::generate_exception("f_CVTD opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CVTW() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CVTW opcode reached");
+        throw ErrorFactory::generate_exception("f_CVTW opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CVTL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CVTL opcode reached");
+        throw ErrorFactory::generate_exception("f_CVTL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CF() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CF opcode reached");
+        throw ErrorFactory::generate_exception("f_CF opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CUN() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CUN opcode reached");
+        throw ErrorFactory::generate_exception("f_CUN opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CEQ() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CEQ opcode reached");
+        throw ErrorFactory::generate_exception("f_CEQ opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CUEQ() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CUEQ opcode reached");
+        throw ErrorFactory::generate_exception("f_CUEQ opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_COLT() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_COLT opcode reached");
+        throw ErrorFactory::generate_exception("f_COLT opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CULT() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CULT opcode reached");
+        throw ErrorFactory::generate_exception("f_CULT opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_COLE() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_COLE opcode reached");
+        throw ErrorFactory::generate_exception("f_COLE opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CULE() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CULE opcode reached");
+        throw ErrorFactory::generate_exception("f_CULE opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CSF() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CSF opcode reached");
+        throw ErrorFactory::generate_exception("f_CSF opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CNGLE() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CNGLE opcode reached");
+        throw ErrorFactory::generate_exception("f_CNGLE opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CSEQ() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CSEQ opcode reached");
+        throw ErrorFactory::generate_exception("f_CSEQ opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CNGL() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CNGL opcode reached");
+        throw ErrorFactory::generate_exception("f_CNGL opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CLT() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CLT opcode reached");
+        throw ErrorFactory::generate_exception("f_CLT opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CNGE() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CNGE opcode reached");
+        throw ErrorFactory::generate_exception("f_CNGE opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CLE() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CLE opcode reached");
+        throw ErrorFactory::generate_exception("f_CLE opcode reached");
     }
     
     TKP_INSTR_FUNC CPU::f_CNGT() {
-        // throw ErrorFactory::generate_exception(__func__, __LINE__, "f_CNGT opcode reached");
+        throw ErrorFactory::generate_exception("f_CNGT opcode reached");
     }
 
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs) {
@@ -1414,6 +1414,7 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case PI_WR_LEN: {
+                std::cout << "PI_WR_LEN" << std::endl;
                 std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data + 1);
                 break;
             }
@@ -1421,10 +1422,11 @@ namespace TKPEmu::N64::Devices {
                 auto format = data & 0b11;
                 // assert(false && "gl_rgb5 (no glew include)");
                 // assert(true && "gl_rgb5 (no glew include)");
-                if (format == 0b10)
-                    rcp_.bitdepth_ = GL_RGB5;
-                else if (format == 0b11)
-                    rcp_.bitdepth_ = GL_RGBA;
+                if (format == 0b10) {
+                    rcp_.bitdepth_ = GL_UNSIGNED_SHORT_5_5_5_1_EXT;
+                    std::cout << "rgb5!" << std::endl;
+                } else if (format == 0b11)
+                    rcp_.bitdepth_ = GL_UNSIGNED_BYTE;
                 break;
             }
             case VI_ORIGIN: {
@@ -1432,9 +1434,35 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case VI_WIDTH: {
+                std::cout << "vi_width: " << std::dec << data << std::endl;
                 rcp_.width_ = data;
                 rcp_.height_ = (480.0f / 640.0f) * data;
                 should_resize_ = true;
+                break;
+            }
+            case VI_V_CURRENT: {
+                cpubus_.set_interrupt(Interrupt::VI, false);
+                break;
+            }
+            case MI_MASK: {
+                // std::cout << "Writing to MI_MASK:\n";
+                // if (data & 0b10) {
+                //     std::cout << "Set SP Interrupt Mask";
+                // }
+                // if (data & 0b1000) {
+                //     std::cout << "Set SI Interrupt Mask";
+                // }
+                // if (data & 0b100000) {
+                //     std::cout << "Set AI Interrupt Mask";
+                // }
+                // if (data & 0b10000000) {
+                //     std::cout << "Set VI Interrupt Mask";
+                // }
+                // if (data & 0b1000000000) {
+                //     std::cout << "Set PI Interrupt Mask";
+                // }
+                // std::cout << "\n" << data;
+                // std::cout << std::endl;
                 break;
             }
             case PIF_COMMAND: {
@@ -1491,6 +1519,9 @@ namespace TKPEmu::N64::Devices {
         for (auto& reg : fpr_regs_) {
             reg = 0.0;
         }
+        for (auto& reg : cp0_regs_) {
+            reg.UD = 0;
+        }
     }
 
     // TODO: probably safe to remove
@@ -1525,7 +1556,9 @@ namespace TKPEmu::N64::Devices {
         }
         ++cp0_regs_[CP0_COUNT].UD;
         if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
-            std::cout << "AH! interrupt" << std::endl;
+            uint32_t flags = cp0_regs_[CP0_CAUSE].UW._0;
+            SetBit(flags, 15, true);
+            cp0_regs_[CP0_CAUSE].UW._0 = flags;
         }
     }
 
@@ -1549,7 +1582,7 @@ namespace TKPEmu::N64::Devices {
         uint32_t func = instr.RType.rs;
         if (func & 0b10000) {
             // Coprocessor function
-            std::cout << "WHOOPS: " << instr.Full << std::endl;
+            // std::cout << "WHOOPS: " << instr.Full << std::endl;
         } else {
             switch (func & 0b1111) {
                 /**
@@ -1558,6 +1591,7 @@ namespace TKPEmu::N64::Devices {
                  * throws Coprocessor unusable exception
                  */
                 case 0b0100: {
+                    // std::cout << "Write to CP0 reg: " << CP0String(instr.RType.rt) << std::endl;
                     int64_t sedata = gpr_regs_[instr.RType.rd].W._0;
                     exdc_latch_.dest = &cp0_regs_[instr.RType.rt].UB._0;
                     exdc_latch_.data = sedata;
@@ -1581,7 +1615,7 @@ namespace TKPEmu::N64::Devices {
                 default: {
                     std::stringstream ss;
                     ss << "Unimplemented CP0 microcode:" << std::bitset<5>(func) << " - full:" << std::bitset<32>(instr.Full);
-                    // throw ErrorFactory::generate_exception(__func__, __LINE__, ss.str());
+                    throw ErrorFactory::generate_exception(ss.str());
                 }
             }
         }

@@ -1,5 +1,6 @@
 #include <iostream>
 #include "n64_impl.hxx"
+#include "utils.hxx"
 
 namespace TKPEmu::N64 {
     N64::N64() :
@@ -21,6 +22,12 @@ namespace TKPEmu::N64 {
     }
 
     void N64::Update() {
+        cpubus_.set_interrupt(Devices::Interrupt::AI, true);
+        bool interrupt_fired = cpubus_.mi_mask_ & cpubus_.mi_interrupt_;
+        if (interrupt_fired) [[unlikely]] {
+            uint32_t flags = cpu_.cp0_regs_[CP0_CAUSE].UW._0;
+            SetBit(flags, 0, true);
+        }
         cpu_.update_pipeline();
     }
 

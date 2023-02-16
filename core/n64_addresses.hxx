@@ -16,6 +16,7 @@ addr RSP_PC              = 0x0408'0000;
 
 // MIPS Interface
 addr MI_MODE             = 0x0430'0000;
+addr MI_INTERRUPT        = 0x0430'0008;
 addr MI_MASK             = 0x0430'000C;
 
 // Video Interface

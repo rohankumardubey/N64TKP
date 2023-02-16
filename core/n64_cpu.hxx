@@ -24,8 +24,9 @@ constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
 constexpr uint32_t KSEG1_START = 0xA000'0000;
 constexpr uint32_t KSEG1_END   = 0xBFFF'FFFF;
 
-constexpr auto CP0_COUNT = 9;
-constexpr auto CP0_COMPARE = 11;
+#define X(name, value) constexpr auto CP0_##name = value;
+#include "cp0_regs.def"
+#undef X
 
 namespace TKPEmu {
     namespace N64 {
@@ -38,6 +39,14 @@ namespace TKPEmu {
     }
 }
 namespace TKPEmu::N64::Devices {
+    enum class Interrupt {
+        SP = 0,
+        SI,
+        AI,
+        VI,
+        PI,
+        DP
+    };
     // Bit hack to get signum of number (-1, 0 or 1)
     template <typename T> int sgn(T val) {
         return (T(0) < val) - (val < T(0));
@@ -103,6 +112,7 @@ namespace TKPEmu::N64::Devices {
         uint8_t*  redirect_paddress         (uint32_t paddr);
         uint8_t*  redirect_paddress_slow    (uint32_t paddr);
         void      map_direct_addresses();
+        void      set_interrupt(Interrupt, bool);
 
         std::vector<uint8_t> cart_rom_;
         bool rom_loaded_ = false;
@@ -119,6 +129,7 @@ namespace TKPEmu::N64::Devices {
 
         // MIPS Interface
         uint32_t mi_mode_         = 0;
+        uint32_t mi_interrupt_    = 0;
         uint32_t mi_mask_         = 0;
 
         // Peripheral Interface
@@ -155,7 +166,7 @@ namespace TKPEmu::N64::Devices {
 
         Devices::RCP& rcp_;
         friend class CPU;
-        friend class N64;
+        friend class TKPEmu::N64::N64;
         friend class TKPEmu::Applications::N64_RomDisassembly;
     };
     template<auto MemberFunc>
