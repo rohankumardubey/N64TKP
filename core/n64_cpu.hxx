@@ -7,6 +7,7 @@
 #include <queue>
 #include <vector>
 #include <memory>
+#include <queue>
 #include "n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
 #include "n64_rcp.hxx"
@@ -24,11 +25,30 @@
 #define KB(x) (static_cast<size_t>(x << 10))
 #define check_bit(x, y) ((x) & (1u << y))
 
-constexpr auto INSTRS_PER_FRAME = 93'750'000;
+constexpr auto INSTRS_PER_SECOND = 93'750'000;
 constexpr uint32_t KSEG0_START = 0x8000'0000;
 constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
 constexpr uint32_t KSEG1_START = 0xA000'0000;
 constexpr uint32_t KSEG1_END   = 0xBFFF'FFFF;
+
+enum class SchedulerEventType {
+    Interrupt,
+    Count,
+    Vi,
+};
+
+struct SchedulerEvent {
+    SchedulerEventType type;
+    uint64_t time;
+};
+
+class SchedulerCompare
+{
+public:
+    bool operator() (SchedulerEvent eventl, SchedulerEvent eventr) {
+        return eventl.time > eventr.time;
+    }
+};
 
 #define X(name, value) constexpr auto CP0_##name = value;
 #include "cp0_regs.def"
@@ -167,7 +187,13 @@ namespace TKPEmu::N64::Devices {
         uint32_t ri_select_       = 0;
 
         // Serial Interface
+        uint32_t si_dram_addr_    = 0;
+        uint32_t si_pif_ad_wr64b_ = 0;
         uint32_t si_status_       = 0;
+
+        uint64_t time_ = 0;
+
+        uint32_t placeholder_ = 0;
 
         Devices::RCP& rcp_;
         friend class CPU;
@@ -202,6 +228,7 @@ namespace TKPEmu::N64::Devices {
         std::array<MemDataUnionDW, 32> gpr_regs_;
         std::array<double, 32> fpr_regs_;
         std::array<MemDataUnionDW, 32> cp0_regs_;
+        uint64_t temp;
         // CPU cache
         std::vector<uint8_t> instr_cache_;
         std::vector<uint8_t> data_cache_;
@@ -295,7 +322,7 @@ namespace TKPEmu::N64::Devices {
         __always_inline PipelineStageRet IC(PipelineStageArgs);
         __always_inline PipelineStageRet RF(PipelineStageArgs);
         __always_inline PipelineStageRet EX(PipelineStageArgs);
-        PipelineStageRet DC(PipelineStageArgs);
+        __always_inline PipelineStageRet DC(PipelineStageArgs);
         __always_inline PipelineStageRet WB(PipelineStageArgs);
 
         void SPECIAL(), REGIMM(), J(), JAL(), BEQ(), BNE(), BLEZ(), BGTZ(),
@@ -374,8 +401,13 @@ namespace TKPEmu::N64::Devices {
         // Fills the pipeline with the first 5 instructions
         void fill_pipeline();
         void check_interrupts();
+        void fire_count();
 
         void clear_registers();
+        void handle_event();
+
+        std::priority_queue<SchedulerEvent, std::vector<SchedulerEvent>, SchedulerCompare> scheduler_;
+        void queue_event(SchedulerEventType, int);
 
         friend class TKPEmu::N64::N64_TKPWrapper;
         friend class TKPEmu::N64::N64;

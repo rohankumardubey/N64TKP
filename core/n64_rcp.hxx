@@ -44,6 +44,7 @@ namespace TKPEmu::N64::Devices {
         uint32_t vi_y_scale_ = 0;
         uint32_t vi_test_addr_ = 0;
         uint32_t vi_staged_data_ = 0;
+        int num_halflines_ = 262; // yeah idk why either
         // Called from cpubus when a relevant register is changed
         friend class TKPEmu::N64::N64;
         friend class TKPEmu::N64::Devices::CPUBus;

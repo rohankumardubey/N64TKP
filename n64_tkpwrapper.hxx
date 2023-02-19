@@ -17,6 +17,7 @@ namespace TKPEmu::N64 {
         N64 n64_impl_;
 		bool should_draw_ = false;
 		static bool ipl_loaded_;
+		int cur_instr_ = 0;
 		void update();
 		void v_extra_close() override;
 		bool& IsResized() override { return n64_impl_.cpu_.should_resize_; }
@@ -24,7 +25,6 @@ namespace TKPEmu::N64 {
 		int GetWidth() override { return n64_impl_.GetWidth(); }
 		int GetHeight() override { return n64_impl_.GetHeight(); }
 		std::chrono::system_clock::time_point frame_start = std::chrono::system_clock::now();
-		uint64_t cur_frame_instrs_ = 0;
 		friend class TKPEmu::Applications::N64_RomDisassembly;
     };
 }

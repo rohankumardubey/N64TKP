@@ -83,6 +83,14 @@ namespace TKPEmu::N64 {
             uint32_t rs        : 5;  // source register number
             uint32_t op        : 6;  // operation code
         } RType; // Register
+        struct {
+            uint32_t func      : 6;  // function field
+            uint32_t fd        : 5;  // destination register number
+            uint32_t fs        : 5;  // source register number
+            uint32_t ft        : 5;  // target register number
+            uint32_t fmt       : 5;  // floating point format
+            uint32_t op        : 6;  // operation code
+        } FType; // Floating instruction
         uint32_t Full;
     };
     union MemDataUnionDWBase {

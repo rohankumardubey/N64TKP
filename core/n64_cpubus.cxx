@@ -54,6 +54,7 @@ namespace TKPEmu::N64::Devices {
         ri_mode_ = 0x0E000000;
         ri_config_ = 0x40000000;
         ri_select_ = 0x14000000;
+        time_ = 0;
     }
     
     uint32_t CPUBus::fetch_instruction_uncached(uint32_t paddr) {
@@ -90,14 +91,24 @@ namespace TKPEmu::N64::Devices {
             // MIPS Interface
             redir_case(MI_MODE, mi_mode_);
             redir_case(MI_INTERRUPT, mi_interrupt_);
-            redir_case(MI_MASK, mi_mask_);
+            redir_case(MI_MASK, placeholder_);
 
             // Video Interface
             redir_case(VI_CTRL, rcp_.vi_ctrl_);
             redir_case(VI_ORIGIN, rcp_.vi_origin_);
             redir_case(VI_WIDTH, rcp_.vi_width_);
             redir_case(VI_V_INTR, rcp_.vi_v_intr_);
-            redir_case(VI_V_CURRENT, rcp_.vi_v_current_);
+            case VI_V_CURRENT: {
+                // calculate current based on time
+                // max time per frame:
+                // 93'750'000 / 60
+                // time per halfline:
+                // 93'750'000 / 60 / num_halflines
+                uint64_t mod = time_ % (93'750'000 / 60);
+                uint64_t time_per = 93'750'000 / 60 / rcp_.num_halflines_;
+                rcp_.vi_v_current_ = mod / time_per;
+                return reinterpret_cast<uint8_t*>(&rcp_.vi_v_current_);
+            }
             redir_case(VI_BURST, rcp_.vi_burst_);
             redir_case(VI_V_SYNC, rcp_.vi_v_sync_);
             redir_case(VI_H_SYNC, rcp_.vi_h_sync_);
@@ -140,6 +151,8 @@ namespace TKPEmu::N64::Devices {
             redir_case(RI_SELECT, ri_select_);
 
             // Serial Interface
+            redir_case(SI_DRAM_ADDR, si_dram_addr_);
+            redir_case(SI_PIF_AD_WR64B, si_pif_ad_wr64b_);
             redir_case(SI_STATUS, si_status_);
             default: {
                 break;

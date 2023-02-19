@@ -6,5 +6,6 @@ namespace TKPEmu::N64::Devices {
         rsp_status_ = 0x01000000;
         rsp_dma_busy_ = 0;
         vi_v_intr_ = 0x3FF;
+        num_halflines_ = 262;
     }
 }

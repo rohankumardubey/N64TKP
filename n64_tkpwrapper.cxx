@@ -47,7 +47,6 @@ namespace TKPEmu::N64 {
 		Stopped = false;
 		Step = false;
 		Reset();
-		bool stopped_break = false;
 		if (Paused) {
 			goto paused;
 		}
@@ -55,46 +54,35 @@ namespace TKPEmu::N64 {
 		CALLGRIND_START_INSTRUMENTATION;
 		frame_start = std::chrono::system_clock::now();
 		while (true) {
-			update();
-			++cur_frame_instrs_;
-			#ifdef NO_PROFILING
-			if (cur_frame_instrs_ >= INSTRS_PER_FRAME) [[unlikely]] {
-			#else
-			if (cur_frame_instrs_ == 5000) [[unlikely]] {
-				stopped_break = true;
-				break;
-			#endif
-				auto end = std::chrono::system_clock::now();
-				auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - frame_start).count();
-				LastFrameTime = dur;
-				cur_frame_instrs_ = 0;
-				if (Stopped.load()) {
-					stopped_break = true;
-					break;
-				}
-				if (Paused.load()) {
-					break;
-				}
-				should_draw_ = true;
-				frame_start = std::chrono::system_clock::now();
+			for (cur_instr_ = 0; cur_instr_ < INSTRS_PER_SECOND; cur_instr_++)
+				update();
+			auto end = std::chrono::system_clock::now();
+			auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - frame_start).count();
+			LastFrameTime = dur;
+			std::cout << std::dec << LastFrameTime << std::endl;
+			if (Stopped.load()) {
+				return;
 			}
+			if (Paused.load()) {
+				break;
+			}
+			should_draw_ = true;
+			frame_start = std::chrono::system_clock::now();
 		}
 		CALLGRIND_STOP_INSTRUMENTATION;
 		paused:
-		if (!stopped_break) {
-			Step.wait(false);
-			Step.store(false);
-			update();
-			goto begin;
-		}
+		Step.wait(false);
+		Step.store(false);
+		update();
+		goto begin;
 	}
 
 	void N64_TKPWrapper::reset() {		
 		try {
 			n64_impl_.Reset();
 		} catch (...) {
-			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
 			Stopped.store(true);
+			cur_instr_ = INSTRS_PER_SECOND - 1;
 		}
 	}
 
@@ -103,8 +91,9 @@ namespace TKPEmu::N64 {
 			n64_impl_.Update();
 		} catch (std::exception& ex) {
 			std::cout << ex.what() << "\n" << boost::stacktrace::stacktrace() << std::endl;
-			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
+        	std::cout << "Current pc: " << n64_impl_.cpu_.pc_ << std::endl;
 			Stopped.store(true);
+			cur_instr_ = INSTRS_PER_SECOND - 1;
 		}
 	}
 
@@ -117,7 +106,7 @@ namespace TKPEmu::N64 {
 	}
 
 	void N64_TKPWrapper::v_extra_close()  {
-		cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
+		cur_instr_ = INSTRS_PER_SECOND - 1;
 	}
 	
 	void* N64_TKPWrapper::GetScreenData() {

@@ -451,7 +451,12 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::LDC1() {
-		throw ErrorFactory::generate_exception("LDC1 opcode reached");
+		int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        uint32_t vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+        uint64_t data;
+        load_memory(false, translate_vaddr(vaddr).paddr, data, 8);
+        fpr_regs_[rfex_latch_.instruction.FType.ft] = *reinterpret_cast<double*>(&data);
 	}
     
     TKP_INSTR_FUNC CPU::LDC2() {
@@ -463,7 +468,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::SWC1() {
-		throw ErrorFactory::generate_exception("SWC1 opcode reached");
+		// throw ErrorFactory::generate_exception("SWC1 opcode reached");
 	}
     
     TKP_INSTR_FUNC CPU::SWC2() {
@@ -475,7 +480,11 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::SDC1() {
-		throw ErrorFactory::generate_exception("SDC1 opcode reached");
+		int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        uint32_t vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+        uint64_t data = *reinterpret_cast<uint64_t*>(&fpr_regs_[rfex_latch_.instruction.FType.ft]);
+        store_memory(false, translate_vaddr(vaddr).paddr, data, 8);
 	}
     
     TKP_INSTR_FUNC CPU::SDC2() {
@@ -863,9 +872,6 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BEQ() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        if (IS_PC_EX(0x80089D5C)) {
-            std::cout << "beqz " << std::hex << pc_ << "\n";
-        }
         if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
@@ -1208,9 +1214,13 @@ namespace TKPEmu::N64::Devices {
         throw ErrorFactory::generate_exception("r_BGEZALL opcode reached");
     }
 
+    #define fpu_instr bool is_double = (rfex_latch_.instruction.FType.fmt == 17)
+
     TKP_INSTR_FUNC CPU::f_ADD() {
-        // VERBOSE(std::cout << "f_ADD not implemented" << std::endl;)
-        std::cout << "Warning: f_ADD unimplemented" << std::endl;
+        fpu_instr;
+        if (is_double) {
+            fpr_regs_[rfex_latch_.instruction.FType.fd] = fpr_regs_[rfex_latch_.instruction.FType.fs] + fpr_regs_[rfex_latch_.instruction.FType.ft];
+        }
     }
     
     TKP_INSTR_FUNC CPU::f_SUB() {
@@ -1359,6 +1369,8 @@ namespace TKPEmu::N64::Devices {
         VERBOSE(std::cout << "f_CNGT not implemented" << std::endl;)
     }
 
+    #undef fpu_instr
+
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs) {
         // Fetch the current process instruction
         auto paddr_s = translate_vaddr(pc_);
@@ -1481,25 +1493,62 @@ namespace TKPEmu::N64::Devices {
                 cpubus_.set_interrupt(Interrupt::VI, false);
                 break;
             }
+            case VI_V_INTR: {
+                data &= 0x3ff;
+                VERBOSE(std::cout << "vi_intr: " << data << std::endl;)
+                if (data == 0x3ff || data == 0)
+                    break;
+                uint64_t mod = cpubus_.time_ % (93'750'000 / 60);
+                uint64_t time_per = (93'750'000 / 60) / rcp_.num_halflines_;
+                uint64_t cur_line = mod / time_per;
+                int lines_left = (data > cur_line) ? (data - cur_line) : (rcp_.num_halflines_ - cur_line + data);
+                std::cout << "cur line: " << cur_line << " lines_left: " << lines_left << " data: " << data << std::endl;
+                queue_event(SchedulerEventType::Vi, time_per * lines_left);
+                break;
+            }
+            case VI_V_SYNC: {
+                rcp_.num_halflines_ = data >> 1;
+                break;
+            }
             case MI_MASK: {
-                // std::cout << "Writing to MI_MASK:\n";
-                // if (data & 0b10) {
-                //     std::cout << "Set SP Interrupt Mask";
-                // }
-                // if (data & 0b1000) {
-                //     std::cout << "Set SI Interrupt Mask";
-                // }
-                // if (data & 0b100000) {
-                //     std::cout << "Set AI Interrupt Mask";
-                // }
-                // if (data & 0b10000000) {
-                //     std::cout << "Set VI Interrupt Mask";
-                // }
-                // if (data & 0b1000000000) {
-                //     std::cout << "Set PI Interrupt Mask";
-                // }
-                // std::cout << "\n" << data;
-                // std::cout << std::endl;
+                // todo: make into a loop
+                if (data & 0b10) {
+                    cpubus_.mi_mask_ |= 1;
+                }
+                if (data & 0b1000) {
+                    cpubus_.mi_mask_ |= 1 << 1;
+                }
+                if (data & 0b100000) {
+                    cpubus_.mi_mask_ |= 1 << 2;
+                }
+                if (data & 0b10000000) {
+                    cpubus_.mi_mask_ |= 1 << 3;
+                }
+                if (data & 0b1000000000) {
+                    cpubus_.mi_mask_ |= 1 << 4;
+                }
+                if (data & 0b100000000000) {
+                    cpubus_.mi_mask_ |= 1 << 5;
+                }
+                if (data & 0b1) {
+                    cpubus_.mi_mask_ &= ~1;
+                }
+                if (data & 0b100) {
+                    cpubus_.mi_mask_ &= ~(1 << 1);
+                }
+                if (data & 0b10000) {
+                    cpubus_.mi_mask_ &= ~(1 << 2);
+                }
+                if (data & 0b1000000) {
+                    cpubus_.mi_mask_ &= ~(1 << 3);
+                }
+                if (data & 0b100000000) {
+                    cpubus_.mi_mask_ &= ~(1 << 4);
+                }
+                if (data & 0b10000000000) {
+                    cpubus_.mi_mask_ &= ~(1 << 5);
+                }
+                data = cpubus_.mi_mask_;
                 break;
             }
             case PIF_COMMAND: {
@@ -1590,7 +1639,8 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::update_pipeline() {
-        check_interrupts();
+        while (scheduler_.size() && cpubus_.time_ >= scheduler_.top().time) [[unlikely]]
+            handle_event();
         WB();
         DC();
         EX();
@@ -1599,29 +1649,38 @@ namespace TKPEmu::N64::Devices {
             RF();
             IC();
         }
-        ++cp0_regs_[CP0_COUNT].UD;
-        if (cp0_regs_[CP0_COUNT].UW._0 == cp0_regs_[CP0_COMPARE].UW._0) [[unlikely]] {
-            uint32_t flags = cp0_regs_[CP0_CAUSE].UW._0;
-            SetBit(flags, 15, true);
-            cp0_regs_[CP0_CAUSE].UW._0 = flags;
-        }
+        ++cpubus_.time_;
     }
 
     void CPU::check_interrupts() {
-        // check vi interrupt
-        if (rcp_.vi_v_intr_ == (rcp_.vi_v_current_ & 0x3FE)) {
-            cpubus_.set_interrupt(Interrupt::VI, true);
-            std::cout << "VI INTERRUPT!" << std::endl;
-        } else {
-            if (rcp_.vi_v_intr_ != 0x3FF) {
-                // quick hack
-                rcp_.vi_v_current_++;
-            }
-        }
-
         if ((cpubus_.mi_interrupt_ & cpubus_.mi_mask_) != 0) {
-            std::cout << "INTERRUPT!" << std::endl;
+            bool interrupts_pending = cp0_regs_[CP0_CAUSE].UD & cp0_regs_[CP0_STATUS].UD;
+            bool interrupts_enabled = cp0_regs_[CP0_STATUS].UD & 0b1;
+            bool currently_handling_exception = cp0_regs_[CP0_STATUS].UD & 0b10 & 0;
+            bool currently_handling_error = cp0_regs_[CP0_STATUS].UD & 0b100;
+            bool should_service_interrupt = interrupts_pending
+                                    && interrupts_enabled
+                                    && !currently_handling_exception
+                                    && !currently_handling_error;
+            if (should_service_interrupt) {
+                cp0_regs_[CP0_STATUS].UD |= 0b10;
+                // todo: delay_slot checks
+                std::cout << "jumping!" << std::endl;
+                cp0_regs_[CP0_EPC].UD = pc_;
+                pc_ = 0x8000'0180;
+            }
+        } else {
+            std::cout << std::bitset<8>(cpubus_.mi_interrupt_) << "\n" << std::bitset<8>(cpubus_.mi_mask_) << std::endl;
         }
+    }
+
+    void CPU::fire_count() {
+        uint32_t flags = cp0_regs_[CP0_CAUSE].UW._0;
+        SetBit(flags, 15, true);
+        cp0_regs_[CP0_CAUSE].UW._0 = flags;
+        cp0_regs_[CP0_COUNT].UD = cp0_regs_[CP0_COMPARE].UD;
+        std::cout << "Fired count!" << std::endl;
+        // queue_event(SchedulerEventType::Interrupt, 1);
     }
 
     void CPU::execute_instruction() {
@@ -1651,11 +1710,13 @@ namespace TKPEmu::N64::Devices {
                  * throws Coprocessor unusable exception
                 */
                 case 0b011000: {
-                    // TODO: set erl / exl bit
                     if ((gpr_regs_[CP0_STATUS].UD & 0b10) == 1) {
                         pc_ = cp0_regs_[CP0_ERROREPC].UD;
+                        cp0_regs_[CP0_STATUS].UD &= ~0b100;
                     } else {
+                        std::cout << "eret to : " << std::hex << cp0_regs_[CP0_EPC].UD << std::endl;
                         pc_ = cp0_regs_[CP0_EPC].UD;
+                        cp0_regs_[CP0_STATUS].UD &= ~0b10;
                     }
                     // ERET doesn't run delay slot instruction
                     llbit_ = 0;
@@ -1675,7 +1736,16 @@ namespace TKPEmu::N64::Devices {
                  */
                 case 0b0100: {
                     int64_t sedata = gpr_regs_[instr.RType.rt].W._0;
-                    VERBOSE(std::cout << "Write to CP0 reg: " << CP0String(instr.RType.rd) << " " << "data: " << std::hex << sedata << std::endl;)
+                    // VERBOSE(std::cout << "Write to CP0 reg: " << CP0String(instr.RType.rd) << " " << "data: " << std::hex << sedata << std::endl;)
+                    switch (instr.RType.rd) {
+                        case CP0_COMPARE: {
+                            if (sedata != 0) {
+                                auto time_left = sedata - (cpubus_.time_ >> 1);
+                                queue_event(SchedulerEventType::Count, time_left * 2);
+                            }
+                            break;  
+                        }
+                    }
                     exdc_latch_.dest = &cp0_regs_[instr.RType.rd].UB._0;
                     exdc_latch_.data = sedata;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD;
@@ -1689,6 +1759,9 @@ namespace TKPEmu::N64::Devices {
                  */
                 case 0b0000: {
                     int64_t sedata = cp0_regs_[instr.RType.rd].W._0;
+                    if (instr.RType.rd == CP0_COUNT) {
+                        sedata = cpubus_.time_ >> 1;
+                    }
                     exdc_latch_.dest = &gpr_regs_[instr.RType.rt].UB._0;
                     exdc_latch_.data = sedata;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD;
