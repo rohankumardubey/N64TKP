@@ -11,8 +11,7 @@ namespace TKPEmu::N64::Devices {
 
     CPUBus::CPUBus(Devices::RCP& rcp) : rcp_(rcp) {
         cart_rom_.resize(0xFC00000);
-        rdram_.resize(0x400000);
-        rdram_xpk_.resize(0x400000);
+        rdram_.resize(0x800000);
         map_direct_addresses();
     }
 
@@ -142,11 +141,15 @@ namespace TKPEmu::N64::Devices {
 
             // Serial Interface
             redir_case(SI_STATUS, si_status_);
+            default: {
+                break;
+            }
         }
         #undef redir_case
         if (paddr - 0x1FC00000u < 1984u) {
             return &ipl_[paddr - 0x1FC00000u];
         } else if (paddr - 0x1FC0'07C0u < 64u) {
+            VERBOSE(std::cout << "read from pif ram: " << paddr - 0x1FC0'07C0u << std::endl;)
             pif_ram_[0x26] = 0x3F;
             pif_ram_[0x27] = 0x3F;
             return &pif_ram_[paddr - 0x1FC0'07C0u];
@@ -164,7 +167,7 @@ namespace TKPEmu::N64::Devices {
         // https://wheremyfoodat.github.io/software-fastmem/
         const uint32_t PAGE_SIZE = 0x100000;
         // Map rdram
-        for (int i = 0; i < 0xE; i++) {
+        for (int i = 0; i < 0x8; i++) {
             page_table_[i] = &rdram_[PAGE_SIZE * i];
         }
         // Map rdram from expansion pak

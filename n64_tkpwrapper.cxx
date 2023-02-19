@@ -2,6 +2,7 @@
 #include "core/n64_tkpargs.hxx"
 #include <include/emulator_factory.h>
 #include <iostream>
+#include <boost/stacktrace.hpp>
 // #include <valgrind/callgrind.h>
 
 #ifndef CALLGRIND_START_INSTRUMENTATION
@@ -42,12 +43,14 @@ namespace TKPEmu::N64 {
 		std::lock_guard<std::mutex> lguard(ThreadStartedMutex);
 		Loaded = true;
 		Loaded.notify_all();
-		Paused = true;
+		Paused = false; // TODO: get from settings
 		Stopped = false;
 		Step = false;
 		Reset();
 		bool stopped_break = false;
-		goto paused;
+		if (Paused) {
+			goto paused;
+		}
 		begin:
 		CALLGRIND_START_INSTRUMENTATION;
 		frame_start = std::chrono::system_clock::now();
@@ -98,7 +101,8 @@ namespace TKPEmu::N64 {
 	void N64_TKPWrapper::update() {
 		try {
 			n64_impl_.Update();
-		} catch (...) {
+		} catch (std::exception& ex) {
+			std::cout << ex.what() << "\n" << boost::stacktrace::stacktrace() << std::endl;
 			cur_frame_instrs_ = INSTRS_PER_FRAME - 1;
 			Stopped.store(true);
 		}

@@ -11,6 +11,7 @@
 
 #define SKIPDEBUGSTUFF 1
 #define TKP_INSTR_FUNC void
+#define IS_PC_EX(target_pc) ((pc_ - 8) == (target_pc))
 constexpr uint64_t LUT[] = {
     0, 0xFF, 0xFFFF, 0, 0xFFFFFFFF, 0, 0, 0, 0xFFFFFFFFFFFFFFFF,
 };
@@ -417,7 +418,7 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::LWC1() {
-		throw ErrorFactory::generate_exception("LWC1 opcode reached");
+		VERBOSE(std::cout << "LWC1 is unimplemented" << std::endl;)
 	}
     
     TKP_INSTR_FUNC CPU::LWC2() {
@@ -841,7 +842,9 @@ namespace TKPEmu::N64::Devices {
     TKP_INSTR_FUNC CPU::BEQ() {
         int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
         int32_t seoffset = offset;
-        // std::cout << "compare " << std::hex << rfex_latch_.fetched_rs.UD << " == " << rfex_latch_.fetched_rt.UD << std::endl;
+        if (IS_PC_EX(0x80089D5C)) {
+            std::cout << "beqz " << std::hex << pc_ << "\n";
+        }
         if (rfex_latch_.fetched_rs.UD == rfex_latch_.fetched_rt.UD) {
             exdc_latch_.data = pc_ - 4 + seoffset;
             exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
@@ -1124,7 +1127,16 @@ namespace TKPEmu::N64::Devices {
     }
     
     TKP_INSTR_FUNC CPU::r_BGEZL() {
-        throw ErrorFactory::generate_exception("r_BGEZL opcode reached");
+        int16_t offset = rfex_latch_.instruction.IType.immediate << 2;
+        int32_t seoffset = offset;
+        if (rfex_latch_.fetched_rs.W._0 >= 0) {
+            exdc_latch_.data = pc_ - 4 + seoffset;
+            exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
+            exdc_latch_.access_type = AccessType::UDOUBLEWORD;
+		    bypass_register();
+        } else {
+            icrf_latch_.instruction.Full = 0;
+        }
     }
     
     TKP_INSTR_FUNC CPU::r_TGEI() {
@@ -1176,148 +1188,154 @@ namespace TKPEmu::N64::Devices {
     }
 
     TKP_INSTR_FUNC CPU::f_ADD() {
-        // throw ErrorFactory::generate_exception("f_ADD opcode reached");
+        // VERBOSE(std::cout << "f_ADD not implemented" << std::endl;)
         std::cout << "Warning: f_ADD unimplemented" << std::endl;
     }
     
     TKP_INSTR_FUNC CPU::f_SUB() {
-        throw ErrorFactory::generate_exception("f_SUB opcode reached");
+        // VERBOSE(std::cout << "f_SUB not implemented" << std::endl;)
+        VERBOSE(std::cout << "f_SUB not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_MUL() {
-        throw ErrorFactory::generate_exception("f_MUL opcode reached");
+        VERBOSE(std::cout << "f_MUL not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_DIV() {
-        throw ErrorFactory::generate_exception("f_DIV opcode reached");
+        // VERBOSE(std::cout << "f_DIV not implemented" << std::endl;)
+        VERBOSE(std::cout << "f_DIV not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_SQRT() {
-        throw ErrorFactory::generate_exception("f_SQRT opcode reached");
+        VERBOSE(std::cout << "f_SQRT not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_ABS() {
-        throw ErrorFactory::generate_exception("f_ABS opcode reached");
+        VERBOSE(std::cout << "f_ABS not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_MOV() {
-        throw ErrorFactory::generate_exception("f_MOV opcode reached");
+        // VERBOSE(std::cout << "f_MOV not implemented" << std::endl;)
+        VERBOSE(std::cout << "f_MOV not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_NEG() {
-        throw ErrorFactory::generate_exception("f_NEG opcode reached");
+        VERBOSE(std::cout << "f_NEG not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_ROUNDL() {
-        throw ErrorFactory::generate_exception("f_ROUNDL opcode reached");
+        VERBOSE(std::cout << "f_ROUNDL not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_TRUNCL() {
-        throw ErrorFactory::generate_exception("f_TRUNCL opcode reached");
+        VERBOSE(std::cout << "f_TRUNCL not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CEILL() {
-        throw ErrorFactory::generate_exception("f_CEILL opcode reached");
+        VERBOSE(std::cout << "f_CEILL not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_FLOORL() {
-        throw ErrorFactory::generate_exception("f_FLOORL opcode reached");
+        VERBOSE(std::cout << "f_FLOORL not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_ROUNDW() {
-        throw ErrorFactory::generate_exception("f_ROUNDW opcode reached");
+        VERBOSE(std::cout << "f_ROUNDW not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_TRUNCW() {
-        throw ErrorFactory::generate_exception("f_TRUNCW opcode reached");
+        VERBOSE(std::cout << "f_TRUNCW not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CEILW() {
-        throw ErrorFactory::generate_exception("f_CEILW opcode reached");
+        VERBOSE(std::cout << "f_CEILW not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_FLOORW() {
-        throw ErrorFactory::generate_exception("f_FLOORW opcode reached");
+        VERBOSE(std::cout << "f_FLOORW not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CVTS() {
-        throw ErrorFactory::generate_exception("f_CVTS opcode reached");
+        // VERBOSE(std::cout << "f_CVTS not implemented" << std::endl;)
+        std::cout << "Warning: f_CVTS unimplemented" << std::endl;
     }
     
     TKP_INSTR_FUNC CPU::f_CVTD() {
-        throw ErrorFactory::generate_exception("f_CVTD opcode reached");
+        // VERBOSE(std::cout << "f_CVTD not implemented" << std::endl;)
+        std::cout << "Warning: f_CVTD unimplemented" << std::endl;
     }
     
     TKP_INSTR_FUNC CPU::f_CVTW() {
-        throw ErrorFactory::generate_exception("f_CVTW opcode reached");
+        VERBOSE(std::cout << "f_CVTW not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CVTL() {
-        throw ErrorFactory::generate_exception("f_CVTL opcode reached");
+        VERBOSE(std::cout << "f_CVTL not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CF() {
-        throw ErrorFactory::generate_exception("f_CF opcode reached");
+        VERBOSE(std::cout << "f_CF not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CUN() {
-        throw ErrorFactory::generate_exception("f_CUN opcode reached");
+        VERBOSE(std::cout << "f_CUN not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CEQ() {
-        throw ErrorFactory::generate_exception("f_CEQ opcode reached");
+        VERBOSE(std::cout << "f_CEQ not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CUEQ() {
-        throw ErrorFactory::generate_exception("f_CUEQ opcode reached");
+        VERBOSE(std::cout << "f_CUEQ not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_COLT() {
-        throw ErrorFactory::generate_exception("f_COLT opcode reached");
+        VERBOSE(std::cout << "f_COLT not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CULT() {
-        throw ErrorFactory::generate_exception("f_CULT opcode reached");
+        VERBOSE(std::cout << "f_CULT not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_COLE() {
-        throw ErrorFactory::generate_exception("f_COLE opcode reached");
+        VERBOSE(std::cout << "f_COLE not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CULE() {
-        throw ErrorFactory::generate_exception("f_CULE opcode reached");
+        VERBOSE(std::cout << "f_CULE not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CSF() {
-        throw ErrorFactory::generate_exception("f_CSF opcode reached");
+        VERBOSE(std::cout << "f_CSF not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CNGLE() {
-        throw ErrorFactory::generate_exception("f_CNGLE opcode reached");
+        VERBOSE(std::cout << "f_CNGLE not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CSEQ() {
-        throw ErrorFactory::generate_exception("f_CSEQ opcode reached");
+        VERBOSE(std::cout << "f_CSEQ not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CNGL() {
-        throw ErrorFactory::generate_exception("f_CNGL opcode reached");
+        VERBOSE(std::cout << "f_CNGL not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CLT() {
-        throw ErrorFactory::generate_exception("f_CLT opcode reached");
+        VERBOSE(std::cout << "f_CLT not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CNGE() {
-        throw ErrorFactory::generate_exception("f_CNGE opcode reached");
+        VERBOSE(std::cout << "f_CNGE not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CLE() {
-        throw ErrorFactory::generate_exception("f_CLE opcode reached");
+        // VERBOSE(std::cout << "f_CLE not implemented" << std::endl;)
+        VERBOSE(std::cout << "f_CLE not implemented" << std::endl;)
     }
     
     TKP_INSTR_FUNC CPU::f_CNGT() {
-        throw ErrorFactory::generate_exception("f_CNGT opcode reached");
+        VERBOSE(std::cout << "f_CNGT not implemented" << std::endl;)
     }
 
     CPU::PipelineStageRet CPU::IC(PipelineStageArgs) {
@@ -1409,18 +1427,19 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case PI_RD_LEN: {
-                std::cout << "FUCK!" << std::endl;
+                VERBOSE(std::cout << "PI_RD_LEN!" << std::endl;)
                 // std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_cart_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_dram_addr_)), data + 1);
                 break;
             }
             case PI_WR_LEN: {
-                std::cout << "PI_WR_LEN" << std::endl;
+                VERBOSE(std::cout << "PI_WR_LEN" << std::endl;)
                 std::memcpy(&cpubus_.rdram_[__builtin_bswap32(cpubus_.pi_dram_addr_)], cpubus_.redirect_paddress(__builtin_bswap32(cpubus_.pi_cart_addr_)), data + 1);
                 break;
             }
             case VI_CTRL: {
                 auto format = data & 0b11;
                 if (format == 0b10) {
+                    VERBOSE(std::cout << "rgb5" << std::endl;)
                     rcp_.bitdepth_ = GL_UNSIGNED_SHORT_5_5_5_1;
                 } else if (format == 0b11)
                     rcp_.bitdepth_ = GL_UNSIGNED_BYTE;
@@ -1431,7 +1450,7 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case VI_WIDTH: {
-                std::cout << "vi_width: " << std::dec << data << std::endl;
+                VERBOSE(std::cout << "vi_width: " << std::dec << data << std::endl;)
                 rcp_.width_ = data;
                 rcp_.height_ = (480.0f / 640.0f) * data;
                 should_resize_ = true;
@@ -1463,8 +1482,15 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case PIF_COMMAND: {
+                VERBOSE(std::cout << "PIF_COMMAND: " << std::bitset<8>(data) << std::endl;)
                 if (data & 0x20) {
-                    data |= 0x80;
+                    data = 0x80;
+                    cpubus_.pif_ram_[0x32] = 0;
+                    cpubus_.pif_ram_[0x33] = 0;
+                    cpubus_.pif_ram_[0x34] = 0;
+                    cpubus_.pif_ram_[0x35] = 0;
+                    cpubus_.pif_ram_[0x36] = 0;
+                    cpubus_.pif_ram_[0x37] = 0;
                 }
                 if (data & 0x40) {
                     cpubus_.pif_ram_.fill(0);
@@ -1579,7 +1605,28 @@ namespace TKPEmu::N64::Devices {
         uint32_t func = instr.RType.rs;
         if (func & 0b10000) {
             // Coprocessor function
-            // std::cout << "WHOOPS: " << instr.Full << std::endl;
+            switch (instr.RType.func) {
+                /**
+                 * ERET
+                 * 
+                 * throws Coprocessor unusable exception
+                */
+                case 0b011000: {
+                    // TODO: set erl / exl bit
+                    if ((gpr_regs_[CP0_STATUS].UD & 0b10) == 1) {
+                        pc_ = cp0_regs_[CP0_ERROREPC].UD;
+                    } else {
+                        pc_ = cp0_regs_[CP0_EPC].UD;
+                    }
+                    // ERET doesn't run delay slot instruction
+                    llbit_ = 0;
+                    icrf_latch_.instruction.Full = 0;
+                    break;
+                }
+                default: {
+                    break;
+                }
+            }
         } else {
             switch (func & 0b1111) {
                 /**
@@ -1588,9 +1635,9 @@ namespace TKPEmu::N64::Devices {
                  * throws Coprocessor unusable exception
                  */
                 case 0b0100: {
-                    // std::cout << "Write to CP0 reg: " << CP0String(instr.RType.rt) << std::endl;
-                    int64_t sedata = gpr_regs_[instr.RType.rd].W._0;
-                    exdc_latch_.dest = &cp0_regs_[instr.RType.rt].UB._0;
+                    int64_t sedata = gpr_regs_[instr.RType.rt].W._0;
+                    VERBOSE(std::cout << "Write to CP0 reg: " << CP0String(instr.RType.rd) << " " << "data: " << std::hex << sedata << std::endl;)
+                    exdc_latch_.dest = &cp0_regs_[instr.RType.rd].UB._0;
                     exdc_latch_.data = sedata;
                     exdc_latch_.access_type = AccessType::UDOUBLEWORD;
                     bypass_register();

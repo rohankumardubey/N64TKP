@@ -10,6 +10,12 @@
 #include "n64_types.hxx"
 #include "n64_cpu_exceptions.hxx"
 #include "n64_rcp.hxx"
+#define TKP_VERBOSE
+#ifdef TKP_VERBOSE
+#define VERBOSE(x) x
+#else
+#define VERBOSE(x)
+#endif
 
 // TODO: Move these to cmake
 #define SKIP64BITCHECK 1
@@ -119,7 +125,6 @@ namespace TKPEmu::N64::Devices {
         bool ipl_loaded_ = false;
         static std::vector<uint8_t> ipl_;
         std::vector<uint8_t> rdram_ {};
-        std::vector<uint8_t> rdram_xpk_ {};
         std::array<uint8_t, 64> pif_ram_ {};
         std::array<uint8_t, 0x1000> rsp_imem_ {};
         std::array<uint8_t, 0x1000> rsp_dmem_ {};
