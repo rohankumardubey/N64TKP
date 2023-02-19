@@ -373,6 +373,7 @@ namespace TKPEmu::N64::Devices {
         void update_pipeline();
         // Fills the pipeline with the first 5 instructions
         void fill_pipeline();
+        void check_interrupts();
 
         void clear_registers();
 

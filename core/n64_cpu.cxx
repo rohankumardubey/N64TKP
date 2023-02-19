@@ -358,11 +358,32 @@ namespace TKPEmu::N64::Devices {
 	}
     
     TKP_INSTR_FUNC CPU::LWL() {
-		throw ErrorFactory::generate_exception("LWL opcode reached");
+        int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+        auto paddr = translate_vaddr(exdc_latch_.vaddr);
+        uint64_t data;
+        uint64_t address = seoffset + rfex_latch_.fetched_rs.UW._0;
+        uint32_t shift = 8 * ((address ^ 0) & 3);
+        uint32_t mask = 0xFFFFFFFF << shift;
+        load_memory(false, paddr.paddr & ~3, data, 4);
+        gpr_regs_[rfex_latch_.instruction.IType.rt].UD = static_cast<int64_t>(static_cast<int32_t>((gpr_regs_[rfex_latch_.instruction.IType.rt].UW._0 & ~mask) | (data << shift)));
+        // exdc_latch_.write_type = WriteType::LATEREGISTER;
+        // exdc_latch_.access_type = AccessType::UWORD;
+        // detect_ldi();
 	}
     
     TKP_INSTR_FUNC CPU::LWR() {
-		throw ErrorFactory::generate_exception("LWR opcode reached");
+		int16_t offset = rfex_latch_.instruction.IType.immediate;
+        int32_t seoffset = offset;
+        exdc_latch_.vaddr = seoffset + rfex_latch_.fetched_rs.UW._0;
+        auto paddr = translate_vaddr(exdc_latch_.vaddr);
+        uint64_t data;
+        uint64_t address = seoffset + rfex_latch_.fetched_rs.UW._0;
+        uint32_t shift = 8 * ((address ^ 3) & 3);
+        uint32_t mask = 0xFFFFFFFF >> shift;
+        load_memory(false, paddr.paddr & ~3, data, 4);
+        gpr_regs_[rfex_latch_.instruction.IType.rt].UD = static_cast<int64_t>(static_cast<int32_t>((gpr_regs_[rfex_latch_.instruction.IType.rt].UW._0 & ~mask) | data >> shift));
 	}
     
     TKP_INSTR_FUNC CPU::SB() {
@@ -1569,6 +1590,7 @@ namespace TKPEmu::N64::Devices {
     }
 
     void CPU::update_pipeline() {
+        check_interrupts();
         WB();
         DC();
         EX();
@@ -1582,6 +1604,23 @@ namespace TKPEmu::N64::Devices {
             uint32_t flags = cp0_regs_[CP0_CAUSE].UW._0;
             SetBit(flags, 15, true);
             cp0_regs_[CP0_CAUSE].UW._0 = flags;
+        }
+    }
+
+    void CPU::check_interrupts() {
+        // check vi interrupt
+        if (rcp_.vi_v_intr_ == (rcp_.vi_v_current_ & 0x3FE)) {
+            cpubus_.set_interrupt(Interrupt::VI, true);
+            std::cout << "VI INTERRUPT!" << std::endl;
+        } else {
+            if (rcp_.vi_v_intr_ != 0x3FF) {
+                // quick hack
+                rcp_.vi_v_current_++;
+            }
+        }
+
+        if ((cpubus_.mi_interrupt_ & cpubus_.mi_mask_) != 0) {
+            std::cout << "INTERRUPT!" << std::endl;
         }
     }
 
