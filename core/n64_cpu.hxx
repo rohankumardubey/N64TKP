@@ -31,10 +31,18 @@ constexpr uint32_t KSEG0_END   = 0x9FFF'FFFF;
 constexpr uint32_t KSEG1_START = 0xA000'0000;
 constexpr uint32_t KSEG1_END   = 0xBFFF'FFFF;
 
+class N64Debugger;
+
 enum class SchedulerEventType {
+    Interrupt = -1,
+    Count = 0x200,
+    Si = 1,
+    Vi = 3,
+    Pi = 4,
+};
+
+enum class ExceptionType {
     Interrupt,
-    Count,
-    Vi,
 };
 
 struct SchedulerEvent {
@@ -54,14 +62,53 @@ public:
 #include "cp0_regs.def"
 #undef X
 
+// endianess issues, switch to BitField< ... >
+union CP0Status {
+    struct {
+        uint64_t IE : 1;
+        uint64_t EXL : 1;
+        uint64_t ERL : 1;
+        uint64_t KSU : 2;
+        uint64_t UX : 1;
+        uint64_t SX : 1;
+        uint64_t KX : 1;
+        uint64_t IM : 8;
+        uint64_t : 32;
+    };
+    uint64_t full;
+};
+static_assert(sizeof(CP0Status) == sizeof(uint64_t));
+#define CP0Status (reinterpret_cast<CP0Status&>(cp0_regs_[CP0_STATUS]))
+
+union CP0Cause {
+    struct {
+        uint64_t : 2;
+        uint64_t ExCode : 5;
+        uint64_t : 1;
+        uint64_t IP0 : 1;
+        uint64_t IP1 : 1;
+        uint64_t IP2 : 1;
+        uint64_t IP3 : 1;
+        uint64_t IP4 : 1;
+        uint64_t IP5 : 1;
+        uint64_t IP6 : 1;
+        uint64_t IP7 : 1;
+        uint64_t : 12;
+        uint64_t CE : 2;
+        uint64_t : 1;
+        uint64_t BD : 1;
+        uint64_t : 32;
+    };
+    uint64_t full;
+};
+static_assert(sizeof(CP0Cause) == sizeof(uint64_t));
+#define CP0Cause (reinterpret_cast<CP0Cause&>(cp0_regs_[CP0_CAUSE]))
+
 namespace TKPEmu {
     namespace N64 {
         class N64_TKPWrapper;
         class N64;
         class QA;
-    }
-    namespace Applications {
-        class N64_RomDisassembly;
     }
 }
 namespace TKPEmu::N64::Devices {
@@ -105,6 +152,7 @@ namespace TKPEmu::N64::Devices {
         uint32_t        paddr;
         bool            cached;
         bool            sign_extend;
+        bool            was_branch;
     };
     struct DCWB_latch {
         WriteType       write_type;
@@ -198,7 +246,7 @@ namespace TKPEmu::N64::Devices {
         Devices::RCP& rcp_;
         friend class CPU;
         friend class TKPEmu::N64::N64;
-        friend class TKPEmu::Applications::N64_RomDisassembly;
+        friend class ::N64Debugger;
     };
     template<auto MemberFunc>
     static void lut_wrapper(CPU* cpu) {
@@ -401,6 +449,7 @@ namespace TKPEmu::N64::Devices {
         // Fills the pipeline with the first 5 instructions
         void fill_pipeline();
         void check_interrupts();
+        void handle_exception(ExceptionType);
         void fire_count();
 
         void clear_registers();
@@ -409,9 +458,9 @@ namespace TKPEmu::N64::Devices {
         std::priority_queue<SchedulerEvent, std::vector<SchedulerEvent>, SchedulerCompare> scheduler_;
         void queue_event(SchedulerEventType, int);
 
+        friend class ::N64Debugger;
         friend class TKPEmu::N64::N64_TKPWrapper;
         friend class TKPEmu::N64::N64;
-        friend class TKPEmu::Applications::N64_RomDisassembly;
         friend class TKPEmu::N64::QA;
     };
 }

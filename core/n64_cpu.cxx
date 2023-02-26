@@ -305,6 +305,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		    bypass_register();
         }
+        exdc_latch_.was_branch = true;
 	}
     
     /**
@@ -614,6 +615,7 @@ namespace TKPEmu::N64::Devices {
         exdc_latch_.dest = reinterpret_cast<uint8_t*>(&pc_);
         exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		bypass_register();
+        exdc_latch_.was_branch = true;
     }
     /**
      * LUI
@@ -878,6 +880,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		    bypass_register();
         }
+        exdc_latch_.was_branch = true;
     }
     /**
      * BEQL
@@ -897,6 +900,7 @@ namespace TKPEmu::N64::Devices {
             icrf_latch_.instruction.Full = 0;
             was_ldi_ = true; // don't log next instruction
         }
+        exdc_latch_.was_branch = true;
     }
     /**
      * BNE
@@ -912,6 +916,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		    bypass_register();
         }
+        exdc_latch_.was_branch = true;
     }
     /**
      * BNEL
@@ -931,6 +936,7 @@ namespace TKPEmu::N64::Devices {
             icrf_latch_.instruction.Full = 0;
             was_ldi_ = true; // don't log next instruction
         }
+        exdc_latch_.was_branch = true;
     }
     /**
      * BLEZL
@@ -950,6 +956,7 @@ namespace TKPEmu::N64::Devices {
             icrf_latch_.instruction.Full = 0;
             was_ldi_ = true; // don't log next instruction
         }
+        exdc_latch_.was_branch = true;
     }
     /**
      * BGTZ
@@ -965,6 +972,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		    bypass_register();
         }
+        exdc_latch_.was_branch = true;
     }
     /**
      * TGE
@@ -1041,6 +1049,7 @@ namespace TKPEmu::N64::Devices {
             throw InstructionAddressErrorException();
         }
         #endif
+        exdc_latch_.was_branch = true;
     }
     /**
      * s_DSLL32
@@ -1147,6 +1156,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		    bypass_register();
         }
+        exdc_latch_.was_branch = true;
     }
     
     TKP_INSTR_FUNC CPU::r_BLTZL() {
@@ -1164,6 +1174,7 @@ namespace TKPEmu::N64::Devices {
         } else {
             icrf_latch_.instruction.Full = 0;
         }
+        exdc_latch_.was_branch = true;
     }
     
     TKP_INSTR_FUNC CPU::r_TGEI() {
@@ -1204,6 +1215,7 @@ namespace TKPEmu::N64::Devices {
             exdc_latch_.access_type = AccessType::UDOUBLEWORD;
 		    bypass_register();
         }
+        exdc_latch_.was_branch = true;
     }
     
     TKP_INSTR_FUNC CPU::r_BLTZALL() {
@@ -1394,6 +1406,7 @@ namespace TKPEmu::N64::Devices {
         was_ldi_ = false;
         exdc_latch_.write_type = WriteType::NONE;
         exdc_latch_.access_type = AccessType::NONE;
+        exdc_latch_.was_branch = false;
         execute_instruction();
     }
 
@@ -1473,9 +1486,9 @@ namespace TKPEmu::N64::Devices {
                 auto format = data & 0b11;
                 if (format == 0b10) {
                     VERBOSE(std::cout << "rgb5" << std::endl;)
-                    rcp_.bitdepth_ = GL_UNSIGNED_SHORT_5_5_5_1;
+                    rcp_.bitdepth_ = GL_UNSIGNED_SHORT_5_5_5_1_;
                 } else if (format == 0b11)
-                    rcp_.bitdepth_ = GL_UNSIGNED_BYTE;
+                    rcp_.bitdepth_ = GL_UNSIGNED_BYTE_;
                 break;
             }
             case VI_ORIGIN: {
@@ -1494,6 +1507,7 @@ namespace TKPEmu::N64::Devices {
                 break;
             }
             case VI_V_INTR: {
+                rcp_.vi_v_intr_ = data;
                 data &= 0x3ff;
                 VERBOSE(std::cout << "vi_intr: " << data << std::endl;)
                 if (data == 0x3ff || data == 0)
@@ -1654,7 +1668,7 @@ namespace TKPEmu::N64::Devices {
 
     void CPU::check_interrupts() {
         if ((cpubus_.mi_interrupt_ & cpubus_.mi_mask_) != 0) {
-            bool interrupts_pending = cp0_regs_[CP0_CAUSE].UD & cp0_regs_[CP0_STATUS].UD;
+            bool interrupts_pending = cp0_regs_[CP0_CAUSE].UB._1 & CP0Status.IM;
             bool interrupts_enabled = cp0_regs_[CP0_STATUS].UD & 0b1;
             bool currently_handling_exception = cp0_regs_[CP0_STATUS].UD & 0b10 & 0;
             bool currently_handling_error = cp0_regs_[CP0_STATUS].UD & 0b100;
@@ -1663,14 +1677,33 @@ namespace TKPEmu::N64::Devices {
                                     && !currently_handling_exception
                                     && !currently_handling_error;
             if (should_service_interrupt) {
-                cp0_regs_[CP0_STATUS].UD |= 0b10;
-                // todo: delay_slot checks
-                std::cout << "jumping!" << std::endl;
-                cp0_regs_[CP0_EPC].UD = pc_;
-                pc_ = 0x8000'0180;
+                std::cout << "Handle exception!" << std::endl;
+                handle_exception(ExceptionType::Interrupt);
+            } else {
+                std::cout << "Mask pass but can't handle exception:\nEXL: " << currently_handling_exception << "\nERL: " << currently_handling_error << "\nIE: " << interrupts_enabled << "\nIP: " << interrupts_pending << std::endl;
+                std::cout << "CP0Status.IM:" << std::bitset<8>(CP0Status.IM) << "\nCP0Cause.IP:" << std::bitset<8>(cp0_regs_[CP0_CAUSE].UH._1);
             }
         } else {
             std::cout << std::bitset<8>(cpubus_.mi_interrupt_) << "\n" << std::bitset<8>(cpubus_.mi_mask_) << std::endl;
+        }
+    }
+
+    void CPU::handle_exception(ExceptionType exception) {
+        if (!CP0Status.EXL) {
+            auto new_pc = pc_ - 8;
+            if (exdc_latch_.was_branch) {
+                // currently executing branch delay slot
+                new_pc -= 4;
+            }
+            CP0Cause.BD = exdc_latch_.was_branch;
+            cp0_regs_[CP0_EPC].UD = new_pc;
+        }
+        CP0Status.EXL = true;
+        switch (exception) {
+            case ExceptionType::Interrupt:
+                CP0Cause.ExCode = 0;
+                pc_ = 0x8000'0180;
+            break;
         }
     }
 
@@ -1711,6 +1744,7 @@ namespace TKPEmu::N64::Devices {
                 */
                 case 0b011000: {
                     if ((gpr_regs_[CP0_STATUS].UD & 0b10) == 1) {
+                        std::cout << "error eret to : " << std::hex << cp0_regs_[CP0_EPC].UD << std::endl;
                         pc_ = cp0_regs_[CP0_ERROREPC].UD;
                         cp0_regs_[CP0_STATUS].UD &= ~0b100;
                     } else {
@@ -1736,7 +1770,7 @@ namespace TKPEmu::N64::Devices {
                  */
                 case 0b0100: {
                     int64_t sedata = gpr_regs_[instr.RType.rt].W._0;
-                    // VERBOSE(std::cout << "Write to CP0 reg: " << CP0String(instr.RType.rd) << " " << "data: " << std::hex << sedata << std::endl;)
+                    VERBOSE(std::cout << "Write to CP0 reg: " << CP0String(instr.RType.rd) << " " << "data: " << std::hex << sedata << std::endl;)
                     switch (instr.RType.rd) {
                         case CP0_COMPARE: {
                             if (sedata != 0) {
@@ -1758,6 +1792,7 @@ namespace TKPEmu::N64::Devices {
                  * throws Coprocessor unusable exception
                  */
                 case 0b0000: {
+                    VERBOSE(std::cout << "Read from CP0 reg: " << CP0String(instr.RType.rd) << std::endl;)
                     int64_t sedata = cp0_regs_[instr.RType.rd].W._0;
                     if (instr.RType.rd == CP0_COUNT) {
                         sedata = cpubus_.time_ >> 1;

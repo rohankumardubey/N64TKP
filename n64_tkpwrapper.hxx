@@ -5,10 +5,9 @@
 #include "core/n64_impl.hxx"
 #include <chrono>
 
+class N64Debugger;
+
 namespace TKPEmu::N64 {
-	namespace Applications {
-		class N64_RomDisassembly;
-	}
     class N64_TKPWrapper : public Emulator {
 		TKP_EMULATOR(N64_TKPWrapper);
 	public:
@@ -25,7 +24,7 @@ namespace TKPEmu::N64 {
 		int GetWidth() override { return n64_impl_.GetWidth(); }
 		int GetHeight() override { return n64_impl_.GetHeight(); }
 		std::chrono::system_clock::time_point frame_start = std::chrono::system_clock::now();
-		friend class TKPEmu::Applications::N64_RomDisassembly;
+		friend class ::N64Debugger;
     };
 }
 #endif

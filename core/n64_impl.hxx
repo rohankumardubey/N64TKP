@@ -5,6 +5,8 @@
 #include "n64_cpu.hxx"
 #include "n64_rcp.hxx"
 
+class N64Debugger;
+
 namespace TKPEmu::N64 {
     class N64_TKPWrapper;
     class N64 {
@@ -31,6 +33,7 @@ namespace TKPEmu::N64 {
         Devices::CPUBus cpubus_;
         Devices::CPU cpu_;
         friend class N64_TKPWrapper;
+        friend class ::N64Debugger;
     };
 }
 #endif

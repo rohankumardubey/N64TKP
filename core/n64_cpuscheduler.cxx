@@ -5,28 +5,33 @@
 
 namespace TKPEmu::N64::Devices {
     void CPU::handle_event() {
-        switch (scheduler_.top().type) {
+        auto event_type = scheduler_.top().type;
+        switch (event_type) {
             case SchedulerEventType::Interrupt: {
                 check_interrupts();
                 break;
             }
             case SchedulerEventType::Count: {
-                if ((scheduler_.top().time >> 1) == cp0_regs_[CP0_COMPARE].UD)
-                    fire_count();
-                else
+                if ((scheduler_.top().time >> 1) == cp0_regs_[CP0_COMPARE].UD) {
+                    // fire_count();
+                } else
                     VERBOSE(std::cout << "Compare changed before firing " << (scheduler_.top().time) << " " << cp0_regs_[CP0_COMPARE].UD << std::endl;)
                 break;
             }
             case SchedulerEventType::Vi: {
-                std::cout << "vi event" << std::endl;
-                uint32_t flags = cp0_regs_[CP0_CAUSE].UW._0;
-                SetBit(flags, 8, true);
-                cp0_regs_[CP0_CAUSE].UW._0 = flags;
-                cpubus_.mi_interrupt_ |= 1 << 3;
-                queue_event(SchedulerEventType::Interrupt, 1);
-                std::cout << "jumped from: " << std::hex << pc_ << std::endl;
+                // queue next interrupt
                 uint64_t temp =  rcp_.vi_v_intr_;
                 invalidate_hwio(VI_V_INTR, temp);
+                [[fallthrough]];
+            }
+            case SchedulerEventType::Si:
+            case SchedulerEventType::Pi: {
+                cpubus_.mi_interrupt_ |= 1 << static_cast<int>(event_type);
+                bool interrupt = cpubus_.mi_interrupt_ & cpubus_.mi_mask_;
+                CP0Cause.IP2 = interrupt;
+                if (interrupt) {
+                    queue_event(SchedulerEventType::Interrupt, 0);
+                }
                 break;
             }
         }

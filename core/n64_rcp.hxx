@@ -12,8 +12,8 @@ namespace TKPEmu::N64 {
     }
 }
 
-constexpr auto GL_UNSIGNED_BYTE = 0x1401;
-constexpr auto GL_UNSIGNED_SHORT_5_5_5_1 = 0x8034;
+constexpr auto GL_UNSIGNED_BYTE_ = 0x1401;
+constexpr auto GL_UNSIGNED_SHORT_5_5_5_1_ = 0x8034;
 
 namespace TKPEmu::N64::Devices {
     class RCP {
@@ -21,7 +21,7 @@ namespace TKPEmu::N64::Devices {
         void Reset();
     private:
         int width_ = 320, height_ = 240;
-        int bitdepth_ = GL_UNSIGNED_BYTE;
+        int bitdepth_ = GL_UNSIGNED_BYTE_;
 		uint8_t* framebuffer_ptr_ = nullptr;
         // RSP internal registers
         uint32_t rsp_status_ = 0;
